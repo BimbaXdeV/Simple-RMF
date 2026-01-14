@@ -1,1 +1,1 @@
-# Simple-RMF
+# Simple Remote Management Framework
