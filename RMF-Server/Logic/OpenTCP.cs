@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using RMF_Server.Debugger;
+using RMF_Server.Exceptions;
+using RMF_Server.Packets;
 using RMF_Server.Storage;
 using System;
 using System.Collections.Concurrent;
@@ -15,7 +17,6 @@ namespace RMF_Server.Logic
     internal class OpenTCP
     {
         private TcpListener? server;
-        private readonly ConcurrentDictionary<string, TcpClient> connections = [];
 
         public async Task RunServer(CancellationToken token)
         {
@@ -27,7 +28,7 @@ namespace RMF_Server.Logic
             try
             {
                 this.server.Start();
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this.connections.Count}");
+                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.SessionsConnected()}");
                 Logging.Output($"Server successfully started listening at {ip}:{port}");
                 Logging.Separator();
 
@@ -42,17 +43,17 @@ namespace RMF_Server.Logic
                         client.Close();
                         continue;
                     }
-
-                    if (!this.connections.TryAdd(endPoint, client))
+                    
+                    if (!SessionManager.NewConnection(client, endPoint))
                     {
                         Logging.Output($"A duplicate connection to the server was detected, the duplicated client {endPoint} was disconnected");
                         client.Close();
                         continue;
                     }
 
-                    AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this.connections.Count}");
+                    AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.SessionsConnected()}");
                     Logging.Output($"Registered new connection from {endPoint}");
-                    _ = Task.Run(() => ClientDowntime(client, endPoint, 10));
+                    _ = Task.Run(() => ClientHandler(client, endPoint));
                 }
             }
 
@@ -74,45 +75,62 @@ namespace RMF_Server.Logic
         public void Shutdown()
         {
             Logging.Output("The server is shutting down...");
-            if (this.connections.Count > 0)
+            if (SessionManager.SessionsConnected() > 0)
             {
-                ClearConnections();
+                SessionManager.ClearConnections();
             }
             this.server?.Stop();
             Logging.Output("The server successfully stoped");
         }
 
-        private void Disconnect(TcpClient client, string endPoint)
-        {
-            if (this.connections.TryRemove(endPoint, out _))
-            {
-                client.Close();
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this.connections.Count}");
-                Logging.Output($"Client {endPoint} was disconnected");
-            }
-        }
-
-        private void ClearConnections()
-        {
-            Logging.Output("Connections are being cleared...");
-
-            int disconnectedClientsCount = 0;
-            int totalConnectedClients = this.connections.Count;
-
-            foreach (var entry in this.connections)
-            {
-                entry.Value.Close();
-                Logging.Output($"Client {entry.Key} was forced disconnected");
-                disconnectedClientsCount++;
-            }
-            this.connections.Clear();
-            Logging.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
-        }
-
         private async Task ClientDowntime(TcpClient client, string endPoint, int connectionDurationSecs)
         {
             await Task.Delay(connectionDurationSecs * 1000);
-            Disconnect(client, endPoint);
+            SessionManager.Disconnect(client, endPoint);
+        }
+
+        private async Task ClientHandler(TcpClient client, string endPoint)
+        {
+            try
+            {
+                NetworkStream stream = client.GetStream();
+                BinaryReader reader = new BinaryReader(stream);
+
+                while (client.Connected)
+                {
+                    if (stream.DataAvailable)
+                    {
+                        short id = reader.ReadInt16();
+                        short length = reader.ReadInt16();
+
+                        int payloadSize = length - 4;
+                        byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, payloadSize);
+
+                        Packet? packet = PacketsAssembler.GetPacket(id);
+                        if (packet != null)
+                        {
+                            using MemoryStream ms = new MemoryStream(payload);
+                            using BinaryReader payloadReader = new BinaryReader(ms);
+
+                            packet.Deserialize(payloadReader);
+                            PacketsHandler.SwitchHandle(packet, endPoint);
+                        }
+                    }
+                    await Task.Delay(ConfigurationManager.PacketsListenDelayMsecs);
+                }
+            }
+            catch (PayloadBufferOverflow)
+            {
+            }
+
+            catch (Exception ex)
+            {
+                Logging.Error($"Error in client handler for {endPoint}: {ex}");
+            }
+            finally
+            {
+                SessionManager.Disconnect(client, endPoint);
+            }
         }
     }
 }

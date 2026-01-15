@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Debugger
 {
-    internal class Logging
+    internal static class Logging
     {
         public static byte[] DatetimeColorRGB = { 193, 255, 128 };
         public static byte[] WarningColorRGB = { 255, 187, 51 };

@@ -10,7 +10,7 @@ using System.Xml.Linq;
 
 namespace RMF_Server.Storage
 {
-    internal class ConfigurationManager
+    internal static class ConfigurationManager
     {
         private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "config.xml");
 
@@ -19,6 +19,8 @@ namespace RMF_Server.Storage
         public static string? IPAddress;
         public static int Port;
         public static int MaxConnections;
+        public static int MaxPacketMemoryLimitKB;
+        public static int PacketsListenDelayMsecs;
 
         public static void Load()
         {

@@ -2,10 +2,12 @@
 
 <Settings>
 	<!-- Appearance Settings -->
-	<add key="AppTitle" value="RAT-Server"/>
+	<add key="AppTitle" value="RMF-Server"/>
 	
 	<!-- Connection Settings -->
 	<add key="IPAddress" value="127.0.0.1"/>
 	<add key="Port" value="8000"/>
-	<add key="MaxConnections" value="10"/>
+	<add key="MaxConnections" value="20"/>
+	<add key="MaxPacketMemoryLimitKB" value="2048"/>
+	<add key="PacketsListenDelayMsecs" value="250"/>
 </Settings>

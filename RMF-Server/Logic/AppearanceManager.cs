@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal class AppearanceManager
+    internal static class AppearanceManager
     {
         private static readonly int maxTitleLength = 48;
 

@@ -19,10 +19,31 @@
 	  <Compile Update="Debugger\Logging.cs">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Compile>
+	  <Compile Update="Exceptions\PayloadBufferOverflow.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
 	  <Compile Update="Logic\AppearanceManager.cs">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Compile>
 	  <Compile Update="Logic\OpenTCP.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	  <Compile Update="Packets\ClientPackets\RemoteDesktopPacket.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	  <Compile Update="Packets\ClientPackets\SystemInfoPacket.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	  <Compile Update="Packets\Packet.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	  <Compile Update="Packets\PacketsAssembler.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	  <Compile Update="Packets\PacketsHandler.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	  <Compile Update="Storage\ClientSession.cs">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Compile>
 	  <Compile Update="Storage\ConfigurationManager.cs">

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Debugger
 {
-    internal class Colorist
+    internal static class Colorist
     {
         private static readonly string ColorPref = "\u001b[38;2;{0};{1};{2}m";
         private static readonly string ResetSuf = "\u001b[0m";
