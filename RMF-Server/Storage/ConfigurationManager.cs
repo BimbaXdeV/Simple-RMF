@@ -22,6 +22,10 @@ namespace RMF_Server.Storage
         public static int MaxPacketMemoryLimitKB;
         public static int PacketsListenDelayMsecs;
 
+        public static bool AutoStartStreaming;
+        public static int ScreenshotQualityPercentage;
+        public static int DesktopSendingIntervalMsecs;
+
         public static void Load()
         {
             if (!File.Exists(ConfigPath))

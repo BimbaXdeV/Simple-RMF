@@ -1,5 +1,7 @@
-﻿using System;
+﻿using RMF_Server.Storage;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +25,10 @@ namespace RMF_Server.Packets.ClientPackets
             this.Width = reader.ReadInt32();
             this.Height = reader.ReadInt32();
             int imageLength = reader.ReadInt32();
+            if (imageLength > ConfigurationManager.MaxPacketMemoryLimitKB * 1024 || imageLength < 0)
+            {
+                throw new Exception("Invalid image length");
+            }
             this.ImageData = reader.ReadBytes(imageLength);
         }
     }

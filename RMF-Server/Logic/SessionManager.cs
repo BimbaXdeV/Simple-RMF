@@ -1,4 +1,5 @@
 ﻿using RMF_Server.Debugger;
+using RMF_Server.Packets;
 using RMF_Server.Storage;
 using System;
 using System.Collections.Concurrent;
@@ -12,8 +13,34 @@ namespace RMF_Server.Logic
 {
     internal static class SessionManager
     {
-        private static readonly ConcurrentDictionary<string, ClientSession> Connections = [];
-        public static int SessionsConnected() => Connections.Count;
+        public static readonly ConcurrentDictionary<string, ClientSession> Connections = [];
+
+        public static async Task SendPacket(string endPoint, Packet packet)
+        {
+            if (Connections.TryGetValue(endPoint, out ClientSession? session))
+            {
+                try
+                {
+                    if (session == null)
+                    {
+                        Logging.Error($"Failed to send packet to client {endPoint}, session not found");
+                        return;
+                    }
+                    byte[] data = packet.ToByteStream();
+                    await session.Client.GetStream().WriteAsync(data, 0, data.Length);
+                }
+                catch (Exception ex)
+                {
+                    Logging.Error($"Failed to send packet to client {endPoint}: {ex.Message}");
+                }
+            }
+        }
+
+        public static async Task BroadcastPacket(Packet packet)
+        {
+            Task[] tasks = Connections.Values.Select(session => SendPacket(session.EndPoint, packet)).ToArray();
+            await Task.WhenAll(tasks);
+        }
 
         public static bool NewConnection(TcpClient client, string endPoint)
         {
@@ -26,7 +53,7 @@ namespace RMF_Server.Logic
             if (Connections.TryRemove(endPoint, out _))
             {
                 client.Close();
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionsConnected()}");
+                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count}");
                 Logging.Output($"Client {endPoint} was disconnected");
             }
         }
@@ -36,7 +63,7 @@ namespace RMF_Server.Logic
             Logging.Output("Connections are being cleared...");
 
             int disconnectedClientsCount = 0;
-            int totalConnectedClients = SessionManager.SessionsConnected();
+            int totalConnectedClients = Connections.Count();
 
             foreach (var entry in Connections)
             {
@@ -45,7 +72,7 @@ namespace RMF_Server.Logic
                 disconnectedClientsCount++;
             }
             Connections.Clear();
-            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionsConnected()}");
+            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count()}");
             Logging.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
         }
     }

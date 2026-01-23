@@ -6,6 +6,7 @@ using RMF_Server.Storage;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -28,7 +29,7 @@ namespace RMF_Server.Logic
             try
             {
                 this.server.Start();
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.SessionsConnected()}");
+                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                 Logging.Output($"Server successfully started listening at {ip}:{port}");
                 Logging.Separator();
 
@@ -51,7 +52,7 @@ namespace RMF_Server.Logic
                         continue;
                     }
 
-                    AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.SessionsConnected()}");
+                    AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                     Logging.Output($"Registered new connection from {endPoint}");
                     _ = Task.Run(() => ClientHandler(client, endPoint));
                 }
@@ -75,7 +76,7 @@ namespace RMF_Server.Logic
         public void Shutdown()
         {
             Logging.Output("The server is shutting down...");
-            if (SessionManager.SessionsConnected() > 0)
+            if (SessionManager.Connections.Count > 0)
             {
                 SessionManager.ClearConnections();
             }
@@ -98,34 +99,50 @@ namespace RMF_Server.Logic
 
                 while (client.Connected)
                 {
-                    if (stream.DataAvailable)
+                    try
                     {
-                        short id = reader.ReadInt16();
-                        short length = reader.ReadInt16();
-
-                        int payloadSize = length - 4;
-                        byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, payloadSize);
-
-                        Packet? packet = PacketsAssembler.GetPacket(id);
-                        if (packet != null)
+                        if (stream.DataAvailable)
                         {
-                            using MemoryStream ms = new MemoryStream(payload);
-                            using BinaryReader payloadReader = new BinaryReader(ms);
+                            short id = reader.ReadInt16();
+                            short length = reader.ReadInt16();
 
-                            packet.Deserialize(payloadReader);
-                            PacketsHandler.SwitchHandle(packet, endPoint);
+                            int payloadSize = length - 4;
+                            byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, payloadSize);
+
+                            try
+                            {
+                                Packet? packet = PacketsAssembler.GetPacket(id);
+                                if (packet != null)
+                                {
+                                    using MemoryStream ms = new MemoryStream(payload);
+                                    using BinaryReader payloadReader = new BinaryReader(ms);
+
+                                    packet.Deserialize(payloadReader);
+                                    PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
+                                }
+                            }
+                            catch (Exception logicEx)
+                            {
+                                Logging.Error($"Error in client handler for {endPoint}: {logicEx}");
+                            }
                         }
+                    }
+                    catch (Exception falalEx) when (!(falalEx is OperationCanceledException))
+                    {
+                        Logging.Error($"Fatal connection error from {endPoint}, disconnecting...");
+                        break;
                     }
                     await Task.Delay(ConfigurationManager.PacketsListenDelayMsecs);
                 }
             }
             catch (PayloadBufferOverflow)
             {
+                Logging.Error($"Payload buffer overflow detected from client {endPoint}, disconnecting...");
             }
 
             catch (Exception ex)
             {
-                Logging.Error($"Error in client handler for {endPoint}: {ex}");
+                Logging.Error($"Failed to start client event loop: {ex}");
             }
             finally
             {
