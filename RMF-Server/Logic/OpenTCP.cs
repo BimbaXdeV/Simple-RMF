@@ -17,25 +17,25 @@ namespace RMF_Server.Logic
 {
     internal class OpenTCP
     {
-        private TcpListener? server;
+        private TcpListener? Server;
 
         public async Task RunServer(CancellationToken token)
         {
             IPAddress ip = ConfigurationManager.IPAddress == "Any" ? IPAddress.Any : IPAddress.Parse(ConfigurationManager.IPAddress ?? "127.0.0.1"); ;
             int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
 
-            this.server ??= new TcpListener(ip, port);
+            this.Server ??= new TcpListener(ip, port);
 
             try
             {
-                this.server.Start();
+                this.Server.Start();
                 AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                 Logging.Output($"Server successfully started listening at {ip}:{port}");
                 Logging.Separator();
 
                 while (!token.IsCancellationRequested)
                 {
-                    TcpClient client = await this.server.AcceptTcpClientAsync(token);
+                    TcpClient client = await this.Server.AcceptTcpClientAsync(token);
                     string? endPoint = client.Client.RemoteEndPoint?.ToString();
 
                     if (string.IsNullOrEmpty(endPoint))
@@ -80,7 +80,7 @@ namespace RMF_Server.Logic
             {
                 SessionManager.ClearConnections();
             }
-            this.server?.Stop();
+            this.Server?.Stop();
             Logging.Output("The server successfully stoped");
         }
 

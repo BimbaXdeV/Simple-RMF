@@ -13,18 +13,25 @@ namespace RMF_Server
     {
         static async Task Main(string[] args)
         {
+            using CancellationTokenSource cts = new();
+
+            Task loggingTask = Logging.RunExecutor();
             Logging.Output("Starting Server...");
             ConfigurationManager.Load();
+
             OpenTCP tcp = new OpenTCP();
-            
-            CancellationTokenSource cts = new CancellationTokenSource();
-            Console.CancelKeyPress += (s, e) =>
-            {
-                e.Cancel = true;
-                cts.Cancel();
-            };
-            
-            await tcp.RunServer(cts.Token);
+            Task serverTask = tcp.RunServer(cts.Token);
+
+            cts.Cancel();
+
+            await Task.WhenAll(loggingTask, serverTask);
+
+            //CancellationTokenSource cts = new CancellationTokenSource();
+            //Console.CancelKeyPress += (s, e) =>
+            //{
+            //    e.Cancel = true;
+            //    cts.Cancel();
+            //};
         }
     }
 }

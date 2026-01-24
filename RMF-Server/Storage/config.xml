@@ -12,7 +12,10 @@
 	<add key="PacketsListenDelayMsecs" value="150"/>
 	
 	<!-- Streaming Settings -->
-	<add key="AutoStartStreaming" value="true"/>
 	<add key="ScreenshotQualityPercentage" value="60"/>
 	<add key="DesktopSendingIntervalMsecs" value="150"/>
+	
+	<!-- Logging Settings -->
+	<add key="LoggingHandlerDelayMsecs" value="100"/>
+	<add key="InputListenerDelayMsecs" value="10"/>
 </Settings>

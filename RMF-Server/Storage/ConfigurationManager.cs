@@ -22,10 +22,14 @@ namespace RMF_Server.Storage
         public static int MaxPacketMemoryLimitKB;
         public static int PacketsListenDelayMsecs;
 
-        public static bool AutoStartStreaming;
         public static int ScreenshotQualityPercentage;
         public static int DesktopSendingIntervalMsecs;
 
+        public static int LoggingHandlerDelayMsecs;
+        public static int InputListenerDelayMsecs;
+
+        // You don't need to parse all the configs from "~\RMF-Server\Storage\config.xml" manually, this method will do it for you;
+        // To scale, simply add empty fields with "public" and "static" flags  ;)
         public static void Load()
         {
             if (!File.Exists(ConfigPath))
