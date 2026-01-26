@@ -14,6 +14,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="Storage\commands.xml">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Storage\config.xml">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Commands>
+	<!-- Performance Commands -->
+	<add name="cmlst" description="View full command list"/>
+	<add name="cminfo" description="Get help about a specific command" paramname1="command" paramtype1="string"/>
+	<add name="shutdown" description="Stop the server"/>
+	<add name="status" description="Check actual server status"/>
+
+	<!-- Client Management Commands -->
+	<add name="screen" description="Get actual screenshot from client desktop" paramname1="ip:port" paramtype1="string"/>
+	<add name="stream" description="Remotely connect to client desktop" paramname1="ip:port" paramtype1="string"/>
+</Commands>

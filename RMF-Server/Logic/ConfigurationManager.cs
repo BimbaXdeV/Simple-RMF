@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace RMF_Server.Storage
+namespace RMF_Server.Logic
 {
     internal static class ConfigurationManager
     {
@@ -25,6 +25,7 @@ namespace RMF_Server.Storage
         public static int ScreenshotQualityPercentage;
         public static int DesktopSendingIntervalMsecs;
 
+        public static bool InlineSuggestionsEnabled;
         public static int LoggingHandlerDelayMsecs;
         public static int InputListenerDelayMsecs;
 
@@ -56,12 +57,12 @@ namespace RMF_Server.Storage
             FieldInfo[] staticFields = type.GetFields(BindingFlags.Static | BindingFlags.Public);
 
             int initializedFieldsCounter = 0;
-            foreach (var fiend in staticFields)
+            foreach (var field in staticFields)
             {
-                if (configDict.TryGetValue(fiend.Name, out string? rawValue))
+                if (configDict.TryGetValue(field.Name, out string? rawValue))
                 {
-                    object processedValue = Convert.ChangeType(rawValue, fiend.FieldType);
-                    fiend.SetValue(null, processedValue);
+                    object processedValue = Convert.ChangeType(rawValue, field.FieldType);
+                    field.SetValue(null, processedValue);
                     initializedFieldsCounter++;
                 }
             }

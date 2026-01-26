@@ -16,6 +16,7 @@
 	<add key="DesktopSendingIntervalMsecs" value="150"/>
 	
 	<!-- Logging Settings -->
+	<add key="InlineSuggestionsEnabled" value="true"/>
 	<add key="LoggingHandlerDelayMsecs" value="100"/>
 	<add key="InputListenerDelayMsecs" value="10"/>
 </Settings>

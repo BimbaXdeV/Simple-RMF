@@ -1,4 +1,4 @@
-﻿using RMF_Server.Storage;
+﻿using RMF_Server.Logic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -72,9 +72,6 @@ namespace RMF_Server.Debugger
                         await Task.Delay(ConfigurationManager.LoggingHandlerDelayMsecs);
                     }
                 }
-            }
-            catch (TaskCanceledException)
-            {
             }
             finally
             {
