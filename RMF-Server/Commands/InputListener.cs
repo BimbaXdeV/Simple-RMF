@@ -14,9 +14,10 @@ namespace RMF_Server.Commands
         private static readonly byte[] AdminSuggestionRGB = { 120, 120, 120 };
 
         private static readonly StringBuilder? InputBuffer = new();
+        private static readonly StringBuilder? SuggestionBuffer = new();
         private static bool IsListening = false;
 
-        private static string CommandSign = "> ";
+        private static readonly string CommandSign = "> " + ConfigurationManager.InlineCommandDefautSign ?? "";
 
         public static async Task StartListen(CancellationTokenSource cts)
         {
@@ -28,6 +29,7 @@ namespace RMF_Server.Commands
 
             CancellationToken token = cts.Token;
             IsListening = true;
+            Logging.Output("Input listener successfully started waiting admin\'s command");
             try
             {
                 while (!token.IsCancellationRequested)
@@ -43,6 +45,13 @@ namespace RMF_Server.Commands
                                 continue;
                             }
 
+                            if (SuggestionBuffer!.Length > 0)
+                            {
+                                Console.SetCursorPosition(Console.CursorLeft + SuggestionBuffer.Length, Console.CursorTop);
+                                RemoveChars(SuggestionBuffer.Length);
+                                SuggestionBuffer.Clear();
+                            }
+
                             string command = InputBuffer.ToString();
                             InputBuffer.Clear();
                             Console.WriteLine();
@@ -53,6 +62,13 @@ namespace RMF_Server.Commands
 
                         else if (key.Key == ConsoleKey.Backspace)
                         {
+                            if (SuggestionBuffer!.Length > 0)
+                            {
+                                Console.SetCursorPosition(Console.CursorLeft + SuggestionBuffer.Length, Console.CursorTop);
+                                RemoveChars(SuggestionBuffer.Length);
+                                SuggestionBuffer.Clear();
+                            }
+
                             if (InputBuffer!.Length > 0)
                             {
                                 InputBuffer.Remove(InputBuffer.Length - 1, 1);
@@ -66,15 +82,50 @@ namespace RMF_Server.Commands
                             }
                         }
 
+                        else if (key.Key == ConsoleKey.Tab)
+                        {
+                            if (SuggestionBuffer!.Length > 0)
+                            {
+                                string suggestion = SuggestionBuffer.ToString();
+                                InputBuffer!.Append(suggestion);
+                                Console.Write(suggestion);
+                                SuggestionBuffer.Clear();
+                            }
+                        }
+
                         else
                         {
+                            if (SuggestionBuffer!.Length > 0)
+                            {
+                                Console.SetCursorPosition(Console.CursorLeft + SuggestionBuffer.Length, Console.CursorTop);
+                                RemoveChars(SuggestionBuffer.Length);
+                                SuggestionBuffer.Clear();
+                            }
+
                             if (!Logging.IsAdminTyping)
                             {
                                 Console.Write(CommandSign);
                                 Logging.IsAdminTyping = true;
                             }
-                            InputBuffer!.Append(key.KeyChar);
+                            InputBuffer?.Append(key.KeyChar);
                             Console.Write(key.KeyChar);
+
+                            if (ConfigurationManager.InlineSuggestionsEnabled && InputBuffer!.Length >= ConfigurationManager.InlineSuggestionsMinChars)
+                            {
+                                string currentInput = InputBuffer.ToString();
+                                Command? predictedCommand = CommandManager.GetSimilarityCommand(currentInput);
+                                if (predictedCommand != null && predictedCommand.Name!.StartsWith(currentInput, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    string suggestionPart = predictedCommand.Name.Substring(currentInput.Length);
+                                    if (!string.IsNullOrEmpty(suggestionPart))
+                                    {
+                                        SuggestionBuffer?.Append(suggestionPart);
+                                        Console.Write($"{Colorist.ColoredFilterRGB(AdminSuggestionRGB[0], AdminSuggestionRGB[1], AdminSuggestionRGB[2])}{suggestionPart}{Colorist.ResetColor()}");
+                                        Console.SetCursorPosition(Console.CursorLeft - suggestionPart.Length, Console.CursorTop);
+
+                                    }
+                                }
+                            }
                         }
                     }
 

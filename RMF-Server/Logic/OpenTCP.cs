@@ -30,7 +30,6 @@ namespace RMF_Server.Logic
                 this.Server.Start();
                 AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                 Logging.Output($"Server successfully started listening at {ip}:{port}");
-                Logging.Separator();
 
                 while (!token.IsCancellationRequested)
                 {

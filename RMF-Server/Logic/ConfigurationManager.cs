@@ -25,7 +25,10 @@ namespace RMF_Server.Logic
         public static int ScreenshotQualityPercentage;
         public static int DesktopSendingIntervalMsecs;
 
+        public static string? InlineCommandDefautSign;
         public static bool InlineSuggestionsEnabled;
+        public static int InlineSuggestionsMinChars;
+
         public static int LoggingHandlerDelayMsecs;
         public static int InputListenerDelayMsecs;
 

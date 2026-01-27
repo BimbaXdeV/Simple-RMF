@@ -83,6 +83,14 @@ namespace RMF_Server.Commands
                     Logging.Warning($"Failed to load \"{cmName}\" command parameters from xml: {ex.Message}");
                     continue;
                 }
+
+                Command cm = new Command
+                {
+                    Name = cmName,
+                    Description = cmDesc,
+                    Parameters = parameters.ToArray()
+                };
+                Commands.Add(cm);
                 initializedCommandsCounter++;
             }
 
@@ -92,6 +100,11 @@ namespace RMF_Server.Commands
         public static Command? GetCommand(string name)
         {
             return Commands.FirstOrDefault(c => c.Name?.Equals(name, StringComparison.OrdinalIgnoreCase) == true);
+        }
+
+        public static Command? GetSimilarityCommand(string name)
+        {
+            return Commands.FirstOrDefault(c => c.Name != null && c.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

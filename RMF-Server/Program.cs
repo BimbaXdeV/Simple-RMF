@@ -28,12 +28,6 @@ namespace RMF_Server
             OpenTCP tcp = new OpenTCP();
             Task serverTask = tcp.RunServer(cts.Token);
 
-            Command? cm = CommandManager.GetCommand("stream");
-            if (cm != null)
-            {
-                Logging.Output($"Test command: {cm.Name} {string.Join("", cm.Parameters?.Select(p => p.Name))}");
-            }
-
             try
             {
                 await InputListener.StartListen(cts);
