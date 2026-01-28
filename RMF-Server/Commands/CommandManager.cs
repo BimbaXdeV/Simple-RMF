@@ -102,6 +102,11 @@ namespace RMF_Server.Commands
             return Commands.FirstOrDefault(c => c.Name?.Equals(name, StringComparison.OrdinalIgnoreCase) == true);
         }
 
+        public static List<Command> GetAllCommands()
+        {
+            return Commands;
+        }
+
         public static Command? GetSimilarityCommand(string name)
         {
             return Commands.FirstOrDefault(c => c.Name != null && c.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase));

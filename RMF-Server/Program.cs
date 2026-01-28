@@ -13,7 +13,19 @@ namespace RMF_Server
     {
         static async Task Main(string[] args)
         {
-            Logging.Output("Starting Server...");
+            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
+            Console.WriteLine(
+                $"""
+                 .|'''.|   ||                      '||             '||''|.   '||    ||' '||''''| 
+                 ||..  '  ...  .. .. ..   ... ...   ||    ....      ||   ||   |||  |||   ||  .   
+                  ''|||.   ||   || || ||   ||'  ||  ||  .|...||     ||''|'    |'|..'||   ||''|   
+                .     '||  ||   || || ||   ||    |  ||  ||          ||   |.   | '|' ||   ||      
+                |'....|'  .||. .|| || ||.  ||...'  .||.  '|...'    .||.  '|' .|. | .||. .||.     
+                                           ||                                                    
+                                          ''''                                                   
+                """);
+            Logging.Separator();
+
             ConfigurationManager.Load();
             CommandManager.Load();
 
@@ -37,7 +49,7 @@ namespace RMF_Server
             }
 
             cts.Cancel();
-            await Task.WhenAll(loggingTask, serverTask);
+            await Task.WhenAll(serverTask, loggingTask);
             Logging.Output("The work process is completed. Goodbye!");
         }
     }

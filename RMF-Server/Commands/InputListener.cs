@@ -52,12 +52,21 @@ namespace RMF_Server.Commands
                                 SuggestionBuffer.Clear();
                             }
 
-                            string command = InputBuffer.ToString();
+                            string command = InputBuffer.ToString().Trim().ToLower();
                             InputBuffer.Clear();
                             Console.WriteLine();
-                            Logging.IsAdminTyping = false;
 
-                            // It will be a command handler logic here...
+                            string commandName = command.Split(' ')[0];
+                            Command? cm = CommandManager.GetCommand(commandName);
+                            if (cm == null)
+                            {
+                                Logging.Warning($"Unknown command: \"{commandName}\". Type \"{ConfigurationManager.InlineCommandDefautSign}cmlst\" to see all available inline commands.");
+                                Logging.IsAdminTyping = false;
+                                continue;
+                            }
+                            
+                            CommandHandler.SearchHandle(command, cm, cts);
+                            Logging.IsAdminTyping = false;
                         }
 
                         else if (key.Key == ConsoleKey.Backspace)
