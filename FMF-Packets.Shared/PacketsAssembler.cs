@@ -5,9 +5,9 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Server.Packets
+namespace RMF_Packets.Shared
 {
-    internal class PacketsAssembler
+    public class PacketsAssembler
     {
         private static readonly Dictionary<short, Type> PacketTypes = [];
 

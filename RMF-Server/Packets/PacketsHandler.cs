@@ -1,7 +1,8 @@
-﻿using RMF_Server.Debugger;
+﻿using RMF_Packets.Shared;
+using RMF_Packets.Shared.Client;
+using RMF_Server.Debugger;
 using RMF_Server.Exceptions;
 using RMF_Server.Logic;
-using RMF_Server.Packets.ClientPackets;
 using RMF_Server.Storage;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace RMF_Server.Packets
     {
         public static async Task<byte[]> ReadPayload(string endPoint, NetworkStream stream, int size)
         {
-            long bytesLimit = ConfigurationManager.MaxPacketMemoryLimitKB * 1024;
+            long bytesLimit = ConfigurationManager.MaxPacketLengthMB;
             if (size > bytesLimit || size < 0)
             {
                 throw new PayloadBufferOverflow("The payload size exceeds the allowed buffer limit");
@@ -49,6 +50,17 @@ namespace RMF_Server.Packets
                     _ = Task.Run(() => ProcessRemoteDesktopPacket(remoteDesktopPacket, endPoint));
                     break;
             }
+        }
+
+        // This handle method is too slow for streaming production, but it's here if you need it for scaling purposes
+        public static void SearchHandle(Packet packet, string endPoint)
+        {
+            //Type packetType = packet.GetType();
+            //var method = typeof(PacketsHandler).GetMethod("Process" + packetType.Name + "Packet", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            //if (method != null)
+            //{
+            //    method.Invoke(null, new object[] { packet, endPoint });
+            //}
         }
 
         private static void ProcessSystemInfoPacket(SystemInfoPacket packet, string endPoint)

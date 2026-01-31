@@ -19,7 +19,7 @@ namespace RMF_Server.Logic
         public static string? IPAddress;
         public static int Port;
         public static int MaxConnections;
-        public static int MaxPacketMemoryLimitKB;
+        public static int MaxPacketLengthMB;
         public static int PacketsListenDelayMsecs;
 
         public static int ScreenshotQualityPercentage;

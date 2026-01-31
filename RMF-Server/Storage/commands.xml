@@ -2,7 +2,7 @@
 <Commands>
 	<!-- Performance Commands -->
 	<add name="cmlst" description="View full command list"/>
-	<add name="cminfo" description="Get help about a specific command" paramname1="command" paramtype1="string"/>
+	<add name="conlst" description="Check client connections"/>
 	<add name="shutdown" description="Stop the server"/>
 	<add name="status" description="Check actual server status"/>
 

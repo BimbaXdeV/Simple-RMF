@@ -1,4 +1,5 @@
-﻿using RMF_Server.Debugger;
+﻿using RMF_Packets.Shared;
+using RMF_Server.Debugger;
 using RMF_Server.Packets;
 using RMF_Server.Storage;
 using System;

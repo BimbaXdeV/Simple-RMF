@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Server.Packets.ClientPackets
+namespace RMF_Packets.Shared.Client
 {
-    internal class SystemInfoPacket : Packet
+    public class SystemInfoPacket : Packet
     {
         public override short ID => 100;
 
@@ -16,7 +16,7 @@ namespace RMF_Server.Packets.ClientPackets
         public string GPU { get; set; } = "Unknown";
         public string Username { get; set; } = "Noname";
 
-        protected override byte[] SerializePayload()
+        protected override byte[] Serialize()
         {
             using MemoryStream ms = new MemoryStream();
             using BinaryWriter writer = new BinaryWriter(ms);

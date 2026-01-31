@@ -5,17 +5,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Server.Packets.ServerRequests
+namespace RMF_Packets.Shared.Server
 {
-    internal class StartStreamingRequest : Packet
+    public class StreamingRequest : Packet
     {
-        public override short ID => 200;
+        public override short ID => 201;
 
         public bool IsActive { get; set; }       // 0 - no, 1 - yes
         public byte Quality { get; set; }        // 1-100% of source screenshot quality
         public short IntervalMsecs { get; set; } // Interval between sending screenshots in milliseconds
 
-        protected override byte[] SerializePayload()
+        protected override byte[] Serialize()
         {
             using MemoryStream ms = new MemoryStream();
             using BinaryWriter writer = new BinaryWriter(ms);
@@ -26,6 +26,11 @@ namespace RMF_Server.Packets.ServerRequests
             return ms.ToArray();
         }
 
-        public override void Deserialize(BinaryReader reader) { }
+        public override void Deserialize(BinaryReader reader)
+        {
+            this.IsActive = reader.ReadBoolean();
+            this.Quality = reader.ReadByte();
+            this.IntervalMsecs = reader.ReadInt16();
+        }
     }
 }

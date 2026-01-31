@@ -6,27 +6,27 @@ using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Server.Packets
+namespace RMF_Packets.Shared
 {
-    internal abstract class Packet
+    public abstract class Packet
     {
         public abstract short ID { get; }
         protected byte[]? Payload { get; set; }
 
         // Needs to override this method in derived classes
-        protected abstract byte[] SerializePayload();
+        protected abstract byte[] Serialize();
         public abstract void Deserialize(BinaryReader reader);
 
         public byte[] ToByteStream()
         {
-            byte[] data = SerializePayload();
-            short streamLength = (short)data.Length;
+            byte[] data = Serialize();
+            int streamLength = data.Length;
 
             using MemoryStream ms = new MemoryStream();
             using BinaryWriter writer = new BinaryWriter(ms);
 
             writer.Write(this.ID);      // 2 bytes
-            writer.Write(streamLength); // 2 bytes
+            writer.Write(streamLength); // 4 bytes
             writer.Write(data);         // n*4 bytes
             return ms.ToArray();
         }
