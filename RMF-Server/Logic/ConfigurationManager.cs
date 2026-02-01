@@ -19,7 +19,7 @@ namespace RMF_Server.Logic
         public static string? IPAddress;
         public static int Port;
         public static int MaxConnections;
-        public static int MaxPacketLengthMB;
+        public static int MaxPacketLengthKB;
         public static int PacketsListenDelayMsecs;
 
         public static int ScreenshotQualityPercentage;
@@ -52,7 +52,7 @@ namespace RMF_Server.Logic
 
             if (configDict == null)
             {
-                Logging.Error($"The configuration file has been corrupted. Please check its integrity");
+                Logging.Error($"The configuration file has been corrupted. Please check its integrity on path: {ConfigPath}");
                 return;
             }
 

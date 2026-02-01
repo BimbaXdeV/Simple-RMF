@@ -14,7 +14,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\FMF-Packets.Shared\RMF-Packets.Shared.csproj" />
+	  <ProjectReference Include="..\RMF.Core\RMF.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

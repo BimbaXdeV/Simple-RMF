@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Packets.Shared
+namespace RMF.Core.Packets
 {
     public class PacketsAssembler
     {

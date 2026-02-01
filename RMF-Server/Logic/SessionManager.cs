@@ -1,6 +1,6 @@
-﻿using RMF_Packets.Shared;
+﻿using RMF.Core.Network;
+using RMF.Core.Packets;
 using RMF_Server.Debugger;
-using RMF_Server.Packets;
 using RMF_Server.Storage;
 using System;
 using System.Collections.Concurrent;
@@ -27,8 +27,21 @@ namespace RMF_Server.Logic
                         Logging.Error($"Failed to send packet to client {endPoint}, session not found");
                         return;
                     }
-                    byte[] data = packet.ToByteStream();
-                    await session.Client.GetStream().WriteAsync(data, 0, data.Length);
+
+                    if (!session.Client.Connected)
+                    {
+                        Logging.Warning($"Cannot send packet to client {endPoint}, client is disconnected");
+                        return;
+                    }
+
+                    MemoryStream ms = NetworkBuffer.GetMemoryStream();
+                    BinaryWriter writer = NetworkBuffer.GetBinaryWriter();
+                    packet.WriteToStream(writer);
+                    
+                    byte[] payload = ms.GetBuffer();
+                    int packetLength = (int)ms.Length;
+
+                    await session.Client.GetStream().WriteAsync(new ReadOnlyMemory<byte>(payload, 0, packetLength));
                 }
                 catch (Exception ex)
                 {

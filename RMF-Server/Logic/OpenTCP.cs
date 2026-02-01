@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
-using RMF_Packets.Shared;
+using RMF.Core.Packets;
 using RMF_Server.Debugger;
 using RMF_Server.Exceptions;
 using RMF_Server.Packets;
@@ -76,7 +76,7 @@ namespace RMF_Server.Logic
         public void Shutdown()
         {
             Logging.Output("The server is shutting down...");
-            if (SessionManager.Connections.Count > 0)
+            if (!SessionManager.Connections.IsEmpty)
             {
                 SessionManager.ClearConnections();
             }
@@ -104,9 +104,9 @@ namespace RMF_Server.Logic
                         if (stream.DataAvailable)
                         {
                             short id = reader.ReadInt16();
-                            short length = reader.ReadInt16();
+                            int length = reader.ReadInt32();
 
-                            int payloadSize = length - 4;
+                            int payloadSize = length - 6;
                             byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, payloadSize);
 
                             try

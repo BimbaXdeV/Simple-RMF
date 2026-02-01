@@ -1,4 +1,5 @@
-﻿using RMF_Server.Commands;
+﻿using RMF.Core.Packets;
+using RMF_Server.Commands;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
 using System;
@@ -28,6 +29,9 @@ namespace RMF_Server
 
             ConfigurationManager.Load();
             CommandManager.Load();
+
+            // Transferring fields data from server configurations to core packet configurations
+            SettingsSynchronizer.Upload(typeof(ConfigurationManager), typeof(PacketConfigurations));
 
             using CancellationTokenSource cts = new();
             Console.CancelKeyPress += (sender, e) =>

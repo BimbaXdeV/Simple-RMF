@@ -8,7 +8,7 @@
 	<add key="IPAddress" value="127.0.0.1"/>
 	<add key="Port" value="8000"/>
 	<add key="MaxConnections" value="20"/>
-	<add key="MaxPacketLengthMB" value="2"/>
+	<add key="MaxPacketLengthKB" value="100"/>
 	<add key="PacketsListenDelayMsecs" value="150"/>
 	
 	<!-- Streaming Settings -->

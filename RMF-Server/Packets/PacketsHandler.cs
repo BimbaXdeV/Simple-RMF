@@ -1,5 +1,5 @@
-﻿using RMF_Packets.Shared;
-using RMF_Packets.Shared.Client;
+﻿using RMF.Core.Packets;
+using RMF.Core.Packets.Client;
 using RMF_Server.Debugger;
 using RMF_Server.Exceptions;
 using RMF_Server.Logic;
@@ -17,7 +17,7 @@ namespace RMF_Server.Packets
     {
         public static async Task<byte[]> ReadPayload(string endPoint, NetworkStream stream, int size)
         {
-            long bytesLimit = ConfigurationManager.MaxPacketLengthMB;
+            long bytesLimit = ConfigurationManager.MaxPacketLengthKB * 1024;
             if (size > bytesLimit || size < 0)
             {
                 throw new PayloadBufferOverflow("The payload size exceeds the allowed buffer limit");
@@ -56,7 +56,7 @@ namespace RMF_Server.Packets
         public static void SearchHandle(Packet packet, string endPoint)
         {
             //Type packetType = packet.GetType();
-            //var method = typeof(PacketsHandler).GetMethod("Process" + packetType.Name + "Packet", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            //var method = typeof(PacketsHandler).GetMethod("Process" + packetType.Name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
             //if (method != null)
             //{
             //    method.Invoke(null, new object[] { packet, endPoint });
