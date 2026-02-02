@@ -20,6 +20,8 @@ namespace RMF_Server.Logic
         public static int Port;
         public static int MaxConnections;
         public static int MaxPacketLengthKB;
+        public static int MaxPacketRate;
+        public static int ReceiveTimeoutSecs;
         public static int PacketsListenDelayMsecs;
 
         public static int ScreenshotQualityPercentage;

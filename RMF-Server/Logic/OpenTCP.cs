@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json.Linq;
+using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Server.Debugger;
 using RMF_Server.Exceptions;
 using RMF_Server.Packets;
+using RMF_Server.Storage;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -54,7 +56,7 @@ namespace RMF_Server.Logic
 
                     AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                     Logging.Output($"Registered new connection from {endPoint}");
-                    _ = Task.Run(() => ClientHandler(client, endPoint));
+                    _ = Task.Factory.StartNew(() => ClientHandler(client, endPoint), TaskCreationOptions.LongRunning);
                 }
             }
 
@@ -95,36 +97,48 @@ namespace RMF_Server.Logic
             try
             {
                 NetworkStream stream = client.GetStream();
-                BinaryReader reader = new BinaryReader(stream);
+                BinaryReader reader = NetworkBuffer.GetBinaryReader(stream);
 
-                while (client.Connected)
+                byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
+                ClientSession? session = SessionManager.Connections.GetValueOrDefault(endPoint);
+                while (client.Connected && session != null)
                 {
                     try
                     {
-                        if (stream.DataAvailable)
+                        int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length);
+                        if (bytesRead == 0)
                         {
-                            short id = reader.ReadInt16();
-                            int length = reader.ReadInt32();
+                            Logging.Output($"The client {endPoint} has disconnected");
+                            break;
+                        }
 
-                            int payloadSize = length - 6;
-                            byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, payloadSize);
+                        if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
+                        {
+                            Logging.Warning($"The client {endPoint} has exceeded the allowed packet rate limit");
+                            session.Client.Close();
+                            SessionManager.Connections.TryRemove(endPoint, out _);
+                            Firewall.Ban(session.IPAddress);
+                            break;
+                        }
 
-                            try
+                        short id = reader.ReadInt16();
+                        int length = reader.ReadInt32();
+                        byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, length);
+
+                        try
+                        {
+                            Packet? packet = PacketsAssembler.GetPacket(id);
+                            if (packet != null)
                             {
-                                Packet? packet = PacketsAssembler.GetPacket(id);
-                                if (packet != null)
-                                {
-                                    using MemoryStream ms = new MemoryStream(payload);
-                                    using BinaryReader payloadReader = new BinaryReader(ms);
+                                BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();
 
-                                    packet.Deserialize(payloadReader);
-                                    PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
-                                }
+                                packet.Deserialize(payloadReader);
+                                PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
                             }
-                            catch (Exception logicEx)
-                            {
-                                Logging.Error($"Error in client handler for {endPoint}: {logicEx}");
-                            }
+                        }
+                        catch (Exception logicEx)
+                        {
+                            Logging.Error($"Error in client handler for {endPoint}: {logicEx}");
                         }
                     }
                     catch (Exception falalEx) when (!(falalEx is OperationCanceledException))
@@ -132,7 +146,6 @@ namespace RMF_Server.Logic
                         Logging.Error($"Fatal connection error from {endPoint}, disconnecting...");
                         break;
                     }
-                    await Task.Delay(ConfigurationManager.PacketsListenDelayMsecs);
                 }
             }
             catch (PayloadBufferOverflow)
