@@ -14,8 +14,9 @@ namespace RMF_Server.Storage
         public string IPAddress { get; set; }
         public ushort Port { get; set; }
 
-        public int PacketsCount { get; set; }
-        public DateTime LastTransferTime { get; set; }
+        public int PacketsCount { get; private set; }
+        public DateTime HandleStartTime { get; private set; }
+        public DateTime LastTransferTime { get; private set; }
 
         public byte[]? LastFrame { get; set; }
         public DateTime? LastUpdate { get; set; }
@@ -35,12 +36,15 @@ namespace RMF_Server.Storage
         public bool IsRateLimitExceed(int maxRate)
         {
             DateTime currentTime = DateTime.UtcNow;
-            int timeDifference = (int)(currentTime - this.LastTransferTime).TotalSeconds;
+            this.LastTransferTime = currentTime;
 
-            if (timeDifference >= 1)
+            if ((currentTime - this.HandleStartTime).TotalSeconds >= 1.0f)
             {
                 this.PacketsCount = 0;
+                this.HandleStartTime = currentTime;
             }
+
+            this.PacketsCount++;
             return this.PacketsCount > maxRate;
         }
     }

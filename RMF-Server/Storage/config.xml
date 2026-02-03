@@ -10,7 +10,7 @@
 	<add key="MaxConnections" value="20"/>
 	<add key="MaxPacketLengthKB" value="100"/>
 	<add key="MaxPacketRate" value="50"/>
-	<add key="ReceiveTimeoutSecs" value="10"/>
+	<add key="ReceiveTimeoutSecs" value="240"/>
 	<add key="PacketsListenDelayMsecs" value="150"/>
 	
 	<!-- Streaming Settings -->

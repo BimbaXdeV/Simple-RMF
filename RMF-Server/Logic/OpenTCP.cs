@@ -86,14 +86,16 @@ namespace RMF_Server.Logic
             Logging.Output("The server successfully stoped");
         }
 
-        private async Task ClientDowntime(TcpClient client, string endPoint, int connectionDurationSecs)
+        private static async Task ClientDowntime(TcpClient client, string endPoint, int connectionDurationSecs)
         {
             await Task.Delay(connectionDurationSecs * 1000);
             SessionManager.Disconnect(client, endPoint);
         }
 
-        private async Task ClientHandler(TcpClient client, string endPoint)
+        private static async Task ClientHandler(TcpClient client, string endPoint)
         {
+            CancellationTokenSource cts = new();
+
             try
             {
                 NetworkStream stream = client.GetStream();
@@ -101,53 +103,53 @@ namespace RMF_Server.Logic
 
                 byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
                 ClientSession? session = SessionManager.Connections.GetValueOrDefault(endPoint);
+
+                cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));
                 while (client.Connected && session != null)
                 {
+                    int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, cts.Token);
+                    if (bytesRead == 0)
+                    {
+                        Logging.Output($"The client {endPoint} has disconnected");
+                        break;
+                    }
+                        
+                    cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));
+                    if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
+                    {
+                        Logging.Warning($"The client {endPoint} has exceeded the allowed packet rate limit");
+                        Firewall.Ban(session.IPAddress);
+                        break;
+                    }
+
+                    short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
+                    int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
+                    int length = reader.ReadInt32();
+                    byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, length);
+
                     try
                     {
-                        int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length);
-                        if (bytesRead == 0)
+                        Packet? packet = PacketsAssembler.GetPacket(id);
+                        if (packet != null)
                         {
-                            Logging.Output($"The client {endPoint} has disconnected");
-                            break;
-                        }
+                            BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();
 
-                        if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
-                        {
-                            Logging.Warning($"The client {endPoint} has exceeded the allowed packet rate limit");
-                            session.Client.Close();
-                            SessionManager.Connections.TryRemove(endPoint, out _);
-                            Firewall.Ban(session.IPAddress);
-                            break;
-                        }
-
-                        short id = reader.ReadInt16();
-                        int length = reader.ReadInt32();
-                        byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, length);
-
-                        try
-                        {
-                            Packet? packet = PacketsAssembler.GetPacket(id);
-                            if (packet != null)
-                            {
-                                BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();
-
-                                packet.Deserialize(payloadReader);
-                                PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
-                            }
-                        }
-                        catch (Exception logicEx)
-                        {
-                            Logging.Error($"Error in client handler for {endPoint}: {logicEx}");
+                            packet.Deserialize(payloadReader);
+                            PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
                         }
                     }
-                    catch (Exception falalEx) when (!(falalEx is OperationCanceledException))
+                    catch (Exception)
                     {
-                        Logging.Error($"Fatal connection error from {endPoint}, disconnecting...");
+                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {endPoint}, disconnecting...");
                         break;
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Logging.Warning($"Client {endPoint} timed out waiting for packets, disconnecting...");
+            }
+
             catch (PayloadBufferOverflow)
             {
                 Logging.Error($"Payload buffer overflow detected from client {endPoint}, disconnecting...");
