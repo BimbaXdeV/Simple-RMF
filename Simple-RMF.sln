@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF_Server", "RMF-Server\RM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF.Core", "RMF.Core\RMF.Core.csproj", "{FA04FC5D-7772-42AC-B0CB-D3DAA9A9829B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF.Tests", "RMF.Tests\RMF.Tests.csproj", "{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{FA04FC5D-7772-42AC-B0CB-D3DAA9A9829B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA04FC5D-7772-42AC-B0CB-D3DAA9A9829B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA04FC5D-7772-42AC-B0CB-D3DAA9A9829B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

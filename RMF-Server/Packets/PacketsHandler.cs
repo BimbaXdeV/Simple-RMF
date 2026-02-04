@@ -5,6 +5,7 @@ using RMF_Server.Exceptions;
 using RMF_Server.Logic;
 using RMF_Server.Storage;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -23,7 +24,7 @@ namespace RMF_Server.Packets
                 throw new PayloadBufferOverflow("The payload size exceeds the allowed buffer limit");
             }
 
-            byte[] buffer = new byte[size];
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
             int totalBytesRead = 0;
             while (totalBytesRead < size)
             {

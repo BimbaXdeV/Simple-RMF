@@ -6,6 +6,7 @@ using RMF_Server.Exceptions;
 using RMF_Server.Packets;
 using RMF_Server.Storage;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -114,7 +115,7 @@ namespace RMF_Server.Logic
                         break;
                     }
                         
-                    cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));
+                    cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));  // Time bomb :D
                     if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
                     {
                         Logging.Warning($"The client {endPoint} has exceeded the allowed packet rate limit");
@@ -124,8 +125,7 @@ namespace RMF_Server.Logic
 
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
-                    int length = reader.ReadInt32();
-                    byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, length);
+                    byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, packetLength);
 
                     try
                     {
@@ -142,6 +142,11 @@ namespace RMF_Server.Logic
                     {
                         Logging.Error($"Fatal connection error when trying to handle incoming packet from {endPoint}, disconnecting...");
                         break;
+                    }
+                    finally
+                    {
+                        // To avoid allocating unnecessary memory, we allocate a free byte[] from the async pool, which must be returned after use
+                        ArrayPool<byte>.Shared.Return(payload);
                     }
                 }
             }
