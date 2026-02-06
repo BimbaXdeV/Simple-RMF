@@ -14,12 +14,15 @@ namespace RMF.Core.Network
         private static readonly AsyncLocal<BinaryReader> CacheReader = new();
         private static readonly AsyncLocal<BinaryWriter> CacheWriter = new();
 
-        public static MemoryStream GetMemoryStream()
+        public static MemoryStream GetMemoryStream(bool resetMemory = false)
         {
-            MemoryStream stream = CacheStream.Value ??= new MemoryStream();
-            stream.SetLength(0);
-            stream.Position = 0;
-            return stream;
+            CacheStream.Value ??= new MemoryStream();
+            if (resetMemory)
+            {
+                CacheStream.Value.SetLength(0);
+                CacheStream.Value.Position = 0;
+            }
+            return CacheStream.Value;
         }
 
         public static BinaryReader GetBinaryReader()

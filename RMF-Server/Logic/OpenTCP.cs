@@ -47,7 +47,14 @@ namespace RMF_Server.Logic
                         client.Close();
                         continue;
                     }
-                    
+
+                    if (Firewall.IsBanned(endPoint))
+                    {
+                        Logging.Warning($"A banned client {endPoint} attempted to connect, access denied");
+                        client.Close();
+                        continue;
+                    }
+
                     if (!SessionManager.NewConnection(client, endPoint))
                     {
                         Logging.Output($"A duplicate connection to the server was detected, the duplicated client {endPoint} was disconnected");
@@ -100,7 +107,6 @@ namespace RMF_Server.Logic
             try
             {
                 NetworkStream stream = client.GetStream();
-                BinaryReader reader = NetworkBuffer.GetBinaryReader(stream);
 
                 byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
                 ClientSession? session = SessionManager.Connections.GetValueOrDefault(endPoint);
@@ -125,6 +131,7 @@ namespace RMF_Server.Logic
 
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
+                    
                     byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, packetLength);
 
                     try
@@ -132,15 +139,19 @@ namespace RMF_Server.Logic
                         Packet? packet = PacketsAssembler.GetPacket(id);
                         if (packet != null)
                         {
-                            BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();
+                            MemoryStream ms = NetworkBuffer.GetMemoryStream(resetMemory: true);
+                            ms.Write(payload, 0, packetLength);
+                            ms.Position = 0;
+
+                            BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();  // It will also call method GetMemoryStram(), but it will not accidentally clear all memory
 
                             packet.Deserialize(payloadReader);
                             PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {endPoint}, disconnecting...");
+                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {endPoint}, disconnecting... \n{ex}");
                         break;
                     }
                     finally

@@ -16,6 +16,15 @@ namespace RMF.Tests
             Console.WriteLine($"Connected to server at {IPAddress}:{Port}");
         }
 
+        public void Disconnect()
+        {
+            if (this.Client != null && this.Client.Connected)
+            {
+                this.Client.Close();
+                Console.WriteLine("Disconnected from server");
+            }
+        }
+
         public async Task StartBombing(int totalSecs, float delay = 1f)
         {
             if (this.Client == null || !this.Client.Connected)

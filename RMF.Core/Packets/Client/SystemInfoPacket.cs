@@ -18,17 +18,17 @@ namespace RMF.Core.Packets.Client
 
         public override void Deserialize(BinaryReader reader)
         {
-            OS = reader.ReadString();
-            CPU = reader.ReadString();
-            GPU = reader.ReadString();
-            Username = reader.ReadString();
+            this.OS = reader.ReadString();
+            this.CPU = reader.ReadString();
+            this.GPU = reader.ReadString();
+            this.Username = reader.ReadString();
         }
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(OS);
-            writer.Write(CPU);
-            writer.Write(GPU);
-            writer.Write(Username);
+            writer.Write(this.OS);
+            writer.Write(this.CPU);
+            writer.Write(this.GPU);
+            writer.Write(this.Username);
         }
     }
 }

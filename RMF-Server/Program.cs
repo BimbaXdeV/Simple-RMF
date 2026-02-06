@@ -30,6 +30,9 @@ namespace RMF_Server
             ConfigurationManager.Load();
             CommandManager.Load();
 
+            int packetsFound = PacketsAssembler.RegisterFound();
+            Logging.Output($"Packets registration completed, {packetsFound} packets found and registered successfully");
+
             // Transferring fields data from server configurations to core packet configurations
             SettingsSynchronizer.Upload(typeof(ConfigurationManager), typeof(PacketConfigurations));
 
