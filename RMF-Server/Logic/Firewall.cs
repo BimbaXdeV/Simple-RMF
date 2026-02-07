@@ -18,6 +18,12 @@ namespace RMF_Server.Logic
             return bannedIPs.ContainsKey(ipAddress);
         }
 
+        public static string[] GetBannedIPs(int? limit = null)
+        {
+            ICollection<string> keys = bannedIPs.Keys;
+            return limit == null ? keys.ToArray() : keys.Take(limit.Value).ToArray();
+        }
+
         public static void Ban(string ipAddress)
         {
             if (!string.IsNullOrEmpty(ipAddress))

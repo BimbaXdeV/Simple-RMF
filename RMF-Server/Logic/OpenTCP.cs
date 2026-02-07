@@ -48,7 +48,7 @@ namespace RMF_Server.Logic
                         continue;
                     }
 
-                    if (Firewall.IsBanned(endPoint))
+                    if (Firewall.IsBanned(endPoint.Split(":")[0]))
                     {
                         Logging.Warning($"A banned client {endPoint} attempted to connect, access denied");
                         client.Close();
@@ -117,7 +117,6 @@ namespace RMF_Server.Logic
                     int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, cts.Token);
                     if (bytesRead == 0)
                     {
-                        Logging.Output($"The client {endPoint} has disconnected");
                         break;
                     }
                         
@@ -137,17 +136,20 @@ namespace RMF_Server.Logic
                     try
                     {
                         Packet? packet = PacketsAssembler.GetPacket(id);
-                        if (packet != null)
+                        if (packet == null)
                         {
-                            MemoryStream ms = NetworkBuffer.GetMemoryStream(resetMemory: true);
-                            ms.Write(payload, 0, packetLength);
-                            ms.Position = 0;
-
-                            BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();  // It will also call method GetMemoryStram(), but it will not accidentally clear all memory
-
-                            packet.Deserialize(payloadReader);
-                            PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
+                            Logging.Warning($"Received an unknown packet \"{id}\" from the client {endPoint}");
+                            continue;
                         }
+
+                        MemoryStream ms = NetworkBuffer.GetMemoryStream(resetMemory: true);
+                        ms.Write(payload, 0, packetLength);
+                        ms.Position = 0;
+
+                        BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();  // It will also call method GetMemoryStram(), but it will not accidentally clear all memory
+
+                        packet.Deserialize(payloadReader);
+                        PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
                     }
                     catch (Exception ex)
                     {

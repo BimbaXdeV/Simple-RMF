@@ -1,4 +1,6 @@
 ﻿using RMF_Server.Debugger;
+using RMF_Server.Logic;
+using RMF_Server.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -118,6 +120,44 @@ namespace RMF_Server.Commands
                 string parametersNamesPerformance = cm.Parameters != null ? Colorist.ColoredFilterRGB(ParameterNameRGB[0], ParameterNameRGB[1], ParameterNameRGB[2]) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor() : "";
                 string descriptionPerformance = cm.Description ?? "Description is empty...";
                 Console.WriteLine($"{Colorist.ColoredFilterRGB(CommandNameRGB[0], CommandNameRGB[1], CommandNameRGB[2])}- {cm.Name}{Colorist.ResetColor()} {parametersNamesPerformance} - {descriptionPerformance}");
+            }
+        }
+
+        private static void Conlst()
+        {
+            ClientSession[] connections = SessionManager.Connections.Values.ToArray();
+            if (connections.Length == 0)
+            {
+                Console.WriteLine("No active connections...");
+                return;
+            }
+
+            Console.WriteLine("Active connections list:");
+            int maxCounterLength = connections.Length.ToString().Length;
+            int counter = 1;
+            foreach (ClientSession c in connections)
+            {
+                Console.WriteLine($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {c.EndPoint} | Last packet: {c.LastTransferTime}");
+                counter++;
+            }
+        }
+
+        private static void Banlst()
+        {
+            string[] bannedIPs = Firewall.GetBannedIPs();
+            if (bannedIPs.Length == 0)
+            {
+                Console.WriteLine("No banned IPs...");
+                return;
+            }
+
+            Console.WriteLine("Banned IPs list:");
+            int maxCounterLength = bannedIPs.Length.ToString().Length;
+            int counter = 1;
+            foreach (string ip in bannedIPs)
+            {
+                Console.WriteLine($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {ip}");
+                counter++;
             }
         }
 
