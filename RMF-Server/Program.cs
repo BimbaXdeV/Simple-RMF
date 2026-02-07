@@ -15,16 +15,7 @@ namespace RMF_Server
         static async Task Main(string[] args)
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
-            Console.WriteLine(
-                $"""
-                 .|'''.|   ||                      '||             '||''|.   '||    ||' '||''''| 
-                 ||..  '  ...  .. .. ..   ... ...   ||    ....      ||   ||   |||  |||   ||  .   
-                  ''|||.   ||   || || ||   ||'  ||  ||  .|...||     ||''|'    |'|..'||   ||''|   
-                .     '||  ||   || || ||   ||    |  ||  ||          ||   |.   | '|' ||   ||      
-                |'....|'  .||. .|| || ||.  ||...'  .||.  '|...'    .||.  '|' .|. | .||. .||.     
-                                           ||                                                    
-                                          ''''                                                   
-                """);
+            Console.WriteLine(Logging.ServerLogo);
             Logging.Separator();
 
             ConfigurationManager.Load();

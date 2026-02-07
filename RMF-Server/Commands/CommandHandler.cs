@@ -92,7 +92,7 @@ namespace RMF_Server.Commands
             MethodInfo? processMethod = type.GetMethod(processMethodName, BindingFlags.NonPublic | BindingFlags.Static);
             if (processMethod == null)
             {
-                Logging.Warning($"No processor found for command \"{commandName}\"");
+                Logging.Warning($"No processor found for command \"{commandName}\"", toHistory: false);
                 return;
             }
 
@@ -106,6 +106,7 @@ namespace RMF_Server.Commands
             }
         }
 
+        // All command processors
         private static void Cmlst()
         {
             Console.WriteLine("Available inline commands:");
@@ -159,6 +160,11 @@ namespace RMF_Server.Commands
                 Console.WriteLine($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {ip}");
                 counter++;
             }
+        }
+
+        private static void Clear()
+        {
+            Logging.ClearConsole();
         }
 
         private static void Shutdown(string input, CancellationTokenSource cts)

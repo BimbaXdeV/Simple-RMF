@@ -13,6 +13,15 @@ namespace RMF_Server.Debugger
     {
         // Inilialization things
         private static readonly int MaxMethodNameLength = GetMaxMethodNameLength();
+        public static string ServerLogo = @"
+ .|'''.|   ||                      '||             '||''|.   '||    ||' '||''''| 
+ ||..  '  ...  .. .. ..   ... ...   ||    ....      ||   ||   |||  |||   ||  .   
+  ''|||.   ||   || || ||   ||'  ||  ||  .|...||     ||''|'    |'|..'||   ||''|   
+.     '||  ||   || || ||   ||    |  ||  ||          ||   |.   | '|' ||   ||      
+|'....|'  .||. .|| || ||.  ||...'  .||.  '|...'    .||.  '|' .|. | .||. .||.     
+                           ||                                                    
+                          ''''                                                   
+";
 
         // Output colors and settings
         public static byte[] DatetimeColorRGB = { 193, 255, 128 };
@@ -21,6 +30,10 @@ namespace RMF_Server.Debugger
         public static string? DefaultLogEnding = "";
         public static char ConsoleSeparator = '-';
         public static int ConsoleSeparatorLength = 32;
+
+        // Circular logging buffer
+        private static string[] History = new string[100];
+        private static int NextHistoryIndex = 0;
 
         // Logging queue and executor control
         private static readonly ConcurrentQueue<string> LogQueue = [];
@@ -31,14 +44,25 @@ namespace RMF_Server.Debugger
         {
             var methodNames = typeof(Logging).GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Where(m => m.ReturnType == typeof(void) &&
-                            m.GetParameters().Length == 1 &&
-                            m.GetParameters()[0].ParameterType == typeof(string))
+                            m.GetParameters().Length == 2 &&
+                            m.GetParameters()[0].ParameterType == typeof(string) &&
+                            m.GetParameters()[1].ParameterType == typeof(bool))
                 .Select(m => m.Name.Length);
             return methodNames.Any() ? methodNames.Max() : 10;
         }
 
+        private static void AddToHistory(string message)
+        {
+            History[NextHistoryIndex] = message;
+            NextHistoryIndex = (NextHistoryIndex + 1) % History.Length;
+            if (NextHistoryIndex == 0)
+            {
+                Logging.Output("The log history buffer is full, older logs will be overwritten", toHistory: false);
+            }
+        }
+
         // The logs will not be in the sump until the executor is started
-        private static void TryLogEnqueue(string message)
+        private static void TryLogEnqueue(string message, bool toHistory)
         {
             if (IsExecutorRunning)
             {
@@ -47,6 +71,11 @@ namespace RMF_Server.Debugger
             else
             {
                 Console.WriteLine(message);
+            }
+
+            if (toHistory)
+            {
+                AddToHistory(message);
             }
         }
 
@@ -80,29 +109,29 @@ namespace RMF_Server.Debugger
         }
 
         // All types of logs
-        public static void Output(string message)
+        public static void Output(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(DatetimeColorRGB[0], DatetimeColorRGB[1], DatetimeColorRGB[2])}[ {DateTime.Now.ToString()} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", System.Reflection.MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "UNKNOWN")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}");
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(DatetimeColorRGB[0], DatetimeColorRGB[1], DatetimeColorRGB[2])}[ {DateTime.Now.ToString()} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", System.Reflection.MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "UNKNOWN")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}", toHistory);
         }
 
-        public static void Warning(string message)
+        public static void Warning(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(WarningColorRGB[0], WarningColorRGB[1], WarningColorRGB[2])}[ {DateTime.Now.ToString()} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", System.Reflection.MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "UNKNOWN")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}");
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(WarningColorRGB[0], WarningColorRGB[1], WarningColorRGB[2])}[ {DateTime.Now.ToString()} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", System.Reflection.MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "UNKNOWN")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
-        public static void Error(string message)
+        public static void Error(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ErrorColorRGB[0], ErrorColorRGB[1], ErrorColorRGB[2])}[ {DateTime.Now.ToString()} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", System.Reflection.MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "UNKNOWN")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}");
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ErrorColorRGB[0], ErrorColorRGB[1], ErrorColorRGB[2])}[ {DateTime.Now.ToString()} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", System.Reflection.MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "UNKNOWN")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
         public static void Separator()
         {
-            TryLogEnqueue(string.Join("", Enumerable.Repeat(ConsoleSeparator.ToString(), ConsoleSeparatorLength)));
+            TryLogEnqueue(string.Join("", Enumerable.Repeat(ConsoleSeparator.ToString(), ConsoleSeparatorLength)), false);
         }
 
         public static void ClearConsole()
         {
-            TryLogEnqueue("\u001b[2J\u001b[H");
+            TryLogEnqueue("\u001b[2J\u001b[H", false);
         }
     }
 }
