@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using RMF.Core.Network;
+﻿using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Server.Debugger;
 using RMF_Server.Exceptions;
@@ -94,11 +93,11 @@ namespace RMF_Server.Logic
             Logging.Output("The server successfully stoped");
         }
 
-        private static async Task ClientDowntime(TcpClient client, string endPoint, int connectionDurationSecs)
-        {
-            await Task.Delay(connectionDurationSecs * 1000);
-            SessionManager.Disconnect(client, endPoint);
-        }
+        //private static async Task ClientDowntime(TcpClient client, string endPoint, int connectionDurationSecs)
+        //{
+        //    await Task.Delay(connectionDurationSecs * 1000);
+        //    SessionManager.Disconnect(client, endPoint);
+        //}
 
         private static async Task ClientHandler(TcpClient client, string endPoint)
         {

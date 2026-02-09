@@ -9,11 +9,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="WPF.UI" Version="3.4.2.7" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\RMF.Core\RMF.Core.csproj" />
 	</ItemGroup>
 

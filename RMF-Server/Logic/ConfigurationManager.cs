@@ -36,12 +36,12 @@ namespace RMF_Server.Logic
 
         // You don't need to parse all the configs from "~\RMF-Server\Storage\config.xml" manually, this method will do it for you;
         // To scale, simply add empty fields with "public" and "static" flags  ;)
-        public static void Load()
+        public static (int, int) Load()
         {
             if (!File.Exists(ConfigPath))
             {
                 Logging.Error($"Unable to load configuration on path: {ConfigPath}");
-                return;
+                return (0, 0);
             }
 
             XDocument configDoc = XDocument.Load(ConfigPath);
@@ -55,7 +55,7 @@ namespace RMF_Server.Logic
             if (configDict == null)
             {
                 Logging.Error($"The configuration file has been corrupted. Please check its integrity on path: {ConfigPath}");
-                return;
+                return (0, 0);
             }
 
             Type type = typeof(ConfigurationManager);
@@ -75,10 +75,10 @@ namespace RMF_Server.Logic
             if (initializedFieldsCounter == 0)
             {
                 Logging.Warning("No static fields were found for config entry");
-                return;
+                return (0, staticFields.Length);
             }
 
-            Logging.Output($"Configuration successfully loaded: {initializedFieldsCounter} / {staticFields.Length} fields filled");
+            return (initializedFieldsCounter, staticFields.Length);
         }
     }
 }

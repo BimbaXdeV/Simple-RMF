@@ -15,14 +15,20 @@ namespace RMF_Server
         static async Task Main(string[] args)
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
-            Console.WriteLine(Logging.ServerLogo);
+            Logging.Message(Logging.ServerLogo);
             Logging.Separator();
 
-            ConfigurationManager.Load();
-            CommandManager.Load();
+            Logging.Output("Initializing components...");
+            
+            (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
+            Logging.Message($"Configuration fields: {configurationsLoaded} / {totalConfigurations}", leftOffset: Logging.LogHeaderLength);
 
-            int packetsFound = PacketsAssembler.RegisterFound();
-            Logging.Output($"Packets registration completed, {packetsFound} packets found and registered successfully");
+            (int commandsLoaded, int totalCommands) = CommandManager.Load();
+            Logging.Message($"Inline commands:      {commandsLoaded} / {totalCommands}", leftOffset: Logging.LogHeaderLength);
+
+            (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
+            Logging.Message($"Network packets:      {packetsLoaded} / {totalPackets}", leftOffset: Logging.LogHeaderLength);
+
 
             // Transferring fields data from server configurations to core packet configurations
             SettingsSynchronizer.Upload(typeof(ConfigurationManager), typeof(PacketConfigurations));
@@ -35,7 +41,7 @@ namespace RMF_Server
             };
 
             Task loggingTask = Logging.RunExecutor(cts.Token);
-            OpenTCP tcp = new OpenTCP();
+            OpenTCP tcp = new();
             Task serverTask = tcp.RunServer(cts.Token);
 
             try

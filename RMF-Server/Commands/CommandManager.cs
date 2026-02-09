@@ -13,12 +13,12 @@ namespace RMF_Server.Commands
         private static readonly string CommandsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "commands.xml");
         private static readonly List<Command> Commands = [];
 
-        public static void Load()
+        public static (int, int) Load()
         {
             if (!File.Exists(CommandsPath))
             {
                 Logging.Error($"Unable to load configuration on path: {CommandsPath}");
-                return;
+                return (0, 0);
             }
 
             XDocument commandsDoc = XDocument.Load(CommandsPath);
@@ -27,7 +27,7 @@ namespace RMF_Server.Commands
             if (commandsDict == null)
             {
                 Logging.Error($"The commands file has been corrupted. Please check its integrity");
-                return;
+                return (0, 0);
             }
 
             int initializedCommandsCounter = 0;
@@ -94,7 +94,7 @@ namespace RMF_Server.Commands
                 initializedCommandsCounter++;
             }
 
-            Logging.Output($"Commands successfully loaded: {initializedCommandsCounter} / {commandsDict.Count()} initialized");
+            return (initializedCommandsCounter, commandsDict.Count());
         }
 
         public static Command? GetCommand(string name)

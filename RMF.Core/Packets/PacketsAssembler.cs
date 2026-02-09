@@ -13,7 +13,7 @@ namespace RMF.Core.Packets
         private static readonly Dictionary<short, Type> PacketTypes = [];
 
         // Automatically register packet types from the project
-        public static int RegisterFound()
+        public static (int, int) RegisterFound()
         {
             Type basePacketType = typeof(Packet);
 
@@ -22,7 +22,7 @@ namespace RMF.Core.Packets
                 .Where(t => t.IsSubclassOf(basePacketType) && !t.IsAbstract)
                 .ToArray();
 
-            int registeredPacketsCount = foundPacketTypes.Length;
+            int registeredPacketsCount = 0;
             foreach (Type packetType in foundPacketTypes)
             {
                 Packet? packetInstance = (Packet?)Activator.CreateInstance(packetType);
@@ -32,7 +32,7 @@ namespace RMF.Core.Packets
                     registeredPacketsCount++;
                 }
             }
-            return registeredPacketsCount;
+            return (registeredPacketsCount, foundPacketTypes.Length);
         }
 
         public static Packet? GetPacket(short id)

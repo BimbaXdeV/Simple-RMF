@@ -109,10 +109,10 @@ namespace RMF_Server.Commands
         // All command processors
         private static void Cmlst()
         {
-            Console.WriteLine("Available inline commands:");
+            Logging.Message("Available inline commands:");
             if (CommandManager.GetAllCommands().Count == 0)
             {
-                Console.WriteLine("No commands have been loaded...");
+                Logging.Message("No commands have been loaded...");
                 return;
             }
 
@@ -120,7 +120,7 @@ namespace RMF_Server.Commands
             {
                 string parametersNamesPerformance = cm.Parameters != null ? Colorist.ColoredFilterRGB(ParameterNameRGB[0], ParameterNameRGB[1], ParameterNameRGB[2]) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor() : "";
                 string descriptionPerformance = cm.Description ?? "Description is empty...";
-                Console.WriteLine($"{Colorist.ColoredFilterRGB(CommandNameRGB[0], CommandNameRGB[1], CommandNameRGB[2])}- {cm.Name}{Colorist.ResetColor()} {parametersNamesPerformance} - {descriptionPerformance}");
+                Logging.Message($"{Colorist.ColoredFilterRGB(CommandNameRGB[0], CommandNameRGB[1], CommandNameRGB[2])}- {cm.Name}{Colorist.ResetColor()} {parametersNamesPerformance} - {descriptionPerformance}");
             }
         }
 
@@ -129,16 +129,16 @@ namespace RMF_Server.Commands
             ClientSession[] connections = SessionManager.Connections.Values.ToArray();
             if (connections.Length == 0)
             {
-                Console.WriteLine("No active connections...");
+                Logging.Message("No active connections...");
                 return;
             }
 
-            Console.WriteLine("Active connections list:");
+            Logging.Message("Active connections list:");
             int maxCounterLength = connections.Length.ToString().Length;
             int counter = 1;
             foreach (ClientSession c in connections)
             {
-                Console.WriteLine($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {c.EndPoint} | Last packet: {c.LastTransferTime}");
+                Logging.Message($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {c.EndPoint} | Last packet: {c.LastTransferTime}");
                 counter++;
             }
         }
@@ -148,16 +148,16 @@ namespace RMF_Server.Commands
             string[] bannedIPs = Firewall.GetBannedIPs();
             if (bannedIPs.Length == 0)
             {
-                Console.WriteLine("No banned IPs...");
+                Logging.Message("No banned IPs...");
                 return;
             }
 
-            Console.WriteLine("Banned IPs list:");
+            Logging.Message("Banned IPs list:");
             int maxCounterLength = bannedIPs.Length.ToString().Length;
             int counter = 1;
             foreach (string ip in bannedIPs)
             {
-                Console.WriteLine($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {ip}");
+                Logging.Message($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {ip}");
                 counter++;
             }
         }
