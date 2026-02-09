@@ -1,0 +1,10 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="RMF_Server.MainWindow"
+		Title="Simple RMF"
+		Background="#1e1e1e" Foreground="White"
+		Width="1000" Height="850">
+	<Grid>
+		<TextBlock Text="It`s just testing window ;D" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+	</Grid>
+</Window>

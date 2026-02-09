@@ -1,4 +1,5 @@
-﻿using RMF.Core.Packets;
+﻿using Avalonia;
+using RMF.Core.Packets;
 using RMF_Server.Commands;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
@@ -12,6 +13,13 @@ namespace RMF_Server
 {
     internal class Program
     {
+        public static AppBuilder BuildApp()
+        {
+            return AppBuilder.Configure<App>()
+                             .UsePlatformDetect()
+                             .LogToTrace();
+        }
+
         static async Task Main(string[] args)
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
@@ -38,13 +46,15 @@ namespace RMF_Server
             OpenTCP tcp = new OpenTCP();
             Task serverTask = tcp.RunServer(cts.Token);
 
-            try
-            {
-                await InputListener.StartListen(cts);
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            BuildApp().StartWithClassicDesktopLifetime(args);
+
+            //try
+            //{
+            //    await InputListener.StartListen(cts);
+            //}
+            //catch (OperationCanceledException)
+            //{
+            //}
 
             cts.Cancel();
             await Task.WhenAll(serverTask, loggingTask);
