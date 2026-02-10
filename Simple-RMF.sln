@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF_Server", "RMF-Server\RMF_Server.csproj", "{025DAA00-DC26-4E36-BB4F-2552741E59C9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF-Server", "RMF-Server\RMF-Server.csproj", "{025DAA00-DC26-4E36-BB4F-2552741E59C9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF.Core", "RMF.Core\RMF.Core.csproj", "{FA04FC5D-7772-42AC-B0CB-D3DAA9A9829B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF.Tests", "RMF.Tests\RMF.Tests.csproj", "{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RMF-Client", "RMF-Client\RMF-Client.csproj", "{0B3FDE1C-AE65-400B-8F18-E9E4D9A22A82}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2E76453-A00A-4C66-9FB2-AED0104BB0F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B3FDE1C-AE65-400B-8F18-E9E4D9A22A82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B3FDE1C-AE65-400B-8F18-E9E4D9A22A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B3FDE1C-AE65-400B-8F18-E9E4D9A22A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B3FDE1C-AE65-400B-8F18-E9E4D9A22A82}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
