@@ -1,4 +1,6 @@
-﻿using RMF_Server.Packets;
+﻿using RMF.Core.Packets;
+using RMF_Server.Packets;
+using RMF_Server.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,21 +12,31 @@ namespace RMF_Server.Channels
 {
     internal class ChannelDispatcher
     {
-        private static readonly Dictionary<int, Channel<byte[]>> Channels = new();
+        private static readonly Dictionary<int, Channel<PacketContext>> Channels = new();
+        //private static readonly ChannelWriter<byte[]> Writer = new();
 
         public static void OpenFound()
         {
-            PacketsAssembler.
+            HashSet<int> channelKeys = PacketsAssembler.GetRegisteredIDs().Select(x => x / 100).ToHashSet();
 
-            for (int i = 0; i < 10; i++)
+            foreach (int k in channelKeys)
             {
-                Channels[i] = Channel.CreateUnbounded<byte[]>();
+                Channels[k] = Channel.CreateUnbounded<PacketContext>();
             }
         }
 
-        public ChannelWriter<byte>? GetChannel(int index)
+        public static void CloseAll()
         {
-            return Channels.ElementAtOrDefault(index);
+            foreach (Channel<PacketContext> c in Channels.Values)
+            {
+                c.Writer.Complete();
+            }
+            Channels.Clear();
+        }
+
+        public Channel<PacketContext>? GetChannel(int key)
+        {
+            return Channels.GetValueOrDefault(key);
         }
     }
 }
