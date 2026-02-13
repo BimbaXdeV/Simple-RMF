@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Network;
 using RMF.Core.Packets;
+using RMF_Server.Channels;
 using RMF_Server.Debugger;
 using RMF_Server.Exceptions;
 using RMF_Server.Packets;
@@ -128,8 +129,12 @@ namespace RMF_Server.Logic
                     }
 
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
+                    if (ChannelDispatcher.IsChannelExists(id))  // It is needed to save memory and reject a packet directly based on its ID
+                    {
+                        Logging.Warning($"Received a packet with unknown channel id \"{id}\" from the client {endPoint}");
+                        continue;
+                    }
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
-                    
                     byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, packetLength);
 
                     try

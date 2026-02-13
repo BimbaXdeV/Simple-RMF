@@ -13,6 +13,9 @@
 	<add key="ReceiveTimeoutSecs" value="240"/>
 	<add key="PacketsListenDelayMsecs" value="150"/>
 	
+	<!-- Channel Settings -->
+	<add key="ChannelPacketsCapacity" value="200"/>
+	
 	<!-- Streaming Settings -->
 	<add key="ScreenshotQualityPercentage" value="60"/>
 	<add key="DesktopSendingIntervalMsecs" value="150"/>

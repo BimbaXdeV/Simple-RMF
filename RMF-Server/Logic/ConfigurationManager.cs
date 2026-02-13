@@ -24,6 +24,8 @@ namespace RMF_Server.Logic
         public static int ReceiveTimeoutSecs;
         public static int PacketsListenDelayMsecs;
 
+        public static int ChannelPacketsCapacity;
+
         public static int ScreenshotQualityPercentage;
         public static int DesktopSendingIntervalMsecs;
 

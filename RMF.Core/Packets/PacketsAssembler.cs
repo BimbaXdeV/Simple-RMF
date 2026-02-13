@@ -40,9 +40,15 @@ namespace RMF.Core.Packets
             return PacketTypes.TryGetValue(id, out Type? packetType) ? (Packet?)Activator.CreateInstance(packetType) : null;
         }
 
-        public static short[] GetRegisteredIDs()
+        public static short[] GetPacketsIDs()
         {
             return PacketTypes.Keys.ToArray();
+        }
+
+        public static short[] GetClientPacketsIDs()
+        {
+            string clientNamespace = typeof(RMF.Core.Packets.Client.HeartbeatPacket).Namespace!;
+            return PacketTypes.Where(item => item.Value.Namespace == clientNamespace).Select(item => item.Key).ToArray();
         }
     }
 }
