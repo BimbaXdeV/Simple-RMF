@@ -9,7 +9,7 @@ namespace RMF.Core.Packets.Server
 {
     public class StreamingRequest : Packet
     {
-        public override short ID => 201;
+        public override short ID => 301;
 
         public bool IsActive { get; set; }        // 0 - no, 1 - yes
         public byte Quality { get; set; }         // 1-100% of source screenshot quality
@@ -17,16 +17,16 @@ namespace RMF.Core.Packets.Server
 
         public override void Deserialize(BinaryReader reader)
         {
-            IsActive = reader.ReadBoolean();
-            Quality = reader.ReadByte();
-            IntervalMsecs = reader.ReadInt16();
+            this.IsActive = reader.ReadBoolean();
+            this.Quality = reader.ReadByte();
+            this.IntervalMsecs = reader.ReadInt16();
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(IsActive);
-            writer.Write(Quality);
-            writer.Write(IntervalMsecs);
+            writer.Write(this.IsActive);
+            writer.Write(this.Quality);
+            writer.Write(this.IntervalMsecs);
         }
     }
 }

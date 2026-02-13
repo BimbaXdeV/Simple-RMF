@@ -9,7 +9,7 @@ namespace RMF.Core.Packets.Client
 {
     public class SystemInfoPacket : Packet
     {
-        public override short ID => 100;
+        public override short ID => 101;
 
         public string OS { get; set; } = "Unknown";
         public string CPU { get; set; } = "Unknown";

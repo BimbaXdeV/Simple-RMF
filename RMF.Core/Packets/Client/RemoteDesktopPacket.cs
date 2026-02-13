@@ -9,7 +9,7 @@ namespace RMF.Core.Packets.Client
 {
     public class RemoteDesktopPacket : Packet
     {
-        public override short ID => 101;
+        public override short ID => 200;
 
         public byte Format { get; set; }  // 0 - JPEG, 1 - PNG
         public int Width { get; set; }
@@ -19,26 +19,26 @@ namespace RMF.Core.Packets.Client
 
         public override void Deserialize(BinaryReader reader)
         {
-            Format = reader.ReadByte();
-            Width = reader.ReadInt32();
-            Height = reader.ReadInt32();
-            ImageLength = reader.ReadInt32();
-            if (ImageLength > PacketConfigurations.MaxPacketLengthKB || ImageLength <= 0)
+            this.Format = reader.ReadByte();
+            this.Width = reader.ReadInt32();
+            this.Height = reader.ReadInt32();
+            this.ImageLength = reader.ReadInt32();
+            if (this.ImageLength > PacketConfigurations.MaxPacketLengthKB || this.ImageLength <= 0)
             {
                 throw new Exception("Invalid image length");
             }
-            ImageData = reader.ReadBytes(ImageLength);
+            ImageData = reader.ReadBytes(this.ImageLength);
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(Format);
-            writer.Write(Width);
-            writer.Write(Height);
-            writer.Write(ImageLength);
-            if (ImageData != null)
+            writer.Write(this.Format);
+            writer.Write(this.Width);
+            writer.Write(this.Height);
+            writer.Write(this.ImageLength);
+            if (this.ImageData != null)
             {
-                writer.Write(ImageData);
+                writer.Write(this.ImageData);
             }
         }
     }

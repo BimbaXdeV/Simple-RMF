@@ -39,5 +39,10 @@ namespace RMF.Core.Packets
         {
             return PacketTypes.TryGetValue(id, out Type? packetType) ? (Packet?)Activator.CreateInstance(packetType) : null;
         }
+
+        public static short[] GetRegisteredIDs()
+        {
+            return PacketTypes.Keys.ToArray();
+        }
     }
 }

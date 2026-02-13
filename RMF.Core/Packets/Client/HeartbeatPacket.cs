@@ -4,22 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Packets.Server
+namespace RMF.Core.Packets.Client
 {
-    public class ClientPingRequest : Packet
+    internal class HeartbeatPacket : Packet
     {
-        public override short ID => 300;
-
-        public string Message { get; set; } = "Just hello";
+        public override short ID => 100;
+        public long Timestamp { get; set; }
 
         public override void Deserialize(BinaryReader reader)
         {
-            this.Message = reader.ReadString();
+            this.Timestamp = reader.ReadInt64();
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(this.Message);
+            writer.Write(this.Timestamp);
         }
     }
 }
