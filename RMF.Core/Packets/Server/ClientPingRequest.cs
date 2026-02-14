@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Network;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,7 @@ namespace RMF.Core.Packets.Server
 
         public string Message { get; set; } = "Just hello";
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(ref SpanReader reader)
         {
             this.Message = reader.ReadString();
         }

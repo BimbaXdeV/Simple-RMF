@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Network;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace RMF.Core.Packets
         public abstract short ID { get; }
 
         // Needs to override this method in derived classes
-        public abstract void Deserialize(BinaryReader reader);
+        public abstract void Deserialize(ref SpanReader reader);
         protected abstract void WriteBody(BinaryWriter writer);
 
         public void WriteToStream(BinaryWriter writer)

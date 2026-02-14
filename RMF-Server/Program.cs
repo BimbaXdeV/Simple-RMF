@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Packets;
+using RMF_Server.Channels;
 using RMF_Server.Commands;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
@@ -28,6 +29,9 @@ namespace RMF_Server
 
             (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
             Logging.Message($"Network packets:      {packetsLoaded} / {totalPackets}", leftOffset: Logging.LogHeaderLength);
+
+            (int channelsLoaded, int totalChannels) = ChannelDispatcher.StartFound();
+            Logging.Message($"Process channels:     {channelsLoaded} / {totalChannels}", leftOffset: Logging.LogHeaderLength);
 
 
             // Transferring fields data from server configurations to core packet configurations

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Network;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace RMF.Core.Packets.Client
         public string GPU { get; set; } = "Unknown";
         public string Username { get; set; } = "Noname";
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(ref SpanReader reader)
         {
             this.OS = reader.ReadString();
             this.CPU = reader.ReadString();

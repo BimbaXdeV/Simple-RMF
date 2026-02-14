@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Network;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace RMF.Core.Packets.Client
         public int ImageLength { get; set; }
         public byte[]? ImageData { get; set; }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(ref SpanReader reader)
         {
             this.Format = reader.ReadByte();
             this.Width = reader.ReadInt32();

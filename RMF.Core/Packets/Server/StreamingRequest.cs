@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Network;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace RMF.Core.Packets.Server
         public byte Quality { get; set; }         // 1-100% of source screenshot quality
         public short IntervalMsecs { get; set; }  // Interval between sending screenshots in milliseconds
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(ref SpanReader reader)
         {
             this.IsActive = reader.ReadBoolean();
             this.Quality = reader.ReadByte();

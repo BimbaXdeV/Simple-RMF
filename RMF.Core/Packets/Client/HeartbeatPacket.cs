@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Network;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +12,7 @@ namespace RMF.Core.Packets.Client
         public override short ID => 100;
         public long Timestamp { get; set; }
 
-        public override void Deserialize(BinaryReader reader)
+        public override void Deserialize(ref SpanReader reader)
         {
             this.Timestamp = reader.ReadInt64();
         }

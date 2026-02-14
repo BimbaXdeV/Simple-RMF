@@ -129,9 +129,9 @@ namespace RMF_Server.Logic
                     }
 
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
-                    if (ChannelDispatcher.IsChannelExists(id))  // It is needed to save memory and reject a packet directly based on its ID
+                    if (ChannelDispatcher.IsChannelExists(id / 100))  // It is needed to save memory and reject a packet directly based on its ID
                     {
-                        Logging.Warning($"Received a packet with unknown channel id \"{id}\" from the client {endPoint}");
+                        Logging.Warning($"Received a packet with unknown id \"{id}\" from the client {endPoint}");
                         continue;
                     }
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
@@ -139,21 +139,8 @@ namespace RMF_Server.Logic
 
                     try
                     {
-                        Packet? packet = PacketsAssembler.GetPacket(id);
-                        if (packet == null)
-                        {
-                            Logging.Warning($"Received an unknown packet \"{id}\" from the client {endPoint}");
-                            continue;
-                        }
-
-                        MemoryStream ms = NetworkBuffer.GetMemoryStream(resetMemory: true);
-                        ms.Write(payload, 0, packetLength);
-                        ms.Position = 0;
-
-                        BinaryReader payloadReader = NetworkBuffer.GetBinaryReader();  // It will also call method GetMemoryStram(), but it will not accidentally clear all memory
-
-                        packet.Deserialize(payloadReader);
-                        PacketsHandler.SwitchHandle(packet, endPoint);  // When scaling, a new case needs to be added
+                        PacketContext context = new(endPoint, id, packetLength, payload);
+                        await ChannelDispatcher.SendPacket(context);  // The packet will be processed in the channel, so we can immediately start waiting for the next packet without worrying about the processing time of the current
                     }
                     catch (Exception ex)
                     {

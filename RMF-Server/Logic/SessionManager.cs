@@ -58,7 +58,7 @@ namespace RMF_Server.Logic
 
         public static bool NewConnection(TcpClient client, string endPoint)
         {
-            ClientSession session = new ClientSession(client, endPoint);
+            ClientSession session = new(client, endPoint);
             return Connections.TryAdd(endPoint, session);
         }
 
