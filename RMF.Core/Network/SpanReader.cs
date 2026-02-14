@@ -63,6 +63,16 @@ namespace RMF.Core.Network
         public string ReadString()
         {
             int length = ReadInt32();
+
+            if (length < 0 || length > 1024 * 1024)
+            {
+                throw new InvalidDataException($"String length {length} is suspicious!");
+            }
+            if (this.Position + length > this.Buffer.Length)
+            {
+                throw new IndexOutOfRangeException("Not enough data to read the string!");
+            }
+
             string result = Encoding.UTF8.GetString(Buffer.Slice(this.Position, length));
             this.Position += length;
             return result;

@@ -54,7 +54,6 @@ namespace RMF_Server.Channels
             int initializedChannelsCounter = 0;
             foreach (int k in channelKeys)
             {
-                Console.WriteLine(k);
                 Channel<PacketContext> rawChannel = Channel.CreateBounded<PacketContext>(new BoundedChannelOptions(ConfigurationManager.ChannelPacketsCapacity)
                 {
                     FullMode = BoundedChannelFullMode.DropOldest,

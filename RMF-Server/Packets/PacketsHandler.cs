@@ -18,7 +18,6 @@ namespace RMF_Server.Packets
     {
         public static async Task<byte[]> ReadPayload(string endPoint, NetworkStream stream, int size)
         {
-            Console.WriteLine(size);
             long bytesLimit = ConfigurationManager.MaxPacketLengthKB * 1024;
             if (size > bytesLimit || size < 0)
             {

@@ -129,10 +129,10 @@ namespace RMF_Server.Logic
                     }
 
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
-                    if (ChannelDispatcher.IsChannelExists(id / 100))  // It is needed to save memory and reject a packet directly based on its ID
+                    if (!ChannelDispatcher.IsChannelExists(id / 100))  // It is needed to save memory and reject a packet directly based on its ID
                     {
                         Logging.Warning($"Received a packet with unknown id \"{id}\" from the client {endPoint}");
-                        continue;
+                        break;
                     }
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
                     byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, packetLength);

@@ -45,7 +45,7 @@ namespace RMF.Tests
                 {
                     ms.SetLength(0);
 
-                    writer.Write((short)100);
+                    writer.Write((short)101);
                     writer.Write(0);
 
                     long startBodyPosition = ms.Position;
