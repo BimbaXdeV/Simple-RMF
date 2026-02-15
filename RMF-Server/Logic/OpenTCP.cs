@@ -144,13 +144,9 @@ namespace RMF_Server.Logic
                     }
                     catch (Exception ex)
                     {
-                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {endPoint}, disconnecting... \n{ex}");
-                        break;
-                    }
-                    finally
-                    {
-                        // To avoid allocating unnecessary memory, we allocate a free byte[] from the async pool, which must be returned after use
+                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {endPoint}, disconnecting...\n{ex}");
                         ArrayPool<byte>.Shared.Return(payload);
+                        break;
                     }
                 }
             }

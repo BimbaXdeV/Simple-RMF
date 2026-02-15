@@ -19,26 +19,53 @@ namespace RMF_Server.Channels
     internal static class ChannelDispatcher
     {
         private static readonly Dictionary<int, Channel<PacketContext>> Channels = new();
-        //private static readonly ChannelWriter<byte[]> Writer = new();
 
-        private static async Task OpenChannel(Channel<PacketContext> channel)
+        private static async Task OpenChannel(Channel<PacketContext> channel, int id = 0)
         {
             ChannelReader<PacketContext> reader = channel.Reader;
 
-            await foreach (PacketContext context in reader.ReadAllAsync())
+            try
             {
-                Packet? packet = PacketsAssembler.GetPacket(context.ID);
-                if (packet == null)
+                await foreach (PacketContext context in reader.ReadAllAsync())
                 {
-                    Logging.Warning($"Received an unknown packet \"{context.ID}\" from the client {context.EndPoint}");
-                    continue;
+                    Packet? packet = PacketsAssembler.GetPacket(context.ID);
+                    if (packet == null)
+                    {
+                        Logging.Warning($"Received an unknown packet \"{context.ID}\" from the client {context.EndPoint}");
+                        ArrayPool<byte>.Shared.Return(context.Payload);
+                        continue;
+                    }
+                    Console.WriteLine(packet.ToString());
+
+                    try
+                    {
+                        ReadOnlySpan<byte> payloadSpan = context.Payload.AsSpan(0, context.Length);
+                        SpanReader payloadReader = new(payloadSpan);
+                        Console.WriteLine($"Deserializing packet with ID {context.ID} from {context.EndPoint}");
+
+                        packet.Deserialize(ref payloadReader);
+                        Console.WriteLine($"Packet with ID {context.ID} from {context.EndPoint} has been deserialized successfully");
+                        PacketsHandler.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
+                    }
+                    catch (Exception ex)
+                    {
+                        Logging.Warning($"Failed to process packet with ID {context.ID} from {context.EndPoint}\n{ex}");
+                        continue;
+                    }
+                    finally
+                    {
+                        // To avoid allocating unnecessary memory, we allocate a free byte[] from the async pool, which must be returned after use
+                        ArrayPool<byte>.Shared.Return(context.Payload);
+                    }
                 }
-
-                ReadOnlySpan<byte> payloadSpan = context.Payload.AsSpan(0, context.Length);
-                SpanReader payloadReader = new(payloadSpan);
-
-                packet.Deserialize(ref payloadReader);
-                PacketsHandler.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                channel.Writer.Complete();
+                Logging.Message($"Channel for key {id} has been closed");
             }
         }
 
@@ -59,8 +86,11 @@ namespace RMF_Server.Channels
                     FullMode = BoundedChannelFullMode.DropOldest,
                     SingleReader = true
                 });
-                
-                Channels[k] = Channel.CreateUnbounded<PacketContext>();
+                if (!Channels.TryAdd(k, rawChannel))
+                {
+                    Logging.Warning($"Failed to initialize channel for key {k}");
+                    continue;
+                }
                 _ = Task.Run(() => OpenChannel(rawChannel));
                 initializedChannelsCounter++;
             }

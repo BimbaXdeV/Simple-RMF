@@ -18,6 +18,14 @@ namespace RMF.Core.Network
             this.Position = 0;
         }
 
+        private void EnsureCapacity(int bytesCount)
+        {
+            if (this.Position + bytesCount > this.Buffer.Length)
+            {
+                throw new IndexOutOfRangeException("Not enough data to read!");
+            }
+        }
+
         public byte ReadByte()
         {
             byte result = this.Buffer[this.Position];
@@ -25,9 +33,9 @@ namespace RMF.Core.Network
             return result;
         }
 
-        public byte[] ReadBytes(int count)
+        public ReadOnlySpan<byte> ReadBytes(int count)
         {
-            byte[] result = this.Buffer.Slice(this.Position, count).ToArray();
+            ReadOnlySpan<byte> result = this.Buffer.Slice(this.Position, count);
             this.Position += count;
             return result;
         }
@@ -41,6 +49,7 @@ namespace RMF.Core.Network
 
         public short ReadInt16()
         {
+            EnsureCapacity(2);
             short result = BinaryPrimitives.ReadInt16LittleEndian(this.Buffer.Slice(this.Position));
             this.Position += 2;
             return result;
@@ -48,6 +57,7 @@ namespace RMF.Core.Network
 
         public int ReadInt32()
         {
+            EnsureCapacity(4);
             int result = BinaryPrimitives.ReadInt32LittleEndian(this.Buffer.Slice(this.Position));
             this.Position += 4;
             return result;
@@ -55,6 +65,7 @@ namespace RMF.Core.Network
 
         public long ReadInt64()
         {
+            EnsureCapacity(8);
             long result = BinaryPrimitives.ReadInt64LittleEndian(this.Buffer.Slice(this.Position));
             this.Position += 8;
             return result;
@@ -63,6 +74,7 @@ namespace RMF.Core.Network
         public string ReadString()
         {
             int length = ReadInt32();
+            Console.WriteLine($"Reading a string of length {length} at position {this.Position}");
 
             if (length < 0 || length > 1024 * 1024)
             {

@@ -41,9 +41,11 @@ namespace RMF_Server.Packets
         // Manual method, but lightning fast to execute
         public static void SwitchHandle(Packet packet, string endPoint)
         {
+            Console.WriteLine($"Received packet with ID {packet.ID} from {endPoint}");
             switch (packet)
             {
                 case SystemInfoPacket systemInfoPacket:
+                    Console.WriteLine($"Received SystemInfoPacket from {endPoint}");
                     ProcessSystemInfoPacket(systemInfoPacket, endPoint);
                     break;
 
