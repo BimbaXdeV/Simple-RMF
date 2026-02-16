@@ -49,10 +49,10 @@ namespace RMF.Tests
                     writer.Write(0);
 
                     long startBodyPosition = ms.Position;
+                    writer.Write("ISock X");
+                    writer.Write("Guest");
                     writer.Write("Lindows");
-                    writer.Write("Inter Core i3 01100f");
-                    writer.Write("Mediatek Graphics 01");
-                    writer.Write("Admin?");
+                    writer.Write("Arm128");
                     long endBodyPosition = ms.Position;
 
                     // So what if it's a crutch? :D

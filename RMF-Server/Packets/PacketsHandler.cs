@@ -76,7 +76,7 @@ namespace RMF_Server.Packets
 
         private static void ProcessSystemInfoPacket(SystemInfoPacket packet, string endPoint)
         {
-            Console.WriteLine($"Info about {endPoint} - OS: {packet.OS}, CPU: {packet.CPU}, GPU: {packet.GPU}, Username: {packet.Username}");
+            Console.WriteLine($"Info about {endPoint} - Name: {packet.MachineName}, User: {packet.Username}, OS: {packet.OS}, Architecture: {packet.Architecture}");
         }
 
         private static async Task ProcessRemoteDesktopPacket(RemoteDesktopPacket packet, string endPoint)

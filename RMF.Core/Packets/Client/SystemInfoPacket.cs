@@ -12,24 +12,24 @@ namespace RMF.Core.Packets.Client
     {
         public override short ID => 101;
 
-        public string OS { get; set; } = "Unknown";
-        public string CPU { get; set; } = "Unknown";
-        public string GPU { get; set; } = "Unknown";
+        public string MachineName { get; set; } = "Unknown";
         public string Username { get; set; } = "Noname";
+        public string OS { get; set; } = "Unknown";
+        public string Architecture { get; set; } = "Unknown";
 
         public override void Deserialize(ref SpanReader reader)
         {
-            this.OS = reader.ReadString();
-            this.CPU = reader.ReadString();
-            this.GPU = reader.ReadString();
+            this.MachineName = reader.ReadString();
             this.Username = reader.ReadString();
+            this.OS = reader.ReadString();
+            this.Architecture = reader.ReadString();
         }
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(this.OS);
-            writer.Write(this.CPU);
-            writer.Write(this.GPU);
+            writer.Write(this.MachineName);
             writer.Write(this.Username);
+            writer.Write(this.OS);
+            writer.Write(this.Architecture);
         }
     }
 }
