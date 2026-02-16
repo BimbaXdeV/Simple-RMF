@@ -28,7 +28,7 @@ namespace RMF.Core.Packets.Client
             {
                 throw new Exception("Invalid image length");
             }
-            ImageData = reader.ReadBytes(this.ImageLength);
+            this.ImageData = reader.ReadBytes(this.ImageLength).ToArray();
         }
 
         protected override void WriteBody(BinaryWriter writer)

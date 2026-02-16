@@ -112,17 +112,17 @@ namespace RMF_Server.Debugger
         // All types of logs
         public static void Output(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(DatetimeColorRGB[0], DatetimeColorRGB[1], DatetimeColorRGB[2])}[ {DateTime.Now} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}", toHistory);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(DatetimeColorRGB[0], DatetimeColorRGB[1], DatetimeColorRGB[2])}[ {DateTime.Now} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}", toHistory);
         }
 
         public static void Warning(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(WarningColorRGB[0], WarningColorRGB[1], WarningColorRGB[2])}[ {DateTime.Now} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(WarningColorRGB[0], WarningColorRGB[1], WarningColorRGB[2])}[ {DateTime.Now} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
         public static void Error(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ErrorColorRGB[0], ErrorColorRGB[1], ErrorColorRGB[2])}[ {DateTime.Now} ] {String.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ErrorColorRGB[0], ErrorColorRGB[1], ErrorColorRGB[2])}[ {DateTime.Now} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
         public static void Message(string message, int leftOffset = 0, bool toHistory = true)

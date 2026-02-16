@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Packets.Client
 {
-    internal class HeartbeatPacket : Packet
+    public class HeartbeatPacket : Packet
     {
         public override short ID => 100;
         public long Timestamp { get; set; }

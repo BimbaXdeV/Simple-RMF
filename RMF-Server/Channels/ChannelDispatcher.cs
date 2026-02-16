@@ -35,16 +35,13 @@ namespace RMF_Server.Channels
                         ArrayPool<byte>.Shared.Return(context.Payload);
                         continue;
                     }
-                    Console.WriteLine(packet.ToString());
 
                     try
                     {
                         ReadOnlySpan<byte> payloadSpan = context.Payload.AsSpan(0, context.Length);
                         SpanReader payloadReader = new(payloadSpan);
-                        Console.WriteLine($"Deserializing packet with ID {context.ID} from {context.EndPoint}");
 
                         packet.Deserialize(ref payloadReader);
-                        Console.WriteLine($"Packet with ID {context.ID} from {context.EndPoint} has been deserialized successfully");
                         PacketsHandler.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
                     }
                     catch (Exception ex)

@@ -9,7 +9,7 @@ namespace RMF_Server.Logic
 {
     internal static class AppearanceManager
     {
-        private static readonly int maxTitleLength = 48;
+        private static readonly int MaxTitleLength = 48;
 
         public static void SetTitle(string newTitle)
         {
@@ -19,9 +19,9 @@ namespace RMF_Server.Logic
                 return;
             }
 
-            if (newTitle.Length > maxTitleLength)
+            if (newTitle.Length > MaxTitleLength)
             {
-                Logging.Warning($"Failed to update application title, received too long string (max length: {maxTitleLength})");
+                Logging.Warning($"Failed to update application title, received too long string (max length: {MaxTitleLength})");
                 return;
             }
 

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Toolbar>
+	<add key="" link="endpointIP" name="Connection IP"/>
+	<add key="" link="endpointPort" name="Connection port"/>
+
+	<add key="" link="endpointUsername" name="Client username"/>
+	<add key="" link="endpointOS" name="Client OS"/>
+	<add key="" link="endpointCPU" name="Client CPU"/>
+	<add key="" link="endpointGPU" name="Client GPU"/>
+	
+	<add key="" link="configsLoaded" name="Configurations"/>
+	<add key="" link="packetsLoaded" name="Network packets"/>
+</Toolbar>

@@ -11,4 +11,13 @@
 	<ItemGroup>
 		<ProjectReference Include="..\RMF.Core\RMF.Core.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Storage\config.xml">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Storage\toolbar.xml">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
 </Project>

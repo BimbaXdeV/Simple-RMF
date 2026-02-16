@@ -10,7 +10,7 @@ namespace RMF_Client.Logic
 {
     internal static class ConfigurationManager
     {
-        private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.xml");
+        private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "config.xml");
 
         public static string? AppTitle;
         

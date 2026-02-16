@@ -28,6 +28,7 @@ namespace RMF.Core.Network
 
         public byte ReadByte()
         {
+            EnsureCapacity(1);
             byte result = this.Buffer[this.Position];
             this.Position++;
             return result;
@@ -42,8 +43,30 @@ namespace RMF.Core.Network
 
         public bool ReadBoolean()
         {
+            EnsureCapacity(1);
             bool result = this.Buffer[this.Position] != 0;
             this.Position++;
+            return result;
+        }
+
+        public int ReadInt7Encoded()
+        {
+            int result = 0;
+            int shift = 0;
+            byte intermByte;
+            do
+            {
+                EnsureCapacity(1);
+                intermByte = this.Buffer[this.Position];
+                this.Position++;
+                result |= (intermByte & 0x7F) << shift;
+                shift += 7;
+                if (shift > 35)
+                {
+                    throw new FormatException("Invalid 7-bit encoded integer format!");
+                }
+            } while ((intermByte & 0x80) != 0);
+            
             return result;
         }
 
@@ -73,18 +96,13 @@ namespace RMF.Core.Network
 
         public string ReadString()
         {
-            int length = ReadInt32();
-            Console.WriteLine($"Reading a string of length {length} at position {this.Position}");
+            int length = ReadInt7Encoded();
 
             if (length < 0 || length > 1024 * 1024)
             {
                 throw new InvalidDataException($"String length {length} is suspicious!");
             }
-            if (this.Position + length > this.Buffer.Length)
-            {
-                throw new IndexOutOfRangeException("Not enough data to read the string!");
-            }
-
+            EnsureCapacity(length);
             string result = Encoding.UTF8.GetString(Buffer.Slice(this.Position, length));
             this.Position += length;
             return result;

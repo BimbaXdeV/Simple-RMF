@@ -8,9 +8,13 @@ namespace RMF_Client
         public static void Main(string[] args)
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle} | Offline");
+            AppearanceManager.DisplayLogo();
+            AppearanceManager.LoadToolbar();
+            AppearanceManager.DisplayToolbar(null);
+            Console.ReadKey();
 
-            (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
-            (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
+            //(int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
+            //(int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
         }
     }
 }
