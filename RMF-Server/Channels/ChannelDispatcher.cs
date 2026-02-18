@@ -42,7 +42,7 @@ namespace RMF_Server.Channels
                         SpanReader payloadReader = new(payloadSpan);
 
                         packet.Deserialize(ref payloadReader);
-                        PacketsHandler.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
+                        PacketsProcessor.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
                     }
                     catch (Exception ex)
                     {
@@ -101,6 +101,7 @@ namespace RMF_Server.Channels
             {
                 // Just in case OpenTCP validator suffers changes in structure
                 Logging.Warning($"Unable to find an open channel for packet {context.ID} reveiced from {context.EndPoint}");
+                ArrayPool<byte>.Shared.Return(context.Payload);
                 return;
             }
             await Channels[channelKey].Writer.WriteAsync(context);

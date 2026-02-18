@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Packets;
 using RMF_Client.Logic;
+using RMF_Client.Network;
 
 namespace RMF_Client
 {
@@ -9,12 +10,22 @@ namespace RMF_Client
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle} | Offline");
             AppearanceManager.DisplayLogo();
-            AppearanceManager.LoadToolbar();
-            AppearanceManager.DisplayToolbar(null);
-            Console.ReadKey();
 
-            //(int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
-            //(int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
+            (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
+            (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
+
+            AppearanceManager.LoadToolbar();
+            AppearanceManager.DisplayToolbar();
+
+            using CancellationTokenSource cts = new();
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+            };
+
+            EntryTCP tcp = new();
+            Task connectionTask = tcp.Connect(cts.Token);
         }
     }
 }

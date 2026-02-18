@@ -2,7 +2,6 @@
 using RMF.Core.Packets;
 using RMF_Server.Channels;
 using RMF_Server.Debugger;
-using RMF_Server.Exceptions;
 using RMF_Server.Packets;
 using RMF_Server.Storage;
 using System;
@@ -135,7 +134,7 @@ namespace RMF_Server.Logic
                         break;
                     }
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
-                    byte[] payload = await PacketsHandler.ReadPayload(endPoint, stream, packetLength);
+                    byte[] payload = await PayloadReader.ReadAsync(stream, packetLength);
 
                     try
                     {
@@ -155,7 +154,7 @@ namespace RMF_Server.Logic
                 Logging.Warning($"Client {endPoint} timed out waiting for packets, disconnecting...");
             }
 
-            catch (PayloadBufferOverflow)
+            catch (OverflowException)
             {
                 Logging.Error($"Payload buffer overflow detected from client {endPoint}, disconnecting...");
             }
