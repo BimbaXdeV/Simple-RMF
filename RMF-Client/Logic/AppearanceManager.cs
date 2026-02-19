@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -89,14 +90,20 @@ namespace RMF_Client.Logic
             InitializeToolbarContent(toolbarItems);
         }
 
-        public static void ReplaceToolbarContent(Dictionary<string, string> content)
+        public static void ReplaceToolbarContent(Dictionary<string, string> content, bool autoUpdate = true)
         {
+            bool isReplaced = false;
             foreach (var (key, value) in content)
             {
                 if (ToolbarContent.ContainsKey(key))
                 {
                     ToolbarContent[key] = value;
+                    isReplaced |= true;
                 }
+            }
+            if (autoUpdate && isReplaced)
+            {
+                DisplayToolbar();
             }
         }
 
@@ -132,6 +139,16 @@ namespace RMF_Client.Logic
             }
 
             Console.Title = newTitle;
+        }
+
+        public static async Task Curtain(float delaySecs)
+        {
+            for (int i = Console.GetCursorPosition().Top + 1; i > 0; i--)
+            {
+                await Task.Delay((int)(delaySecs * 1000));
+                Console.SetCursorPosition(0, i);
+                Console.WriteLine(new string(' ', Console.WindowWidth - 1));
+            }
         }
     }
 }

@@ -9,6 +9,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO.Pipes;
+using System.Reflection;
 
 namespace RMF_Client.Network
 {
@@ -26,6 +28,12 @@ namespace RMF_Client.Network
                     ProcessStreamingRequest(streamingRequest);
                     break;
             }
+        }
+
+        public static void SearchHandle(Packet packet)
+        {
+            var method = typeof(PacketsProcessor).GetMethod("Process" + packet.GetType().Name, BindingFlags.NonPublic | BindingFlags.Static);
+            method?.Invoke(null, new object[] { packet });
         }
 
         private static void ProcessClientPingRequest(ClientPingRequest packet)

@@ -6,16 +6,24 @@ namespace RMF_Client
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle} | Offline");
+            AppearanceManager.SetTitle(ConfigurationManager.AppTitle + "| Offline");
             AppearanceManager.DisplayLogo();
 
             (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
             (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
 
             AppearanceManager.LoadToolbar();
-            AppearanceManager.DisplayToolbar();
+            AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+            {
+                { "endpointMachine", HardwareAnalyser.GetMachineName() },
+                { "endpointUsername", HardwareAnalyser.GetUsername() },
+                { "endpointOS", HardwareAnalyser.GetOS() },
+                { "endpointArch", HardwareAnalyser.GetArchitecture() },
+                { "configurationsLoaded", configurationsLoaded + " / " + totalConfigurations },
+                { "packetsLoaded", packetsLoaded + " / " + totalPackets }
+            });
 
             using CancellationTokenSource cts = new();
             Console.CancelKeyPress += (sender, e) =>
@@ -25,7 +33,9 @@ namespace RMF_Client
             };
 
             EntryTCP tcp = new();
-            Task connectionTask = tcp.Connect(cts.Token);
+            await tcp.Connect(cts.Token);
+            await AppearanceManager.Curtain(0.08f);
+            await Task.Delay(500);
         }
     }
 }

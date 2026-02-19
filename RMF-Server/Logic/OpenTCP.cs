@@ -24,7 +24,7 @@ namespace RMF_Server.Logic
         public async Task RunServer(CancellationToken token)
         {
             Logging.Output("Starting TCP server...");
-            IPAddress ip = ConfigurationManager.IPAddress == "Any" ? IPAddress.Any : IPAddress.Parse(ConfigurationManager.IPAddress ?? "127.0.0.1"); ;
+            IPAddress ip = ConfigurationManager.IPAddress == "Any" ? IPAddress.Any : IPAddress.Parse(ConfigurationManager.IPAddress ?? "127.0.0.1");
             int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
 
             this.Server ??= new TcpListener(ip, port);

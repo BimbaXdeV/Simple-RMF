@@ -1,6 +1,8 @@
 ﻿using RMF.Core.Network;
 using RMF.Core.Packets;
+using RMF_Client.Logic;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -16,6 +18,8 @@ namespace RMF_Client.Network
 
         private async Task PacketListener()
         {
+            AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Connected");
+
             CancellationTokenSource cts = new();
 
             NetworkStream stream = this.Client!.GetStream();
@@ -43,6 +47,7 @@ namespace RMF_Client.Network
 
                         packet.Deserialize(ref payloadReader);
                         PacketsProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
+                        ArrayPool<byte>.Shared.Return(payload);
                     }
 
                 }
@@ -59,34 +64,43 @@ namespace RMF_Client.Network
 
         public async Task Connect(CancellationToken token)
         {
-            IPAddress? ip = IPAddress.TryParse(IPAddress.Any.ToString(), out IPAddress? parsedIP) ? parsedIP : null;
-            if (ip == null)
-            {
-                //Console.WriteLine("The connection IPAddress is corrupted. Check your configuration");
-                return;
-            }
+            AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Waiting...");
+            IPAddress ip = ConfigurationManager.IPAddress == "Any" ? IPAddress.Any : IPAddress.Parse(ConfigurationManager.IPAddress ?? "127.0.0.1");
+            int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
 
-            //Console.WriteLine($"Attempting to connect to {ip}:8000...");
             this.Client ??= new TcpClient();
 
             try
             {
-                await this.Client.ConnectAsync(ip, 8000, token);
-                _ = Task.Factory.StartNew(PacketListener, TaskCreationOptions.LongRunning);
-                //Console.WriteLine("Successfully connected to RMF-Server!");
+                await this.Client.ConnectAsync(ip, port, token);
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointIP", ip.ToString() },
+                    { "endpointPort", port.ToString() }
+                });
+                await PacketListener();
             }
             catch (OperationCanceledException)
             {
-                //Console.WriteLine("Received session end signal, disconnecting...");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //Console.WriteLine($"Failed to connect to the server: {ex.Message}");
             }
             finally
             {
                 Disconnect();
+                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Offline");
             }
+        }
+
+        public string GetConnectionEndpoint()
+        {
+            if (this.Client != null && this.Client.Connected)
+            {
+                string? endPoint = this.Client.Client.RemoteEndPoint?.ToString();
+                return endPoint ?? "Unknown";
+            }
+            return "Not connected";
         }
 
         public void Disconnect()
