@@ -63,7 +63,7 @@ namespace RMF_Server.Logic
 
                     AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                     Logging.Output($"Registered new connection from {endPoint}");
-                    _ = Task.Factory.StartNew(() => ClientHandler(client, endPoint), TaskCreationOptions.LongRunning);
+                    _ = Task.Factory.StartNew(() => ClientHandler(client, endPoint, token), TaskCreationOptions.LongRunning);
                 }
             }
 
@@ -99,7 +99,7 @@ namespace RMF_Server.Logic
         //    SessionManager.Disconnect(client, endPoint);
         //}
 
-        private static async Task ClientHandler(TcpClient client, string endPoint)
+        private static async Task ClientHandler(TcpClient client, string endPoint, CancellationToken token)
         {
             CancellationTokenSource cts = new();
 
@@ -134,7 +134,7 @@ namespace RMF_Server.Logic
                         break;
                     }
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
-                    byte[] payload = await PayloadReader.ReadAsync(stream, packetLength);
+                    byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
 
                     try
                     {

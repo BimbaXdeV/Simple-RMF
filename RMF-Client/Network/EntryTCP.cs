@@ -16,20 +16,18 @@ namespace RMF_Client.Network
     {
         private TcpClient? Client;
 
-        private async Task PacketListener()
+        private async Task PacketListener(CancellationToken token)
         {
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Connected");
-
-            CancellationTokenSource cts = new();
 
             NetworkStream stream = this.Client!.GetStream();
             byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
 
-            while (this.Client.Connected && !cts.IsCancellationRequested)
+            while (this.Client.Connected)
             {
                 try
                 {
-                    int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, cts.Token);
+                    int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, token);
                     if (bytesRead == 0)
                     {
                         break;
@@ -37,7 +35,7 @@ namespace RMF_Client.Network
 
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
-                    byte[] payload = await PayloadReader.ReadAsync(stream, packetLength);
+                    byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
 
                     Packet? packet = PacketsAssembler.GetPacket(id);
                     if (packet != null)
@@ -51,13 +49,12 @@ namespace RMF_Client.Network
                     }
 
                 }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
                 catch (Exception)
                 {
-                    continue;
-                }
-                finally
-                {
-                    cts.Cancel();
                 }
             }
         }
@@ -76,9 +73,9 @@ namespace RMF_Client.Network
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointIP", ip.ToString() },
-                    { "endpointPort", port.ToString() }
+                    { "endpointPort", $"{port.ToString()} ({GetRemotePort()})" }
                 });
-                await PacketListener();
+                await PacketListener(token);
             }
             catch (OperationCanceledException)
             {
@@ -93,14 +90,10 @@ namespace RMF_Client.Network
             }
         }
 
-        public string GetConnectionEndpoint()
+        public int GetRemotePort()
         {
-            if (this.Client != null && this.Client.Connected)
-            {
-                string? endPoint = this.Client.Client.RemoteEndPoint?.ToString();
-                return endPoint ?? "Unknown";
-            }
-            return "Not connected";
+            IPEndPoint? remoteEndpoint = this.Client?.Client.RemoteEndPoint as IPEndPoint;
+            return remoteEndpoint?.Port ?? -1;
         }
 
         public void Disconnect()

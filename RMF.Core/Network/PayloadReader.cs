@@ -11,7 +11,7 @@ namespace RMF.Core.Network
 {
     public static class PayloadReader
     {
-        public static async Task<byte[]> ReadAsync(NetworkStream stream, int size)
+        public static async Task<byte[]> ReadAsync(NetworkStream stream, int size, CancellationToken token)
         {
             long bytesLimit = PacketConfigurations.MaxPacketLengthKB * 1024;
             if (size > bytesLimit || size < 0)
@@ -22,7 +22,7 @@ namespace RMF.Core.Network
             byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
             try
             {
-                await stream.ReadExactlyAsync(buffer.AsMemory(0, size));
+                await stream.ReadExactlyAsync(buffer.AsMemory(0, size), token);
                 return buffer;
             }
             catch (Exception)
