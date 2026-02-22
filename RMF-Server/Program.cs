@@ -1,4 +1,5 @@
-﻿using RMF.Core.Packets;
+﻿using RMF.Core.Events;
+using RMF.Core.Packets;
 using RMF_Server.Channels;
 using RMF_Server.Commands;
 using RMF_Server.Debugger;
@@ -32,6 +33,9 @@ namespace RMF_Server
 
             (int channelsLoaded, int totalChannels) = ChannelDispatcher.StartFound();
             Logging.Message($"Process channels:     {channelsLoaded} / {totalChannels}", leftOffset: Logging.LogHeaderLength);
+
+            (int eventsLoaded, int totalEvents) = EventAssembler.RegisterFound("Server");
+            Logging.Message($"Server events:        {eventsLoaded} / {totalEvents}", leftOffset: Logging.LogHeaderLength);
 
 
             // Transferring fields data from server configurations to core packet configurations

@@ -19,7 +19,7 @@ namespace RMF_Client.Logic
         public static int ConnectionRequestTimeoutSecs;
         public static int MaxPacketLengthKB;
 
-        // You don't need to parse all the configs from "~\RMF-Client\config.xml" manually, this method will do it for you;
+        // You don't need to parse all the configs from "~\RMF-Client\Storage\config.xml" manually, this method will do it for you;
         // To scale, simply add empty fields with "public" and "static" flags  ;)
         public static (int, int) Load()
         {

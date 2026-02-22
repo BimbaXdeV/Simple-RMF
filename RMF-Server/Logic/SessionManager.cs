@@ -16,32 +16,13 @@ namespace RMF_Server.Logic
     {
         public static readonly ConcurrentDictionary<string, ClientSession> Connections = [];
 
-        public static async Task SendPacket(string endPoint, Packet packet)
+        public static async Task SendPacket(string endPoint, Packet packet, CancellationToken token)
         {
-            if (Connections.TryGetValue(endPoint, out ClientSession? session))
+            if (Connections.TryGetValue(endPoint, out ClientSession? session) && session?.Client.Connected == true)
             {
                 try
                 {
-                    if (session == null)
-                    {
-                        Logging.Error($"Failed to send packet to client {endPoint}, session not found");
-                        return;
-                    }
-
-                    if (!session.Client.Connected)
-                    {
-                        Logging.Warning($"Cannot send packet to client {endPoint}, client is disconnected");
-                        return;
-                    }
-
-                    MemoryStream ms = NetworkBuffer.GetMemoryStream();
-                    BinaryWriter writer = NetworkBuffer.GetBinaryWriter();
-                    packet.WriteToStream(writer);
-                    
-                    byte[] payload = ms.GetBuffer();
-                    int packetLength = (int)ms.Length;
-
-                    await session.Client.GetStream().WriteAsync(new ReadOnlyMemory<byte>(payload, 0, packetLength));
+                    await StreamManager.SendPacketAsync(session.Client.GetStream(), packet, token);
                 }
                 catch (Exception ex)
                 {
@@ -50,9 +31,9 @@ namespace RMF_Server.Logic
             }
         }
 
-        public static async Task BroadcastPacket(Packet packet)
+        public static async Task BroadcastPacket(Packet packet, CancellationToken token)
         {
-            Task[] tasks = Connections.Values.Select(session => SendPacket(session.EndPoint, packet)).ToArray();
+            Task[] tasks = Connections.Values.Select(session => SendPacket(session.EndPoint, packet, token)).ToArray();
             await Task.WhenAll(tasks);
         }
 
