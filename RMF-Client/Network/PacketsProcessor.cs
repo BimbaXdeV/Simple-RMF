@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO.Pipes;
 using System.Reflection;
+using RMF_Client.Storage;
 
 namespace RMF_Client.Network
 {
@@ -38,6 +39,14 @@ namespace RMF_Client.Network
 
         private static void ProcessClientPingRequest(ClientPingRequest packet)
         {
+            NetworkStream? stream = ConnectionSession.Client?.GetStream();
+            if (stream != null)
+            {
+                ConnectionSession.Events.ToggleEvent(stream, "Heartbeat", new Dictionary<string, object>
+                {
+                    { "IntervalSecs", packet.IntervalSecs }
+                });
+            }
         }
 
         private static void ProcessStreamingRequest(StreamingRequest packet)

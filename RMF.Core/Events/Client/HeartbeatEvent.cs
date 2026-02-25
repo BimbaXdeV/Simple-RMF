@@ -11,8 +11,8 @@ namespace RMF.Core.Events.Client
 {
     public class HeartbeatEvent : BackgroundEvent
     {
-        public override string EvName => "HeartbeatEvent";
-        public float IntervalSecs { get; set; } = 5f;
+        public override string EvName => "Heartbeat";
+        public int IntervalSecs { get; set; } = 5;
 
         protected override async Task BackgroundEvLogic(Stream stream, CancellationToken token)
         {

@@ -39,15 +39,18 @@ namespace RMF_Server.Logic
 
         public static bool NewConnection(TcpClient client, string endPoint)
         {
-            ClientSession session = new(client, endPoint);
+            ClientSession session = new(client);
             return Connections.TryAdd(endPoint, session);
         }
 
         public static void Disconnect(TcpClient client, string endPoint)
         {
-            if (Connections.TryRemove(endPoint, out _))
+            if (Connections.TryGetValue(endPoint, out ClientSession? session) && session != null)
             {
+                session.Events.StopAllRunning();
                 client.Close();
+                Connections.TryRemove(endPoint, out _);
+
                 AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count}");
                 Logging.Output($"Client {endPoint} was disconnected");
             }

@@ -6,8 +6,9 @@
 	<add key="" link="endpointMachine" name="Client machine" default="Unknown"/>
 	<add key="" link="endpointUsername" name="Client username" default="Unknown"/>
 	<add key="" link="endpointOS" name="Client OS" default="Undefined"/>
-	<add key="" link="endpointArchitecture" name="Client Architecture" default="Undefined"/>
+	<add key="" link="endpointArchitecture" name="Client architecture" default="Undefined"/>
 	
 	<add key="" link="configsLoaded" name="Configurations" default="0 / 0"/>
 	<add key="" link="packetsLoaded" name="Network packets" default="0 / 0"/>
+	<add key="" link="eventsLoaded" name="Client events" default="0 / 0"/>
 </Toolbar>

@@ -49,5 +49,10 @@ namespace RMF.Core.Events
         {
             return Events.TryGetValue(name, out BackgroundEvent? backgroundEvent) ? backgroundEvent : null;
         }
+
+        public static void ApplyEventSettings(BackgroundEvent backgroundEvent, Dictionary<string, object> settings)
+        {
+            
+        }
     }
 }

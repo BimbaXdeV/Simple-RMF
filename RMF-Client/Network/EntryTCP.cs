@@ -1,6 +1,8 @@
-﻿using RMF.Core.Network;
+﻿using RMF.Core.Events;
+using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Client.Logic;
+using RMF_Client.Storage;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -14,16 +16,14 @@ namespace RMF_Client.Network
 {
     internal class EntryTCP
     {
-        private TcpClient? Client;
-
         private async Task PacketListener(CancellationToken token)
         {
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Connected");
 
-            NetworkStream stream = this.Client!.GetStream();
+            NetworkStream stream = ConnectionSession.Client!.GetStream();
             byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
 
-            while (this.Client.Connected)
+            while (ConnectionSession.Client.Connected)
             {
                 try
                 {
@@ -65,16 +65,18 @@ namespace RMF_Client.Network
             IPAddress ip = ConfigurationManager.IPAddress == "Any" ? IPAddress.Any : IPAddress.Parse(ConfigurationManager.IPAddress ?? "127.0.0.1");
             int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
 
-            this.Client ??= new TcpClient();
+            ConnectionSession.NewSession(ip.ToString(), port);
 
             try
             {
-                await this.Client.ConnectAsync(ip, port, token);
+                await ConnectionSession.Client!.ConnectAsync(ip, port, token);
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointIP", ip.ToString() },
-                    { "endpointPort", $"{port.ToString()} ({GetRemotePort()})" }
+                    { "endpointPort", $"{port.ToString()} ({ConnectionSession.GetRemotePort()})" }
                 });
+
+                ConnectionSession.Events!.ToggleEvent(ConnectionSession.Client.GetStream(), "Heartbeat");
                 await PacketListener(token);
             }
             catch (OperationCanceledException)
@@ -85,24 +87,9 @@ namespace RMF_Client.Network
             }
             finally
             {
-                Disconnect();
+                ConnectionSession.Disconnect();
                 AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Offline");
             }
-        }
-
-        public int GetRemotePort()
-        {
-            IPEndPoint? remoteEndpoint = this.Client?.Client.RemoteEndPoint as IPEndPoint;
-            return remoteEndpoint?.Port ?? -1;
-        }
-
-        public void Disconnect()
-        {
-            if (this.Client != null && this.Client.Connected)
-            {
-                this.Client.Close();
-            }
-            this.Client = null;
         }
     }
 }

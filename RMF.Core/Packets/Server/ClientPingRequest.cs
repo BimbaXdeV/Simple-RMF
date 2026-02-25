@@ -11,16 +11,16 @@ namespace RMF.Core.Packets.Server
     {
         public override short ID => 300;
 
-        public string Message { get; set; } = "Just hello";
+        public int IntervalSecs;
 
         public override void Deserialize(ref SpanReader reader)
         {
-            this.Message = reader.ReadString();
+            this.IntervalSecs = reader.ReadInt32();
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(this.Message);
+            writer.Write(this.IntervalSecs);
         }
     }
 }

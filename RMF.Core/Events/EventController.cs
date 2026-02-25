@@ -6,36 +6,41 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Events
 {
-    public static class EventController
+    public class EventController
     {
-        private static readonly Dictionary<string, CancellationTokenSource> RunningTasks = [];
+        private readonly Dictionary<string, CancellationTokenSource> RunningTasks = [];
 
-        public static void ToggleEvent(string eventName)
+        public void ToggleEvent(Stream stream, string eventName, Dictionary<string, object>? eventSettings = null)
         {
-            if (RunningTasks.TryGetValue(eventName, out CancellationTokenSource? runningCts))
+            if (this.RunningTasks.TryGetValue(eventName, out CancellationTokenSource? runningCts))
             {
                 runningCts.Cancel();
-                RunningTasks.Remove(eventName);
+                this.RunningTasks.Remove(eventName);
             }
             else
             {
                 BackgroundEvent? backgroundEvent = EventAssembler.GetEvent(eventName);
                 if (backgroundEvent != null)
                 {
+                    if (eventSettings != null)
+                    {
+                        EventAssembler.ApplyEventSettings(backgroundEvent, eventSettings);
+                    }
+
                     CancellationTokenSource newCts = new();
-                    _ = Task.Run(() => backgroundEvent.ExecuteEvAsync(newCts.Token), newCts.Token);
-                    RunningTasks[eventName] = newCts;
+                    _ = Task.Run(() => backgroundEvent.ExecuteEvAsync(stream, newCts.Token), newCts.Token);
+                    this.RunningTasks[eventName] = newCts;
                 }
             }
         }
 
-        public static void StopAllRunning()
+        public void StopAllRunning()
         {
-            foreach (var cts in RunningTasks.Values)
+            foreach (var cts in this.RunningTasks.Values)
             {
                 cts.Cancel();
             }
-            RunningTasks.Clear();
+            this.RunningTasks.Clear();
         }
     }
 }

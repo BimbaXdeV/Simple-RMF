@@ -1,4 +1,5 @@
-﻿using RMF.Core.Packets;
+﻿using RMF.Core.Events;
+using RMF.Core.Packets;
 using RMF_Client.Logic;
 using RMF_Client.Network;
 
@@ -13,6 +14,7 @@ namespace RMF_Client
 
             (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
             (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
+            (int eventsLoaded, int totalEvents) = EventAssembler.RegisterFound("Client");
 
             AppearanceManager.LoadToolbar();
             AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
@@ -22,7 +24,8 @@ namespace RMF_Client
                 { "endpointOS", HardwareAnalyser.GetOS() },
                 { "endpointArch", HardwareAnalyser.GetArchitecture() },
                 { "configurationsLoaded", configurationsLoaded + " / " + totalConfigurations },
-                { "packetsLoaded", packetsLoaded + " / " + totalPackets }
+                { "packetsLoaded", packetsLoaded + " / " + totalPackets },
+                { "eventsLoaded", eventsLoaded + " / " + totalEvents }
             });
 
             using CancellationTokenSource cts = new();
