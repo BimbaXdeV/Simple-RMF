@@ -35,15 +35,15 @@ namespace RMF_Server.Packets
         }
 
         // This handle method is too slow for streaming production, but it's here if you need it for scaling purposes
-        public static void SearchHandle(Packet packet, string endPoint)
-        {
-            //Type packetType = packet.GetType();
-            //var method = typeof(PacketsHandler).GetMethod("Process" + packetType.Name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            //if (method != null)
-            //{
-            //    method.Invoke(null, new object[] { packet, endPoint });
-            //}
-        }
+        //public static void SearchHandle(Packet packet, string endPoint)
+        //{
+        //    Type packetType = packet.GetType();
+        //    var method = typeof(PacketsProcessor).GetMethod("Process" + packetType.Name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        //    if (method != null)
+        //    {
+        //        method.Invoke(null, new object[] { packet, endPoint });
+        //    }
+        //}
 
         private static void ProcessHeartbeatPacket(HeartbeatPacket packet, string endPoint)
         {

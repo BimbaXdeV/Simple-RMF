@@ -13,7 +13,7 @@ namespace RMF_Server.Storage
     {
         public TcpClient Client { get; set; }
         public EventController Events { get; } = new();
-        public string EndPoint { get; set; }
+        public string EndPoint { get; set; } = "";
         public string IPAddress { get; set; } = "127.0.0.1";
         public ushort Port { get; set; } = 0;
 

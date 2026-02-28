@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.IO.Pipes;
 using System.Reflection;
 using RMF_Client.Storage;
+using System.Net;
 
 namespace RMF_Client.Network
 {
@@ -21,6 +22,10 @@ namespace RMF_Client.Network
         {
             switch (packet)
             {
+                case HandshakePacket handshakePacket:
+                    ProcessHandshakePacket(handshakePacket);
+                    break;
+
                 case ClientPingRequest clientPingRequest:
                     ProcessClientPingRequest(clientPingRequest);
                     break;
@@ -37,12 +42,27 @@ namespace RMF_Client.Network
             method?.Invoke(null, new object[] { packet });
         }
 
+        private static void ProcessHandshakePacket(HandshakePacket packet)
+        {
+            IPEndPoint? remoteEndpoint = ConnectionSession.Client?.Client.RemoteEndPoint as IPEndPoint;
+            int localPort = remoteEndpoint?.Port ?? -1;
+            
+            AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+            {
+                { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).ToString("HH:mm:ss") },
+                { "endpointID", packet.SessionID.ToString() },
+                { "endpointIP", remoteEndpoint?.Address.ToString() ?? "0.0.0.0" },
+                { "endpointPort", $"{localPort} ({packet.RemotePort})" },
+                { "endpointBuffer", $"Sd: {packet.SendBufferSize}b, Rc: {packet.ReceiveBufferSize}b" }
+            });
+        }
+
         private static void ProcessClientPingRequest(ClientPingRequest packet)
         {
             NetworkStream? stream = ConnectionSession.Client?.GetStream();
             if (stream != null)
             {
-                ConnectionSession.Events.ToggleEvent(stream, "Heartbeat", new Dictionary<string, object>
+                ConnectionSession.Events?.ToggleEvent(stream, "Heartbeat", new Dictionary<string, object>
                 {
                     { "IntervalSecs", packet.IntervalSecs }
                 });

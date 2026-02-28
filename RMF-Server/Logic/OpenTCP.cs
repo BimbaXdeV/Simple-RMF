@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Network;
 using RMF.Core.Packets;
+using RMF.Core.Packets.Server;
 using RMF_Server.Channels;
 using RMF_Server.Debugger;
 using RMF_Server.Packets;
@@ -38,16 +39,17 @@ namespace RMF_Server.Logic
                 while (!token.IsCancellationRequested)
                 {
                     TcpClient client = await this.Server.AcceptTcpClientAsync(token);
-                    string? endPoint = client.Client.RemoteEndPoint?.ToString();
+                    IPEndPoint? remoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
+                    string? endPoint = remoteEndPoint?.ToString();
 
-                    if (string.IsNullOrEmpty(endPoint))
+                    if (remoteEndPoint == null || string.IsNullOrEmpty(endPoint))
                     {
                         Logging.Warning($"Connection attempt from unknown address, access denied");
                         client.Close();
                         continue;
                     }
 
-                    if (Firewall.IsBanned(endPoint.Split(":")[0]))
+                    if (Firewall.IsBanned(remoteEndPoint.Address.ToString()))
                     {
                         Logging.Warning($"A banned client {endPoint} attempted to connect, access denied");
                         client.Close();
@@ -63,7 +65,18 @@ namespace RMF_Server.Logic
 
                     AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                     Logging.Output($"Registered new connection from {endPoint}");
+
                     _ = Task.Factory.StartNew(() => ClientHandler(client, endPoint, token), TaskCreationOptions.LongRunning);
+
+                    HandshakePacket handshakePacket = new()
+                    {
+                        ConnectionTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        SessionID = SessionManager.GetSessionID(endPoint),
+                        RemotePort = remoteEndPoint.Port,
+                        SendBufferSize = client.Client.SendBufferSize,
+                        ReceiveBufferSize = client.Client.ReceiveBufferSize
+                    };
+                    await StreamManager.SendPacketAsync(client.GetStream(), handshakePacket, token);
                 }
             }
 

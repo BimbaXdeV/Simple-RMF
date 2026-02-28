@@ -17,7 +17,6 @@ namespace RMF.Core.Network
             try
             {
                 packet.WriteToStream(writer);
-                //ReadOnlyMemory<byte> payload = ms.GetBuffer().AsMemory(0, ms.Length);
                 if (ms.TryGetBuffer(out ArraySegment<byte> buffer))
                 {
                     await stream.WriteAsync(buffer.AsMemory(), token);
@@ -25,7 +24,7 @@ namespace RMF.Core.Network
             }
             catch (Exception)
             {
-                throw ;
+                throw;
             }
             finally
             {

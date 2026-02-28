@@ -26,7 +26,7 @@ namespace RMF_Client.Logic
 
         public static string GetArchitecture()
         {
-            return RuntimeInformation.OSArchitecture.ToString();
+            return RuntimeInformation.ProcessArchitecture.ToString();
         }
     }
 }

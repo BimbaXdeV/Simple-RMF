@@ -16,7 +16,7 @@ namespace RMF_Server.Logic
     {
         public static readonly ConcurrentDictionary<string, ClientSession> Connections = [];
 
-        public static async Task SendPacket(string endPoint, Packet packet, CancellationToken token)
+        public static async Task SendPacketAsync(string endPoint, Packet packet, CancellationToken token)
         {
             if (Connections.TryGetValue(endPoint, out ClientSession? session) && session?.Client.Connected == true)
             {
@@ -33,7 +33,7 @@ namespace RMF_Server.Logic
 
         public static async Task BroadcastPacket(Packet packet, CancellationToken token)
         {
-            Task[] tasks = Connections.Values.Select(session => SendPacket(session.EndPoint, packet, token)).ToArray();
+            Task[] tasks = Connections.Values.Select(session => SendPacketAsync(session.EndPoint, packet, token)).ToArray();
             await Task.WhenAll(tasks);
         }
 
@@ -41,6 +41,12 @@ namespace RMF_Server.Logic
         {
             ClientSession session = new(client);
             return Connections.TryAdd(endPoint, session);
+        }
+
+        public static int GetSessionID(string endPoint)
+        {
+            List<string> connectedEndPoints = Connections.Keys.ToList();
+            return connectedEndPoints.IndexOf(endPoint);
         }
 
         public static void Disconnect(TcpClient client, string endPoint)

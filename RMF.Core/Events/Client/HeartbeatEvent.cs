@@ -11,15 +11,14 @@ namespace RMF.Core.Events.Client
 {
     public class HeartbeatEvent : BackgroundEvent
     {
-        public override string EvName => "Heartbeat";
-        public int IntervalSecs { get; set; } = 5;
+        public int IntervalSecs { get; set; } = 1;
 
-        protected override async Task BackgroundEvLogic(Stream stream, CancellationToken token)
+        protected override async Task HandleLogic(Stream stream, CancellationToken token)
         {
             HeartbeatPacket heartbeatPacket = new();
             while (!token.IsCancellationRequested)
             {
-                heartbeatPacket.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                heartbeatPacket.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 await StreamManager.SendPacketAsync(stream, heartbeatPacket, token);
                 await Task.Delay((int)(this.IntervalSecs * 1000), token);
             }

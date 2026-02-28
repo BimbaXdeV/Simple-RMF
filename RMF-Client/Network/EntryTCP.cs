@@ -32,14 +32,15 @@ namespace RMF_Client.Network
                     {
                         break;
                     }
-
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
+                    Console.WriteLine($"Packet ID: {id}, Length: {packetLength} bytes");
                     byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
 
                     Packet? packet = PacketsAssembler.GetPacket(id);
                     if (packet != null)
                     {
+                        Console.WriteLine(packet.GetType().Name + " received");
                         ReadOnlySpan<byte> payloadSpan = payload.AsSpan(0, packetLength);
                         SpanReader payloadReader = new(payloadSpan);
 
@@ -62,28 +63,31 @@ namespace RMF_Client.Network
         public async Task Connect(CancellationToken token)
         {
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Waiting...");
-            IPAddress ip = ConfigurationManager.IPAddress == "Any" ? IPAddress.Any : IPAddress.Parse(ConfigurationManager.IPAddress ?? "127.0.0.1");
+            string ip = (ConfigurationManager.IPAddress == "Any" || string.IsNullOrEmpty(ConfigurationManager.IPAddress)) ? "127.0.0.1" : ConfigurationManager.IPAddress;
             int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
-
-            ConnectionSession.NewSession(ip.ToString(), port);
 
             try
             {
-                await ConnectionSession.Client!.ConnectAsync(ip, port, token);
+                ConnectionSession.NewSession(ip, port);
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointIP", ip.ToString() },
-                    { "endpointPort", $"{port.ToString()} ({ConnectionSession.GetRemotePort()})" }
+                    { "endpointPort", port.ToString() }
                 });
 
-                ConnectionSession.Events!.ToggleEvent(ConnectionSession.Client.GetStream(), "Heartbeat");
+                ConnectionSession.Events?.ToggleEvent(ConnectionSession.Client!.GetStream(), "HeartbeatEvent", new Dictionary<string, object>
+                {
+                    {"IntervalSecs", 10 }
+                });
                 await PacketListener(token);
             }
             catch (OperationCanceledException)
             {
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex);
+                await Task.Delay(5000, token);
             }
             finally
             {

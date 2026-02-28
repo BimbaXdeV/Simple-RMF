@@ -12,26 +12,20 @@ namespace RMF_Client.Storage
     internal static class ConnectionSession
     {
         public static TcpClient? Client { get; set; }
-        public static EventController Events { get; private set; } = new();
+        public static EventController? Events { get; private set; }
 
         private static void CloseClient()
         {
             if (Client != null)
             {
                 Client.Close();
-                Client = null;
+                Client.Dispose();
             }
         }
 
         public static bool IsConnected()
         {
             return Client != null && Client.Connected;
-        }
-
-        public static int GetRemotePort()
-        {
-            IPEndPoint? remoteEndpoint = Client?.Client.RemoteEndPoint as IPEndPoint;
-            return remoteEndpoint?.Port ?? -1;
         }
 
         public static void NewSession(string ip, int port)
@@ -57,7 +51,7 @@ namespace RMF_Client.Storage
             if (Client != null)
             {
                 Events?.StopAllRunning();
-                Client.Close();
+                CloseClient();
                 Client = null;
             }
         }
