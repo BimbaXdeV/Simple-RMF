@@ -17,7 +17,7 @@ namespace RMF_Server
         static async Task Main(string[] args)
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
-            Logging.Message(Logging.ServerLogo);
+            Logging.Message(Logging.ServerLogo, toHistory: false);
             Logging.Separator();
 
             Logging.Output("Initializing components...");
@@ -47,6 +47,8 @@ namespace RMF_Server
                 e.Cancel = true;
                 cts.Cancel();
             };
+
+            Logging.CreateHistory(ConfigurationManager.LoggingHistoryLength);
 
             Task loggingTask = Logging.RunExecutor(cts.Token);
             OpenTCP tcp = new();

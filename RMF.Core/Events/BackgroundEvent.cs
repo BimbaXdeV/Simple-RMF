@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Bases;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,15 +11,15 @@ namespace RMF.Core.Events
     {
         public bool IsEvRunning { get; private set; } = false;
 
-        protected abstract Task HandleLogic(Stream stream, CancellationToken token);
+        protected abstract Task HandleLogic(ClientSession session, CancellationToken token);
         
-        public async Task ExecuteEvAsync(Stream stream, CancellationToken token)
+        public async Task ExecuteEvAsync(ClientSession session, CancellationToken token)
         {
             this.IsEvRunning = true;
             try
             {
                 await Task.Delay(1000, token);  // Small delay (1sec) to ensure the event is fully registered before execution
-                await HandleLogic(stream, token);
+                await HandleLogic(session, token);
             }
             catch (Exception)
             {

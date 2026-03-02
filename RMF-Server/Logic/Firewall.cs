@@ -24,7 +24,7 @@ namespace RMF_Server.Logic
             return limit == null ? keys.ToArray() : keys.Take(limit.Value).ToArray();
         }
 
-        public static void Ban(string ipAddress)
+        public static void Ban(string? ipAddress)
         {
             if (!string.IsNullOrEmpty(ipAddress))
             {

@@ -1,5 +1,7 @@
-﻿using RMF.Core.Packets;
+﻿using RMF.Core.Bases;
+using RMF.Core.Packets;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,24 +13,20 @@ namespace RMF.Core.Network
     {
         public static async Task SendPacketAsync(Stream stream, Packet packet, CancellationToken token)
         {
-            MemoryStream ms = NetworkBuffer.GetMemoryStream();
-            BinaryWriter writer = NetworkBuffer.GetBinaryWriter();
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(PacketConfigurations.MaxPacketLengthKB);
 
             try
             {
+                using MemoryStream ms = new(buffer);
+                using BinaryWriter writer = new(ms);
+
                 packet.WriteToStream(writer);
-                if (ms.TryGetBuffer(out ArraySegment<byte> buffer))
-                {
-                    await stream.WriteAsync(buffer.AsMemory(), token);
-                }
-            }
-            catch (Exception)
-            {
-                throw;
+                //ReadOnlyMemory<byte> packedBuffer = ms.GetBuffer().AsMemory(0, (int)ms.Length);
+                await stream.WriteAsync(buffer.AsMemory(0, (int)ms.Length), token);
             }
             finally
             {
-                ms.SetLength(0);
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }

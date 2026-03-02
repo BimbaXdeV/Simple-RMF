@@ -1,4 +1,5 @@
-﻿using RMF.Core.Network;
+﻿using RMF.Core.Bases;
+using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Server.Debugger;
 using RMF_Server.Storage;
@@ -14,32 +15,28 @@ namespace RMF_Server.Logic
 {
     internal static class SessionManager
     {
-        public static readonly ConcurrentDictionary<string, ClientSession> Connections = [];
+        public static readonly ConcurrentDictionary<string, ServerClientSession> Connections = [];
 
-        public static async Task SendPacketAsync(string endPoint, Packet packet, CancellationToken token)
+        public static void BroadcastPacket(Packet packet, CancellationToken token)
         {
-            if (Connections.TryGetValue(endPoint, out ClientSession? session) && session?.Client.Connected == true)
+            int totalTransferedPackets = 0;
+            foreach (ClientSession session in Connections.Values)
             {
                 try
                 {
-                    await StreamManager.SendPacketAsync(session.Client.GetStream(), packet, token);
+                    session.SendPacket(packet);
+                    totalTransferedPackets++;
                 }
                 catch (Exception ex)
                 {
-                    Logging.Error($"Failed to send packet to client {endPoint}: {ex.Message}");
+                    Logging.Warning($"Failed to transfer {session.GetType().Name} to \"{session.EndPoint?.ToString()}\" : {ex.Message}");
                 }
             }
         }
 
-        public static async Task BroadcastPacket(Packet packet, CancellationToken token)
+        public static bool NewConnection(TcpClient client, string endPoint, CancellationToken token)
         {
-            Task[] tasks = Connections.Values.Select(session => SendPacketAsync(session.EndPoint, packet, token)).ToArray();
-            await Task.WhenAll(tasks);
-        }
-
-        public static bool NewConnection(TcpClient client, string endPoint)
-        {
-            ClientSession session = new(client);
+            ServerClientSession session = new(client, token);
             return Connections.TryAdd(endPoint, session);
         }
 
@@ -49,12 +46,12 @@ namespace RMF_Server.Logic
             return connectedEndPoints.IndexOf(endPoint);
         }
 
-        public static void Disconnect(TcpClient client, string endPoint)
+        public static void Disconnect(string endPoint)
         {
-            if (Connections.TryGetValue(endPoint, out ClientSession? session) && session != null)
+            if (Connections.TryGetValue(endPoint, out ServerClientSession? session) && session != null)
             {
                 session.Events.StopAllRunning();
-                client.Close();
+                session.Client.Close();
                 Connections.TryRemove(endPoint, out _);
 
                 AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count}");
@@ -67,7 +64,7 @@ namespace RMF_Server.Logic
             Logging.Output("Connections are being cleared...");
 
             int disconnectedClientsCount = 0;
-            int totalConnectedClients = Connections.Count();
+            int totalConnectedClients = Connections.Count;
 
             foreach (var entry in Connections)
             {

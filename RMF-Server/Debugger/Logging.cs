@@ -33,8 +33,8 @@ namespace RMF_Server.Debugger
         public static int ConsoleSeparatorLength = 50;
 
         // Circular logging buffer
-        private static string[] History = new string[100];
-        private static int NextHistoryIndex = 0;
+        private static string[]? History;
+        private static int NextHistoryIndex;
 
         // Logging queue and executor control
         private static readonly ConcurrentQueue<string> LogQueue = [];
@@ -54,6 +54,11 @@ namespace RMF_Server.Debugger
 
         private static void AddToHistory(string message)
         {
+            if (History == null)
+            {
+                return;  // Well, maybe this story isn't really needed...
+            }
+
             History[NextHistoryIndex] = message;
             NextHistoryIndex = (NextHistoryIndex + 1) % History.Length;
             if (NextHistoryIndex == 0)
@@ -78,6 +83,12 @@ namespace RMF_Server.Debugger
             {
                 AddToHistory(message);
             }
+        }
+
+        public static void CreateHistory(int bufferLength)
+        {
+            History = new string[bufferLength];
+            NextHistoryIndex = 0;
         }
 
         public static async Task RunExecutor(CancellationToken token)

@@ -20,10 +20,15 @@ namespace RMF_Client.Network
         {
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Connected");
 
-            NetworkStream stream = ConnectionSession.Client!.GetStream();
+            NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
+            if (stream == null)
+            {
+                return;
+            }
+
             byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
 
-            while (ConnectionSession.Client.Connected)
+            while (SessionManager.Connection?.Client.Connected == true)
             {
                 try
                 {
@@ -62,23 +67,25 @@ namespace RMF_Client.Network
 
         public async Task Connect(CancellationToken token)
         {
+            if (SessionManager.Connection?.Client == null)
+            {
+                SessionManager.StartSession(new TcpClient(), token);
+            }
+
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Waiting...");
             string ip = (ConfigurationManager.IPAddress == "Any" || string.IsNullOrEmpty(ConfigurationManager.IPAddress)) ? "127.0.0.1" : ConfigurationManager.IPAddress;
             int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
 
             try
             {
-                ConnectionSession.NewSession(ip, port);
+                await SessionManager.Connection!.Client.ConnectAsync(ip, port, token);
+                SessionManager.Connection?.RunProcessing(token);
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointIP", ip.ToString() },
                     { "endpointPort", port.ToString() }
                 });
 
-                ConnectionSession.Events?.ToggleEvent(ConnectionSession.Client!.GetStream(), "HeartbeatEvent", new Dictionary<string, object>
-                {
-                    {"IntervalSecs", 10 }
-                });
                 await PacketListener(token);
             }
             catch (OperationCanceledException)
@@ -91,7 +98,8 @@ namespace RMF_Client.Network
             }
             finally
             {
-                ConnectionSession.Disconnect();
+                SessionManager.Connection?.StopProcessing();
+                SessionManager.ClearSession();
                 AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Offline");
             }
         }

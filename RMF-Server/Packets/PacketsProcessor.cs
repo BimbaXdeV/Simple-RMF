@@ -1,6 +1,5 @@
 ﻿using RMF.Core.Packets;
 using RMF.Core.Packets.Client;
-using RMF_Server.Debugger;
 using RMF_Server.Logic;
 using RMF_Server.Storage;
 using System;
@@ -58,7 +57,7 @@ namespace RMF_Server.Packets
 
         private static async Task ProcessRemoteDesktopPacket(RemoteDesktopPacket packet, string endPoint)
         {
-            if (SessionManager.Connections.TryGetValue(endPoint, out ClientSession? session))
+            if (SessionManager.Connections.TryGetValue(endPoint, out ServerClientSession? session))
             {
                 session.LastFrame = packet.ImageData;
                 session.LastUpdate = DateTime.Now;

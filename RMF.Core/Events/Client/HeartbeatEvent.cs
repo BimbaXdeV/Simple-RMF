@@ -1,4 +1,5 @@
-﻿using RMF.Core.Network;
+﻿using RMF.Core.Bases;
+using RMF.Core.Network;
 using RMF.Core.Packets.Client;
 using System;
 using System.Collections.Generic;
@@ -13,13 +14,13 @@ namespace RMF.Core.Events.Client
     {
         public int IntervalSecs { get; set; } = 1;
 
-        protected override async Task HandleLogic(Stream stream, CancellationToken token)
+        protected override async Task HandleLogic(ClientSession session, CancellationToken token)
         {
             HeartbeatPacket heartbeatPacket = new();
             while (!token.IsCancellationRequested)
             {
                 heartbeatPacket.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                await StreamManager.SendPacketAsync(stream, heartbeatPacket, token);
+                session.SendPacket(heartbeatPacket);
                 await Task.Delay((int)(this.IntervalSecs * 1000), token);
             }
         }

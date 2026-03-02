@@ -33,6 +33,7 @@ namespace RMF_Server.Logic
         public static bool InlineSuggestionsEnabled;
         public static int InlineSuggestionsMinChars;
 
+        public static int LoggingHistoryLength;
         public static int LoggingHandlerDelayMsecs;
         public static int InputListenerDelayMsecs;
 

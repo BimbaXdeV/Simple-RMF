@@ -1,4 +1,5 @@
-﻿using RMF.Core.Network;
+﻿using RMF.Core.Bases;
+using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF.Core.Packets.Server;
 using RMF_Server.Channels;
@@ -39,24 +40,24 @@ namespace RMF_Server.Logic
                 while (!token.IsCancellationRequested)
                 {
                     TcpClient client = await this.Server.AcceptTcpClientAsync(token);
-                    IPEndPoint? remoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
-                    string? endPoint = remoteEndPoint?.ToString();
+                    IPEndPoint? ipEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
+                    string? endPoint = ipEndPoint?.ToString();
 
-                    if (remoteEndPoint == null || string.IsNullOrEmpty(endPoint))
+                    if (ipEndPoint == null || string.IsNullOrEmpty(endPoint))
                     {
                         Logging.Warning($"Connection attempt from unknown address, access denied");
                         client.Close();
                         continue;
                     }
 
-                    if (Firewall.IsBanned(remoteEndPoint.Address.ToString()))
+                    if (Firewall.IsBanned(ipEndPoint.Address.ToString()))
                     {
                         Logging.Warning($"A banned client {endPoint} attempted to connect, access denied");
                         client.Close();
                         continue;
                     }
 
-                    if (!SessionManager.NewConnection(client, endPoint))
+                    if (!SessionManager.NewConnection(client, endPoint, token))
                     {
                         Logging.Output($"A duplicate connection to the server was detected, the duplicated client {endPoint} was disconnected");
                         client.Close();
@@ -72,7 +73,7 @@ namespace RMF_Server.Logic
                     {
                         ConnectionTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                         SessionID = SessionManager.GetSessionID(endPoint),
-                        RemotePort = remoteEndPoint.Port,
+                        RemotePort = ipEndPoint.Port,
                         SendBufferSize = client.Client.SendBufferSize,
                         ReceiveBufferSize = client.Client.ReceiveBufferSize
                     };
@@ -121,7 +122,7 @@ namespace RMF_Server.Logic
                 NetworkStream stream = client.GetStream();
 
                 byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
-                ClientSession? session = SessionManager.Connections.GetValueOrDefault(endPoint);
+                ServerClientSession? session = SessionManager.Connections.GetValueOrDefault(endPoint);
 
                 cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));
                 while (client.Connected && session != null)
@@ -136,7 +137,7 @@ namespace RMF_Server.Logic
                     if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
                     {
                         Logging.Warning($"The client {endPoint} has exceeded the allowed packet rate limit");
-                        Firewall.Ban(session.IPAddress);
+                        Firewall.Ban(session.EndPoint?.Address.ToString());
                         break;
                     }
 
@@ -178,7 +179,7 @@ namespace RMF_Server.Logic
             }
             finally
             {
-                SessionManager.Disconnect(client, endPoint);
+                SessionManager.Disconnect(endPoint);
             }
         }
     }

@@ -44,7 +44,7 @@ namespace RMF_Client.Network
 
         private static void ProcessHandshakePacket(HandshakePacket packet)
         {
-            IPEndPoint? remoteEndpoint = ConnectionSession.Client?.Client.RemoteEndPoint as IPEndPoint;
+            IPEndPoint? remoteEndpoint = SessionManager.Connection?.Client.Client.RemoteEndPoint as IPEndPoint;
             int localPort = remoteEndpoint?.Port ?? -1;
             
             AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
@@ -59,10 +59,10 @@ namespace RMF_Client.Network
 
         private static void ProcessClientPingRequest(ClientPingRequest packet)
         {
-            NetworkStream? stream = ConnectionSession.Client?.GetStream();
+            NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
             if (stream != null)
             {
-                ConnectionSession.Events?.ToggleEvent(stream, "Heartbeat", new Dictionary<string, object>
+                SessionManager.Connection?.Events?.ToggleEvent(SessionManager.Connection, "Heartbeat", new Dictionary<string, object>
                 {
                     { "IntervalSecs", packet.IntervalSecs }
                 });

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Bases;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ namespace RMF.Core.Events
     {
         private readonly Dictionary<string, CancellationTokenSource> RunningTasks = [];
 
-        public void ToggleEvent(Stream stream, string eventName, Dictionary<string, object>? eventSettings = null)
+        public void ToggleEvent(ClientSession session, string eventName, Dictionary<string, object>? eventSettings = null)
         {
             if (this.RunningTasks.TryGetValue(eventName, out CancellationTokenSource? runningCts))
             {
@@ -28,7 +29,7 @@ namespace RMF.Core.Events
                     }
 
                     CancellationTokenSource newCts = new();
-                    _ = Task.Run(() => backgroundEvent.ExecuteEvAsync(stream, newCts.Token), newCts.Token);
+                    _ = Task.Run(() => backgroundEvent.ExecuteEvAsync(session, newCts.Token), newCts.Token);
                     this.RunningTasks[eventName] = newCts;
                 }
             }

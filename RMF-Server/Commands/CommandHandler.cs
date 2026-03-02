@@ -126,7 +126,7 @@ namespace RMF_Server.Commands
 
         private static void Conlst()
         {
-            ClientSession[] connections = SessionManager.Connections.Values.ToArray();
+            ServerClientSession[] connections = SessionManager.Connections.Values.ToArray();
             if (connections.Length == 0)
             {
                 Logging.Message("No active connections...");
@@ -136,7 +136,7 @@ namespace RMF_Server.Commands
             Logging.Message("Active connections list:");
             int maxCounterLength = connections.Length.ToString().Length;
             int counter = 1;
-            foreach (ClientSession c in connections)
+            foreach (ServerClientSession c in connections)
             {
                 Logging.Message($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {c.EndPoint} | Last packet: {c.LastTransferTime}");
                 counter++;
