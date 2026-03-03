@@ -57,7 +57,8 @@ namespace RMF_Server.Logic
                         continue;
                     }
 
-                    if (!SessionManager.NewConnection(client, endPoint, token))
+                    ServerClientSession? session = SessionManager.NewConnection(client, endPoint, token);
+                    if (session == null)
                     {
                         Logging.Output($"A duplicate connection to the server was detected, the duplicated client {endPoint} was disconnected");
                         client.Close();
@@ -67,17 +68,30 @@ namespace RMF_Server.Logic
                     AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
                     Logging.Output($"Registered new connection from {endPoint}");
 
-                    _ = Task.Factory.StartNew(() => ClientHandler(client, endPoint, token), TaskCreationOptions.LongRunning);
-
-                    HandshakePacket handshakePacket = new()
+                    if (ConfigurationManager.EnableWelcomeHandshake)
                     {
-                        ConnectionTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                        SessionID = SessionManager.GetSessionID(endPoint),
-                        RemotePort = ipEndPoint.Port,
-                        SendBufferSize = client.Client.SendBufferSize,
-                        ReceiveBufferSize = client.Client.ReceiveBufferSize
-                    };
-                    await StreamManager.SendPacketAsync(client.GetStream(), handshakePacket, token);
+                        HandshakePacket handshakePacket = new()
+                        {
+                            ConnectionTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                            SessionID = SessionManager.GetSessionID(endPoint),
+                            RemoteIP = ipEndPoint.Address.ToString(),
+                            RemotePort = ipEndPoint.Port,
+                            SendBufferSize = session.Client.Client.SendBufferSize,
+                            ReceiveBufferSize = session.Client.Client.ReceiveBufferSize
+                        };
+                        await StreamManager.SendPacketAsync(session.Client.GetStream(), handshakePacket, token);
+                    }
+                    
+                    if (ConfigurationManager.EnableClientHeartbeat)
+                    {
+                        ClientPingRequest pingRequest = new()
+                        {
+                            IntervalSecs = ConfigurationManager.ClientHeartbeatIntervalSecs
+                        };
+                        await StreamManager.SendPacketAsync(session.Client.GetStream(), pingRequest, token);
+                    }
+
+                    _ = Task.Factory.StartNew(() => ClientHandler(session, token), TaskCreationOptions.LongRunning);
                 }
             }
 
@@ -113,21 +127,20 @@ namespace RMF_Server.Logic
         //    SessionManager.Disconnect(client, endPoint);
         //}
 
-        private static async Task ClientHandler(TcpClient client, string endPoint, CancellationToken token)
+        private static async Task ClientHandler(ServerClientSession session, CancellationToken token)
         {
             CancellationTokenSource cts = new();
 
             try
             {
-                NetworkStream stream = client.GetStream();
+                NetworkStream stream = session.Client.GetStream();
 
                 byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
-                ServerClientSession? session = SessionManager.Connections.GetValueOrDefault(endPoint);
 
                 cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));
-                while (client.Connected && session != null)
+                while (session.Client.Connected)
                 {
-                    int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, cts.Token);
+                    int bytesRead = await stream.ReadAsync(headerBuffer.AsMemory(0, headerBuffer.Length), cts.Token);
                     if (bytesRead == 0)
                     {
                         break;
@@ -136,7 +149,7 @@ namespace RMF_Server.Logic
                     cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));  // Time bomb :D
                     if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
                     {
-                        Logging.Warning($"The client {endPoint} has exceeded the allowed packet rate limit");
+                        Logging.Warning($"The client {session.EndPoint} has exceeded the allowed packet rate limit");
                         Firewall.Ban(session.EndPoint?.Address.ToString());
                         break;
                     }
@@ -144,7 +157,7 @@ namespace RMF_Server.Logic
                     short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                     if (!ChannelDispatcher.IsChannelExists(id / 100))  // It is needed to save memory and reject a packet directly based on its ID
                     {
-                        Logging.Warning($"Received a packet with unknown id \"{id}\" from the client {endPoint}");
+                        Logging.Warning($"Received a packet with unknown id \"{id}\" from the client {session.EndPoint}");
                         break;
                     }
                     int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
@@ -152,12 +165,12 @@ namespace RMF_Server.Logic
 
                     try
                     {
-                        PacketContext context = new(endPoint, id, packetLength, payload);
+                        PacketContext context = new(session.EndPoint!.ToString(), id, packetLength, payload);
                         await ChannelDispatcher.SendPacket(context);  // The packet will be processed in the channel, so we can immediately start waiting for the next packet without worrying about the processing time of the current
                     }
                     catch (Exception ex)
                     {
-                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {endPoint}, disconnecting...\n{ex}");
+                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {session.EndPoint}, disconnecting...\n{ex}");
                         ArrayPool<byte>.Shared.Return(payload);
                         break;
                     }
@@ -165,12 +178,12 @@ namespace RMF_Server.Logic
             }
             catch (OperationCanceledException)
             {
-                Logging.Warning($"Client {endPoint} timed out waiting for packets, disconnecting...");
+                Logging.Warning($"Client {session.EndPoint} timed out waiting for packets, disconnecting...");
             }
 
             catch (OverflowException)
             {
-                Logging.Error($"Payload buffer overflow detected from client {endPoint}, disconnecting...");
+                Logging.Error($"Payload buffer overflow detected from client {session.EndPoint}, disconnecting...");
             }
 
             catch (Exception ex)
@@ -179,7 +192,7 @@ namespace RMF_Server.Logic
             }
             finally
             {
-                SessionManager.Disconnect(endPoint);
+                SessionManager.Disconnect(session.EndPoint?.ToString() ?? "");
             }
         }
     }

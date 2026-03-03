@@ -41,20 +41,10 @@ namespace RMF.Core.Bases
             {
                 return;
             }
-            
-            try
+
+            await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
             {
-                await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
-                {
-                    await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            finally
-            {
-                StopProcessing();
+                await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
             }
         }
 
@@ -79,7 +69,7 @@ namespace RMF.Core.Bases
         public void StopProcessing()
         {
             this.IsRunning = false;
-            this.OutboundChannel.Writer.Complete();
+            this.OutboundChannel.Writer.TryComplete();
             this.Events.StopAllRunning();
             this.Client.Close();
         }

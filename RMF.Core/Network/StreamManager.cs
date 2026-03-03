@@ -13,7 +13,7 @@ namespace RMF.Core.Network
     {
         public static async Task SendPacketAsync(Stream stream, Packet packet, CancellationToken token)
         {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(PacketConfigurations.MaxPacketLengthKB);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(PacketConfigurations.MaxPacketLengthKB * 1024);
 
             try
             {
@@ -21,8 +21,7 @@ namespace RMF.Core.Network
                 using BinaryWriter writer = new(ms);
 
                 packet.WriteToStream(writer);
-                //ReadOnlyMemory<byte> packedBuffer = ms.GetBuffer().AsMemory(0, (int)ms.Length);
-                await stream.WriteAsync(buffer.AsMemory(0, (int)ms.Length), token);
+                await stream.WriteAsync(buffer.AsMemory(0, (int)ms.Position), token);
             }
             finally
             {

@@ -34,24 +34,27 @@ namespace RMF_Server.Logic
             }
         }
 
-        public static bool NewConnection(TcpClient client, string endPoint, CancellationToken token)
+        public static ServerClientSession? NewConnection(TcpClient client, string endPoint, CancellationToken token)
         {
             ServerClientSession session = new(client, token);
-            return Connections.TryAdd(endPoint, session);
+            if (Connections.TryAdd(endPoint, session))
+            {
+                return session;
+            }
+            return null;
         }
 
         public static int GetSessionID(string endPoint)
         {
             List<string> connectedEndPoints = Connections.Keys.ToList();
-            return connectedEndPoints.IndexOf(endPoint);
+            return connectedEndPoints.IndexOf(endPoint) + 1;
         }
 
         public static void Disconnect(string endPoint)
         {
-            if (Connections.TryGetValue(endPoint, out ServerClientSession? session) && session != null)
+            if (!string.IsNullOrEmpty(endPoint) && Connections.TryGetValue(endPoint, out ServerClientSession? session) && session != null)
             {
-                session.Events.StopAllRunning();
-                session.Client.Close();
+                session.StopProcessing();
                 Connections.TryRemove(endPoint, out _);
 
                 AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count}");

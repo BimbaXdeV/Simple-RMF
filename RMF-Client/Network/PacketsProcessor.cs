@@ -51,7 +51,7 @@ namespace RMF_Client.Network
             {
                 { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).ToString("HH:mm:ss") },
                 { "endpointID", packet.SessionID.ToString() },
-                { "endpointIP", remoteEndpoint?.Address.ToString() ?? "0.0.0.0" },
+                { "endpointIP", packet.RemoteIP ?? "0.0.0.0" },
                 { "endpointPort", $"{localPort} ({packet.RemotePort})" },
                 { "endpointBuffer", $"Sd: {packet.SendBufferSize}b, Rc: {packet.ReceiveBufferSize}b" }
             });

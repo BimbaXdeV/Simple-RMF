@@ -2,6 +2,7 @@
 using RMF.Core.Packets;
 using RMF_Client.Logic;
 using RMF_Client.Network;
+using RMF_Server.Logic;
 
 namespace RMF_Client
 {
@@ -15,6 +16,9 @@ namespace RMF_Client
             (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
             (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
             (int eventsLoaded, int totalEvents) = EventAssembler.RegisterFound("Client");
+
+            // Transferring fields data from server configurations to core packet configurations
+            SettingsSynchronizer.Upload(typeof(ConfigurationManager), typeof(PacketConfigurations));
 
             AppearanceManager.LoadToolbar();
             AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>

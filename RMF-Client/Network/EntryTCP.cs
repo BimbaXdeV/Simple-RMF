@@ -30,37 +30,36 @@ namespace RMF_Client.Network
 
             while (SessionManager.Connection?.Client.Connected == true)
             {
-                try
-                {
-                    int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, token);
-                    if (bytesRead == 0)
-                    {
-                        break;
-                    }
-                    short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
-                    int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
-                    Console.WriteLine($"Packet ID: {id}, Length: {packetLength} bytes");
-                    byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
-
-                    Packet? packet = PacketsAssembler.GetPacket(id);
-                    if (packet != null)
-                    {
-                        Console.WriteLine(packet.GetType().Name + " received");
-                        ReadOnlySpan<byte> payloadSpan = payload.AsSpan(0, packetLength);
-                        SpanReader payloadReader = new(payloadSpan);
-
-                        packet.Deserialize(ref payloadReader);
-                        PacketsProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
-                        ArrayPool<byte>.Shared.Return(payload);
-                    }
-
-                }
-                catch (OperationCanceledException)
+                int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, token);
+                if (bytesRead == 0)
                 {
                     break;
                 }
+                short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
+                int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
+
+                byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
+
+                try
+                {
+                    Packet? packet = PacketsAssembler.GetPacket(id);
+                    if (packet == null)
+                    {
+                        await Task.Delay(5000, token);
+                        continue;
+                    }
+
+                    ReadOnlySpan<byte> payloadSpan = payload.AsSpan(0, packetLength);
+                    SpanReader payloadReader = new(payloadSpan);
+
+                    packet.Deserialize(ref payloadReader);
+                    PacketsProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
+                    ArrayPool<byte>.Shared.Return(payload);
+                }
                 catch (Exception)
                 {
+                    ArrayPool<byte>.Shared.Return(payload);
+                    throw;
                 }
             }
         }
@@ -79,7 +78,7 @@ namespace RMF_Client.Network
             try
             {
                 await SessionManager.Connection!.Client.ConnectAsync(ip, port, token);
-                SessionManager.Connection?.RunProcessing(token);
+                SessionManager.Connection.RunProcessing(token);
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointIP", ip.ToString() },
@@ -98,7 +97,6 @@ namespace RMF_Client.Network
             }
             finally
             {
-                SessionManager.Connection?.StopProcessing();
                 SessionManager.ClearSession();
                 AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Offline");
             }

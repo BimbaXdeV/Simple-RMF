@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Storage
 {
-    internal class PacketContext
+    public class PacketContext
     {
         public string EndPoint { get; }
         

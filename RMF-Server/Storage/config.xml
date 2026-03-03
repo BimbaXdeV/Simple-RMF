@@ -11,7 +11,11 @@
 	<add key="MaxPacketLengthKB" value="100"/>
 	<add key="MaxPacketRate" value="50"/>
 	<add key="ReceiveTimeoutSecs" value="240"/>
-	<add key="PacketsListenDelayMsecs" value="150"/>
+	
+	<!-- Controller Settings -->
+	<add key="EnableWelcomeHandshake" value="true"/>
+	<add key="EnableClientHeartbeat" value="true"/>
+	<add key="ClientHeartbeatIntervalSecs" value="10"/>
 	
 	<!-- Channel Settings -->
 	<add key="ChannelPacketsCapacity" value="200"/>

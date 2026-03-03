@@ -11,7 +11,7 @@ namespace RMF.Core.Network
 {
     public static class PayloadReader
     {
-        public static async Task<byte[]> ReadAsync(NetworkStream stream, int size, CancellationToken token)
+        public static async Task<byte[]> ReadAsync(Stream stream, int size, CancellationToken token)
         {
             long bytesLimit = PacketConfigurations.MaxPacketLengthKB * 1024;
             if (size > bytesLimit || size < 0)
@@ -30,17 +30,6 @@ namespace RMF.Core.Network
                 ArrayPool<byte>.Shared.Return(buffer);
                 throw;
             }
-            //int totalBytesRead = 0;
-            //while (totalBytesRead < size)
-            //{
-            //    int bytesRead = await stream.ReadAsync(buffer, totalBytesRead, size - totalBytesRead);
-            //    if (bytesRead == 0)
-            //    {
-            //        throw new Exception("Connection closed unexpectedly");
-            //    }
-            //    totalBytesRead += bytesRead;
-            //}
-            //return buffer;
         }
     }
 }

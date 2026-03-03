@@ -13,7 +13,7 @@ namespace RMF.Core.Packets
     {
         public abstract short ID { get; }
 
-        // Needs to override this method in derived classes
+        // Needs to override this methods in derived classes
         public abstract void Deserialize(ref SpanReader reader);
         protected abstract void WriteBody(BinaryWriter writer);
 

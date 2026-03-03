@@ -22,7 +22,10 @@ namespace RMF_Server.Logic
         public static int MaxPacketLengthKB;
         public static int MaxPacketRate;
         public static int ReceiveTimeoutSecs;
-        public static int PacketsListenDelayMsecs;
+
+        public static bool EnableWelcomeHandshake;
+        public static bool EnableClientHeartbeat;
+        public static int ClientHeartbeatIntervalSecs;
 
         public static int ChannelPacketsCapacity;
 

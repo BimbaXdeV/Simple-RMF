@@ -21,7 +21,7 @@ namespace RMF.Core.Events.Client
             {
                 heartbeatPacket.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 session.SendPacket(heartbeatPacket);
-                await Task.Delay((int)(this.IntervalSecs * 1000), token);
+                await Task.Delay(this.IntervalSecs * 1000, token);
             }
         }
     }
