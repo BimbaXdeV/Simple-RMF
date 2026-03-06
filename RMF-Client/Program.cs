@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Events;
 using RMF.Core.Packets;
+using RMF_Client.Collectors;
 using RMF_Client.Logic;
 using RMF_Client.Network;
 using RMF_Server.Logic;

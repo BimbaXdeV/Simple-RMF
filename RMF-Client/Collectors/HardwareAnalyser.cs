@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Client.Logic
+namespace RMF_Client.Collectors
 {
     internal static class HardwareAnalyser
     {

@@ -62,7 +62,7 @@ namespace RMF_Client.Network
             NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
             if (stream != null)
             {
-                SessionManager.Connection?.Events?.ToggleEvent(SessionManager.Connection, "Heartbeat", new Dictionary<string, object>
+                SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "HeartbeatEvent", new Dictionary<string, object>
                 {
                     { "IntervalSecs", packet.IntervalSecs }
                 });
