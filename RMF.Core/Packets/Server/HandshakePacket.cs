@@ -9,7 +9,7 @@ namespace RMF.Core.Packets.Server
 {
     public class HandshakePacket : Packet
     {
-        public override short ID => 302;
+        public override short ID => 301;
 
         public long ConnectionTimestamp;
         public int SessionID;

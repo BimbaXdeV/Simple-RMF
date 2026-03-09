@@ -12,7 +12,7 @@ namespace RMF.Core.Packets.Client
     {
         public override short ID => 200;
 
-        public byte Format { get; set; }  // 0 - JPEG, 1 - PNG
+        public byte FormatID { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public int ImageLength { get; set; }
@@ -20,7 +20,7 @@ namespace RMF.Core.Packets.Client
 
         public override void Deserialize(ref SpanReader reader)
         {
-            this.Format = reader.ReadByte();
+            this.FormatID = reader.ReadByte();
             this.Width = reader.ReadInt32();
             this.Height = reader.ReadInt32();
             this.ImageLength = reader.ReadInt32();
@@ -33,7 +33,7 @@ namespace RMF.Core.Packets.Client
 
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(this.Format);
+            writer.Write(this.FormatID);
             writer.Write(this.Width);
             writer.Write(this.Height);
             writer.Write(this.ImageLength);

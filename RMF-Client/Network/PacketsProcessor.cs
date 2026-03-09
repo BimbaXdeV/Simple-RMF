@@ -13,6 +13,9 @@ using System.IO.Pipes;
 using System.Reflection;
 using RMF_Client.Storage;
 using System.Net;
+using RMF_Client.Capture;
+using RMF.Core.Events;
+using RMF.Core.Screen;
 
 namespace RMF_Client.Network
 {
@@ -28,6 +31,10 @@ namespace RMF_Client.Network
 
                 case ClientPingRequest clientPingRequest:
                     ProcessClientPingRequest(clientPingRequest);
+                    break;
+
+                case ScreenshotRequest screenshotRequest:
+                    ProcessScreenshotRequest(screenshotRequest);
                     break;
 
                 case StreamingRequest streamingRequest:
@@ -65,6 +72,20 @@ namespace RMF_Client.Network
                 SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "HeartbeatEvent", new Dictionary<string, object>
                 {
                     { "IntervalSecs", packet.IntervalSecs }
+                });
+            }
+        }
+
+        private static void ProcessScreenshotRequest(ScreenshotRequest packet)
+        {
+            NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
+            if (stream != null)
+            {
+                SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "StreamingEvent", new Dictionary<string, object>
+                {
+                    { "ProcessMode", (byte)ProcessModes.Single },
+                    { "Format", (ScreenFormats)packet.FormatID },
+                    { "QualityPercent", packet.QualityPercent }
                 });
             }
         }

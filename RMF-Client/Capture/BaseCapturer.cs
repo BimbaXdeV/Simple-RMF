@@ -1,4 +1,5 @@
-﻿using RMF_Client.Storage;
+﻿using RMF.Core.Screen;
+using RMF_Client.Storage;
 using SkiaSharp;
 using System;
 using System.Buffers;
@@ -9,8 +10,18 @@ using System.Threading.Tasks;
 
 namespace RMF_Client.Capture
 {
-    internal abstract class BaseCapturer : IScreenCapturer
+    internal abstract class BaseCapturer : IScreenProvider
     {
+        protected int ScreenWidth;
+        protected int ScreenHeight;
+        protected SKBitmap? ScreenBitmap;
+
+        public BaseCapturer()
+        {
+            UpdateScreenMetrics();
+        }
+
+        protected abstract void UpdateScreenMetrics();
         protected abstract SKBitmap GetScreenBitmap();
 
         public CapturedFrame? Capture(ScreenFormats format, byte quality)
@@ -39,8 +50,11 @@ namespace RMF_Client.Capture
 
                 return new CapturedFrame()
                 {
-                    Buffer = buffer,
-                    Length = (int)data.Size
+                    Format = format,
+                    Width = ScreenWidth,
+                    Height = ScreenHeight,
+                    Length = (int)data.Size,
+                    Buffer = buffer
                 };
             }
         }

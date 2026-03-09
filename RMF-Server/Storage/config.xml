@@ -22,7 +22,7 @@
 	
 	<!-- Streaming Settings -->
 	<add key="ScreenshotQualityPercentage" value="60"/>
-	<add key="DesktopSendingIntervalMsecs" value="150"/>
+	<add key="DesktopSendingIntervalMsecs" value="0"/>
 
 	<!-- Commands Settings -->
 	<add key="InlineCommandDefautSign" value="/"/>

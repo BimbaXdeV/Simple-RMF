@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Client.Storage
+namespace RMF.Core.Screen
 {
-    internal enum ScreenFormats : byte
+    public enum ScreenFormats : byte
     {
         Jpeg = 0,  // Used by default to capture the client screen
         WebP = 1,  // It can be used for higher performance and FPS overclocking when streaming, but it will require more power

@@ -5,12 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Client.Storage
+namespace RMF.Core.Screen
 {
-    internal class CapturedFrame
+    public class CapturedFrame
     {
-        public byte[]? Buffer;
+        public ScreenFormats Format;
+        public int Width;
+        public int Height;
         public int Length;
+        public byte[]? Buffer;
 
         public void Release()
         {

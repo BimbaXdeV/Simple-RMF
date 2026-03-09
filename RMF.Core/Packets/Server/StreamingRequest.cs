@@ -10,7 +10,7 @@ namespace RMF.Core.Packets.Server
 {
     public class StreamingRequest : Packet
     {
-        public override short ID => 301;
+        public override short ID => 302;
 
         public bool IsActive { get; set; }        // 0 - no, 1 - yes
         public byte Quality { get; set; }         // 1-100% of source screenshot quality
