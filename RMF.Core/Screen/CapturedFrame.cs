@@ -7,20 +7,21 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Screen
 {
-    public class CapturedFrame
+    public readonly struct CapturedFrame
     {
-        public ScreenFormats Format;
-        public int Width;
-        public int Height;
-        public int Length;
-        public byte[]? Buffer;
+        public readonly byte[]? Buffer;
+        public readonly int Length;
+        public readonly int Width;
+        public readonly int Height;
+        public readonly ScreenFormats Format;
 
-        public void Release()
+        public CapturedFrame(byte[]? buffer, int length, int width, int height, ScreenFormats format)
         {
-            if (Buffer != null)
-            {
-                ArrayPool<byte>.Shared.Return(this.Buffer);
-            }
+            this.Buffer = buffer;
+            this.Length = length;
+            this.Width = width;
+            this.Height = height;
+            this.Format = format;
         }
     }
 }

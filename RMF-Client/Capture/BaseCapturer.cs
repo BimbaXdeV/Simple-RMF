@@ -48,14 +48,7 @@ namespace RMF_Client.Capture
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)data.Size);
                 data.AsSpan().CopyTo(buffer);
 
-                return new CapturedFrame()
-                {
-                    Format = format,
-                    Width = ScreenWidth,
-                    Height = ScreenHeight,
-                    Length = (int)data.Size,
-                    Buffer = buffer
-                };
+                return new CapturedFrame(buffer, (int)data.Size, this.ScreenWidth, this.ScreenHeight, format);
             }
         }
     }

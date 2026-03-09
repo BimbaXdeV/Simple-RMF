@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Network;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Packets.Client
 {
-    public class RemoteDesktopPacket : Packet
+    public class RemoteDesktopPacket : Packet, IReleasable
     {
         public override short ID => 200;
 
@@ -40,6 +41,14 @@ namespace RMF.Core.Packets.Client
             if (this.ImageData != null)
             {
                 writer.Write(this.ImageData);
+            }
+        }
+
+        public void Release()
+        {
+            if (this.ImageData != null)
+            {
+                ArrayPool<byte>.Shared.Return(this.ImageData);
             }
         }
     }

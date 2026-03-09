@@ -79,11 +79,13 @@ namespace RMF_Client.Network
         private static void ProcessScreenshotRequest(ScreenshotRequest packet)
         {
             NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
-            if (stream != null)
+            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider();
+            if (stream != null && screenProvider != null)
             {
                 SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "StreamingEvent", new Dictionary<string, object>
                 {
-                    { "ProcessMode", (byte)ProcessModes.Single },
+                    { "Provider", screenProvider },
+                    { "ProcessMode", ProcessModes.Single },
                     { "Format", (ScreenFormats)packet.FormatID },
                     { "QualityPercent", packet.QualityPercent }
                 });

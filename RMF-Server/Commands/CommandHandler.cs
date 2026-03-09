@@ -1,9 +1,13 @@
-﻿using RMF_Server.Debugger;
+﻿using RMF.Core.Bases;
+using RMF.Core.Packets.Server;
+using RMF.Core.Screen;
+using RMF_Server.Debugger;
 using RMF_Server.Logic;
 using RMF_Server.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -171,6 +175,26 @@ namespace RMF_Server.Commands
         {
             Logging.Output($"The \"{input}\" command received. Initiating shutdown process...");
             cts.Cancel();
+        }
+
+        private static void Screen(string input, CancellationTokenSource cts)
+        {
+            string targetEndPoint = input.Split(' ')[1];
+            if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
+            {
+                Logging.Message("Sending request...");
+                ScreenshotRequest screenshotRequest = new()
+                {
+                    FormatID = (byte)ScreenFormats.Png,
+                    QualityPercent = (byte)ConfigurationManager.ScreenshotQualityPercentage
+                };
+                session.SendPacket(screenshotRequest);
+                Logging.Message($"Successfully sent to {targetEndPoint}, waiting for remote screenshot...");
+            }
+            else
+            {
+                Logging.Message($"No connection found named \"{targetEndPoint}\"");
+            }
         }
     }
 }

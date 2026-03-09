@@ -45,6 +45,10 @@ namespace RMF.Core.Bases
             await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
             {
                 await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
+                if (packet is IReleasable releasable)
+                {
+                    releasable.Release();
+                }
             }
         }
 
