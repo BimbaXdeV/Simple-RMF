@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Paths>
+	<add key="Errors" path="Debug/Logs/%date%/"/>
+	<add key="DesktopScreenshots" path="Screenshots/%endPoint%/"/>
+</Paths>

@@ -15,7 +15,7 @@ namespace RMF_Server.Packets
     internal static class PacketsProcessor
     {
         // Manual method, but lightning fast to execute
-        public static void SwitchHandle(Packet packet, string endPoint)
+        public static async Task SwitchHandle(Packet packet, string endPoint)
         {
             switch (packet)
             {
@@ -27,8 +27,12 @@ namespace RMF_Server.Packets
                     ProcessSystemInfoPacket(systemInfoPacket, endPoint);
                     break;
 
-                case RemoteDesktopPacket remoteDesktopPacket:
-                    _ = Task.Run(() => ProcessRemoteDesktopPacket(remoteDesktopPacket, endPoint));
+                case DesktopFramePacket desktopFramePacket:
+                    await ProcessDesktopFramePacket(desktopFramePacket, endPoint);
+                    break;
+
+                case StreamFramePacket streamFramePacket:
+                    await ProcessStreamFramePacket(streamFramePacket, endPoint);
                     break;
             }
         }
@@ -55,7 +59,12 @@ namespace RMF_Server.Packets
             Console.WriteLine($"Info about {endPoint} - Name: {packet.MachineName}, User: {packet.Username}, OS: {packet.OS}, Architecture: {packet.Architecture}");
         }
 
-        private static async Task ProcessRemoteDesktopPacket(RemoteDesktopPacket packet, string endPoint)
+        private static async Task ProcessDesktopFramePacket(DesktopFramePacket packet, string endPoint)
+        {
+            
+        }
+
+        private static async Task ProcessStreamFramePacket(StreamFramePacket packet, string endPoint)
         {
             if (SessionManager.Connections.TryGetValue(endPoint, out ServerClientSession? session))
             {

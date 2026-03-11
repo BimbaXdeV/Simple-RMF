@@ -42,17 +42,20 @@ namespace RMF_Server.Channels
                         SpanReader payloadReader = new(payloadSpan);
 
                         packet.Deserialize(ref payloadReader);
-                        PacketsProcessor.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
+                        await PacketsProcessor.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
                     }
                     catch (Exception ex)
                     {
                         Logging.Warning($"Failed to process packet with ID {context.ID} from {context.EndPoint}\n{ex}");
-                        continue;
                     }
                     finally
                     {
                         // To avoid allocating unnecessary memory, we allocate a free byte[] from the async pool, which must be returned after use
                         ArrayPool<byte>.Shared.Return(context.Payload);
+                        if (packet is IReleasable releasable)
+                        {
+                            releasable.Release();
+                        }
                     }
                 }
             }

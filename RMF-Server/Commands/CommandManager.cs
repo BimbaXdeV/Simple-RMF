@@ -17,7 +17,7 @@ namespace RMF_Server.Commands
         {
             if (!File.Exists(CommandsPath))
             {
-                Logging.Error($"Unable to load configuration on path: {CommandsPath}");
+                Logging.Error($"Unable to load commands on path: {CommandsPath}");
                 return (0, 0);
             }
 

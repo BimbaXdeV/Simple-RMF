@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Packets.Client
 {
-    public class RemoteDesktopPacket : Packet, IReleasable
+    public class DesktopFramePacket : Packet, IReleasable
     {
         public override short ID => 200;
 
@@ -25,11 +25,12 @@ namespace RMF.Core.Packets.Client
             this.Width = reader.ReadInt32();
             this.Height = reader.ReadInt32();
             this.ImageLength = reader.ReadInt32();
-            if (this.ImageLength > PacketConfigurations.MaxPacketLengthKB || this.ImageLength <= 0)
+            if (this.ImageLength <= 0)
             {
                 throw new Exception("Invalid image length");
             }
-            this.ImageData = reader.ReadBytes(this.ImageLength).ToArray();
+            this.ImageData = ArrayPool<byte>.Shared.Rent(this.ImageLength);
+            reader.ReadBytes(this.ImageLength).CopyTo(this.ImageData);
         }
 
         protected override void WriteBody(BinaryWriter writer)

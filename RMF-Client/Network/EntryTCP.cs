@@ -39,13 +39,12 @@ namespace RMF_Client.Network
                 int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
 
                 byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
+                Packet? packet = PacketsAssembler.GetPacket(id);
 
                 try
                 {
-                    Packet? packet = PacketsAssembler.GetPacket(id);
                     if (packet == null)
                     {
-                        await Task.Delay(5000, token);
                         continue;
                     }
 
@@ -54,12 +53,14 @@ namespace RMF_Client.Network
 
                     packet.Deserialize(ref payloadReader);
                     PacketsProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
-                    ArrayPool<byte>.Shared.Return(payload);
                 }
-                catch (Exception)
+                finally
                 {
                     ArrayPool<byte>.Shared.Return(payload);
-                    throw;
+                    if (packet is IReleasable releasable)
+                    {
+                        releasable.Release();
+                    }
                 }
             }
         }

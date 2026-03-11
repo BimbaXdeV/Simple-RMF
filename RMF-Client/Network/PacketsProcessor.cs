@@ -79,16 +79,31 @@ namespace RMF_Client.Network
         private static void ProcessScreenshotRequest(ScreenshotRequest packet)
         {
             NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
-            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider();
+            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(UpdateIfNullable: true);
             if (stream != null && screenProvider != null)
             {
-                SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "StreamingEvent", new Dictionary<string, object>
+                //SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "StreamingEvent", new Dictionary<string, object>
+                //{
+                //    { "Provider", screenProvider },
+                //    { "ProcessMode", ProcessModes.Single },
+                //    { "Format", (ScreenFormats)packet.FormatID },
+                //    { "QualityPercent", packet.QualityPercent }
+                //});
+
+                CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent);
+                if (screenshot != null)
                 {
-                    { "Provider", screenProvider },
-                    { "ProcessMode", ProcessModes.Single },
-                    { "Format", (ScreenFormats)packet.FormatID },
-                    { "QualityPercent", packet.QualityPercent }
-                });
+                    DesktopFramePacket desktopFramePacket = new()
+                    {
+                        FormatID = packet.FormatID,
+                        Width = screenshot.Value.Width,
+                        Height = screenshot.Value.Height,
+                        ImageLength = screenshot.Value.Length,
+                        ImageData = screenshot.Value.Buffer
+                    };
+
+                    SessionManager.Connection!.SendPacket(desktopFramePacket);
+                }
             }
         }
 

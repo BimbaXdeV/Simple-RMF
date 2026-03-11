@@ -5,7 +5,7 @@
 	
 	<add key="" link="endpointIP" name="Connection IP" default="Undefined"/>
 	<add key="" link="endpointPort" name="Connection port" default="Undefined"/>
-	<add key="" link="endpointBuffer" name="Connection buffer" default="0b"/>
+	<add key="" link="endpointBuffer" name="Connection buffer" default="Sd: 0b, Rc: 0b"/>
 
 	<add key="" link="endpointMachine" name="Client machine" default="Unknown"/>
 	<add key="" link="endpointUsername" name="Client username" default="Unknown"/>

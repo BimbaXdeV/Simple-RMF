@@ -15,12 +15,11 @@ namespace RMF.Core.Events.Client
     public class StreamingEvent : BackgroundEvent
     {
         public IScreenProvider? Provider;
-        public ProcessModes ProcessMode;
         public ScreenFormats Format;
         public byte QualityPercent;
         public int IntervalMsecs;  // (default) 0 - without delay
 
-        private readonly RemoteDesktopPacket PacketTemplate = new();
+        private readonly StreamFramePacket PacketTemplate = new();
 
         private void SendActualFrame(ClientSession session)
         {
@@ -39,22 +38,13 @@ namespace RMF.Core.Events.Client
 
         protected override async Task HandleLogic(ClientSession session, CancellationToken token)
         {
-            switch (this.ProcessMode)
+            while (!token.IsCancellationRequested)
             {
-                case ProcessModes.Single:
-                    SendActualFrame(session);
-                    break;
-
-                case ProcessModes.InfinityLoop:
-                    while (!token.IsCancellationRequested)
-                    {
-                        SendActualFrame(session);
-                        if (this.IntervalMsecs > 0)
-                        {
-                            await Task.Delay(this.IntervalMsecs, token);
-                        }
-                    }
-                    break;
+                SendActualFrame(session);
+                if (this.IntervalMsecs > 0)
+                {
+                    await Task.Delay(this.IntervalMsecs, token);
+                }
             }
         }
     }
