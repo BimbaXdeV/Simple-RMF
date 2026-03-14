@@ -11,22 +11,27 @@ namespace RMF.Core.Network
 {
     public static class StreamManager
     {
+        [ThreadStatic]
+        private static MemoryStream? CachedMemoryStream;
+
+        public static MemoryStream GetCachedStream()
+        {
+            CachedMemoryStream ??= new MemoryStream(PacketConfigurations.MinPacketBufferKB * 1000);
+            CachedMemoryStream.Position = 0;
+            CachedMemoryStream.SetLength(0);
+            return CachedMemoryStream;
+        }
+
         public static async Task SendPacketAsync(Stream stream, Packet packet, CancellationToken token)
         {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(PacketConfigurations.MaxPacketLengthKB * 1024);
+            MemoryStream ms = GetCachedStream();
+            using BinaryWriter writer = new(ms, Encoding.UTF8, leaveOpen: true);
 
-            try
-            {
-                using MemoryStream ms = new(buffer);
-                using BinaryWriter writer = new(ms);
+            packet.WriteToStream(writer);
 
-                packet.WriteToStream(writer);
-                await stream.WriteAsync(buffer.AsMemory(0, (int)ms.Position), token);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
+            byte[] buffer = ms.GetBuffer();
+            int bufferLength = (int)ms.Length;
+            await stream.WriteAsync(buffer.AsMemory(0, bufferLength), token);
         }
     }
 }

@@ -54,6 +54,10 @@ namespace RMF_Client.Network
                     packet.Deserialize(ref payloadReader);
                     PacketsProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
                 }
+                catch (Exception)
+                {
+                    // Then, in place of all these stubs, I`ll put a log buffer to write them to a file
+                }
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(payload);
@@ -93,6 +97,7 @@ namespace RMF_Client.Network
             }
             catch (Exception ex)
             {
+                // Just a crutch :D
                 Console.WriteLine(ex);
                 await Task.Delay(5000, token);
             }

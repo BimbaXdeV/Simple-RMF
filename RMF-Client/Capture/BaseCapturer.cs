@@ -15,6 +15,7 @@ namespace RMF_Client.Capture
         protected int ScreenWidth;
         protected int ScreenHeight;
         protected SKBitmap? ScreenBitmap;
+        protected readonly Lock ScreenGetterLock = new();
 
         public BaseCapturer()
         {
@@ -22,11 +23,11 @@ namespace RMF_Client.Capture
         }
 
         protected abstract void UpdateScreenMetrics();
-        protected abstract SKBitmap GetScreenBitmap();
+        protected abstract SKBitmap? GetScreenBitmap();
 
         public CapturedFrame? Capture(ScreenFormats format, byte quality)
         {
-            using (SKBitmap bitmap = GetScreenBitmap())
+            using (SKBitmap? bitmap = GetScreenBitmap())
             {
                 if (bitmap == null)
                 {

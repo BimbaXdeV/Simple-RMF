@@ -10,6 +10,7 @@ namespace RMF.Core.Packets
 {
     public static class PacketConfigurations
     {
+        public static int MinPacketBufferKB;
         public static int MaxPacketLengthKB;
     }
 }

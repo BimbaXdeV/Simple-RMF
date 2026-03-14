@@ -78,32 +78,34 @@ namespace RMF_Client.Network
 
         private static void ProcessScreenshotRequest(ScreenshotRequest packet)
         {
-            NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
-            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(UpdateIfNullable: true);
-            if (stream != null && screenProvider != null)
+            ConnectionClientSession? session = SessionManager.Connection;
+            if (session?.Client == null || !session.Client.Client.Connected)
             {
-                //SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "StreamingEvent", new Dictionary<string, object>
-                //{
-                //    { "Provider", screenProvider },
-                //    { "ProcessMode", ProcessModes.Single },
-                //    { "Format", (ScreenFormats)packet.FormatID },
-                //    { "QualityPercent", packet.QualityPercent }
-                //});
+                return;
+            }
 
-                CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent);
-                if (screenshot != null)
+
+            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(UpdateIfNullable: true);
+            if (screenProvider == null)
+            {
+                return;
+            }
+
+            CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent);
+            if (screenshot.HasValue)
+            {
+
+                var frame = screenshot.Value;
+                DesktopFramePacket desktopFramePacket = new()
                 {
-                    DesktopFramePacket desktopFramePacket = new()
-                    {
-                        FormatID = packet.FormatID,
-                        Width = screenshot.Value.Width,
-                        Height = screenshot.Value.Height,
-                        ImageLength = screenshot.Value.Length,
-                        ImageData = screenshot.Value.Buffer
-                    };
+                    FormatID = packet.FormatID,
+                    Width = frame.Width,
+                    Height = frame.Height,
+                    ImageLength = frame.Length,
+                    ImageData = frame.Buffer
+                };
 
-                    SessionManager.Connection!.SendPacket(desktopFramePacket);
-                }
+                session.SendPacket(desktopFramePacket);
             }
         }
 

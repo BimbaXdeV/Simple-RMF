@@ -165,7 +165,7 @@ namespace RMF_Server.Logic
 
                     try
                     {
-                        PacketContext context = new(session.EndPoint!.ToString(), id, packetLength, payload);
+                        PacketContext context = new(session.EndPoint!, id, packetLength, payload);
                         await ChannelDispatcher.SendPacket(context);  // The packet will be processed in the channel, so we can immediately start waiting for the next packet without worrying about the processing time of the current
                     }
                     catch (Exception ex)

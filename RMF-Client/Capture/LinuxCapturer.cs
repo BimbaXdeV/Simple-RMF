@@ -14,7 +14,7 @@ namespace RMF_Client.Capture
             throw new NotImplementedException();
         }
 
-        protected override SKBitmap GetScreenBitmap()
+        protected override SKBitmap? GetScreenBitmap()
         {
             throw new NotImplementedException();
         }

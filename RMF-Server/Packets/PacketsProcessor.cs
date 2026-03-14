@@ -1,11 +1,14 @@
 ﻿using RMF.Core.Packets;
 using RMF.Core.Packets.Client;
+using RMF.Core.Screen;
+using RMF_Server.Debugger;
 using RMF_Server.Logic;
 using RMF_Server.Storage;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +18,7 @@ namespace RMF_Server.Packets
     internal static class PacketsProcessor
     {
         // Manual method, but lightning fast to execute
-        public static async Task SwitchHandle(Packet packet, string endPoint)
+        public static async Task SwitchHandle(Packet packet, IPEndPoint endPoint)
         {
             switch (packet)
             {
@@ -48,25 +51,51 @@ namespace RMF_Server.Packets
         //    }
         //}
 
-        private static void ProcessHeartbeatPacket(HeartbeatPacket packet, string endPoint)
+        private static void ProcessHeartbeatPacket(HeartbeatPacket packet, IPEndPoint endPoint)
         {
             double delay = (DateTime.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(packet.Timestamp)).TotalMilliseconds;
-            Console.WriteLine($"Received heartbeat from {endPoint} : {delay}ms delay");
+            Logging.Message($"Received heartbeat from {endPoint} : {delay}ms delay");
         }
 
-        private static void ProcessSystemInfoPacket(SystemInfoPacket packet, string endPoint)
+        private static void ProcessSystemInfoPacket(SystemInfoPacket packet, IPEndPoint endPoint)
         {
-            Console.WriteLine($"Info about {endPoint} - Name: {packet.MachineName}, User: {packet.Username}, OS: {packet.OS}, Architecture: {packet.Architecture}");
+            Logging.Message($"Info about {endPoint} - Name: {packet.MachineName}, User: {packet.Username}, OS: {packet.OS}, Architecture: {packet.Architecture}");
         }
 
-        private static async Task ProcessDesktopFramePacket(DesktopFramePacket packet, string endPoint)
+        private static async Task ProcessDesktopFramePacket(DesktopFramePacket packet, IPEndPoint endPoint)
         {
-            
+            if (packet.ImageData == null)
+            {
+                Logging.Message($"Failed to save an empty screenshot from \"{endPoint}\"");
+                return;
+            }
+
+            string savePath = Path.GetFullPath(PathManager.GetResolvedPath("DesktopScreenshots",
+                                                                           fileName: "%endPoint%_%datetime%",
+                                                                           fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower(),
+                                                                           endPoint: endPoint.Address.ToString(),
+                                                                           UpdateCachedDate: true));
+
+            try
+            {
+                string? directory = Path.GetDirectoryName(savePath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                
+                await File.WriteAllBytesAsync(savePath, packet.ImageData.AsMemory(0, packet.ImageLength));
+                Logging.Message($"Screenshot from {endPoint} successfully saved on path: \"{savePath}\"");
+            }
+            catch (Exception ex)
+            {
+                Logging.Error($"Failed to save screenshot: {ex.Message}");
+            }
         }
 
-        private static async Task ProcessStreamFramePacket(StreamFramePacket packet, string endPoint)
+        private static async Task ProcessStreamFramePacket(StreamFramePacket packet, IPEndPoint endPoint)
         {
-            if (SessionManager.Connections.TryGetValue(endPoint, out ServerClientSession? session))
+            if (SessionManager.Connections.TryGetValue(endPoint.ToString(), out ServerClientSession? session))
             {
                 session.LastFrame = packet.ImageData;
                 session.LastUpdate = DateTime.Now;

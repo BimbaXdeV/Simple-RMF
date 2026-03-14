@@ -41,7 +41,7 @@ namespace RMF.Core.Packets.Client
             writer.Write(this.ImageLength);
             if (this.ImageData != null)
             {
-                writer.Write(this.ImageData);
+                writer.Write(this.ImageData, 0, this.ImageLength);
             }
         }
 

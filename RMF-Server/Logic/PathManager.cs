@@ -15,6 +15,10 @@ namespace RMF_Server.Logic
         private static readonly Dictionary<string, string> ExternalPaths = [];
         private static readonly string DefaultStoragePath = "Undefined";
 
+        private static string CachedDate = string.Empty;
+        private static DateTime LastDateUpdated = DateTime.MinValue;
+        private static readonly Lock CachedDateLock = new();
+
         public static (int, int) Load()
         {
             if (!File.Exists(FilePath))
@@ -45,15 +49,37 @@ namespace RMF_Server.Logic
             return (initializedPathsCounter, pathsDict.Count());
         }
 
-        public static string GetResolvedPath(string key, string endPoint)
+        private static void UpdateDate()
+        {
+            lock (CachedDateLock)
+            {
+                DateTime actualDateTime = DateTime.Now;
+                if (actualDateTime.Date != LastDateUpdated)
+                {
+                    CachedDate = actualDateTime.ToString("yyyy_MM_dd");
+                    LastDateUpdated = actualDateTime.Date;
+                }
+            }
+        }
+
+        public static string GetResolvedPath(string key, string? fileName = null, string? fileFormat = null, string? endPoint = null, bool UpdateCachedDate = false)
         {
             if (!ExternalPaths.TryGetValue(key, out string? rawPath) || string.IsNullOrEmpty(rawPath))
             {
                 return DefaultStoragePath;
             }
 
-            StringBuilder resolvedPath = new(rawPath);
-            resolvedPath.Replace("%date%", DateTime.Now.ToString("yyyy_MM_dd"))
+            if (UpdateCachedDate && DateTime.Now.Date != LastDateUpdated)
+            {
+                UpdateDate();  // You don`t need to constantly convert the same long-lived object
+            }
+
+            string resolvedFileName = string.IsNullOrEmpty(fileName) ? "Undefined" : fileName;
+            string resolvedFileFormat = string.IsNullOrEmpty(fileFormat) ? "txt" : fileFormat;
+
+            string fullFilePath = Path.Combine(rawPath, $"{resolvedFileName}.{resolvedFileFormat}");
+            StringBuilder resolvedPath = new(fullFilePath);
+            resolvedPath.Replace("%date%", CachedDate)
                         .Replace("%time%", DateTime.Now.ToString("HH_mm_ss"))
                         .Replace("%datetime%", DateTime.Now.ToString("yyyyMMdd_HHmmss"))
                         .Replace("%endPoint%", string.IsNullOrEmpty(endPoint) ? "Unknown" : endPoint)

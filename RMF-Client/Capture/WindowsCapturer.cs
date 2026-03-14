@@ -56,7 +56,7 @@ namespace RMF_Client.Capture
         private static extern bool BitBlt(IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, IntPtr hdcSrc, int nXSrc, int nYSrc, uint dwRop);
 
         [DllImport("gdi32.dll")]
-        private static extern int GetDIBits(IntPtr hdc, IntPtr hbmp, uint uStartScan, uint cScanLines, [Out] IntPtr lpvBits, IntPtr lpbmi, uint uUsage);
+        private static extern int GetDIBits(IntPtr hdc, IntPtr hbmp, uint uStartScan, uint cScanLines, IntPtr lpvBits, ref BITMAPINFOHEADER lpbmi, uint uUsage);
 
         [DllImport("gdi32.dll")]
         private static extern bool DeleteDC(IntPtr hDC);
@@ -69,14 +69,17 @@ namespace RMF_Client.Capture
 
         protected override void UpdateScreenMetrics()
         {
-            this.ScreenWidth = GetSystemMetrics(0);
-            this.ScreenHeight = GetSystemMetrics(1);
+            lock (this.ScreenGetterLock)
+            {
+                this.ScreenWidth = GetSystemMetrics(0);
+                this.ScreenHeight = GetSystemMetrics(1);
 
-            this.ScreenBitmap?.Dispose();
-            this.ScreenBitmap = new(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+                this.ScreenBitmap?.Dispose();
+                this.ScreenBitmap = new(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+            }
         }
 
-        protected override SKBitmap GetScreenBitmap()
+        protected override SKBitmap? GetScreenBitmap()
         {
             // Automatic metrics update is called once every X iterations to avoid hogging the processor with useless calls
             if (this.IterationCounter++ % ConfigurationManager.AutoMetricsUpdateRate == 0 &&
@@ -85,35 +88,40 @@ namespace RMF_Client.Capture
                 UpdateScreenMetrics();
             }
 
-            IntPtr hwnd = GetDesktopWindow();
-            IntPtr hdcSrc = GetWindowDC(hwnd);
-            IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
-            IntPtr hBitmap = CreateCompatibleBitmap(hdcSrc, this.ScreenWidth, this.ScreenHeight);
-            IntPtr hOld = SelectObject(hdcDest, hBitmap);
-
-            BitBlt(hdcDest, 0, 0, this.ScreenWidth, this.ScreenHeight, hdcSrc, 0, 0, SrcCopyCode);
-
-            BITMAPINFOHEADER bmi = new()
+            lock (this.ScreenGetterLock)
             {
-                biSize = (uint)Marshal.SizeOf<BITMAPINFOHEADER>(),
-                biWidth = this.ScreenWidth,
-                biHeight = -this.ScreenHeight,
-                biPlanes = 1,
-                biBitCount = 32,
-                biCompression = 0
-            };
+                IntPtr hwnd = GetDesktopWindow();
+                IntPtr hdcSrc = GetWindowDC(hwnd);
+                if (hdcSrc == IntPtr.Zero)
+                {
+                    return null;
+                }
 
-            IntPtr bmiPtr = Marshal.AllocHGlobal(Marshal.SizeOf(bmi));
-            Marshal.StructureToPtr(bmi, bmiPtr, false);
-            _ = GetDIBits(hdcDest, hBitmap, 0, (uint)this.ScreenHeight, this.ScreenBitmap!.GetPixels(), bmiPtr, 0);
+                IntPtr hdcDest = CreateCompatibleDC(hdcSrc);
+                IntPtr hBitmap = CreateCompatibleBitmap(hdcSrc, this.ScreenWidth, this.ScreenHeight);
+                IntPtr hOld = SelectObject(hdcDest, hBitmap);
 
-            Marshal.FreeHGlobal(bmiPtr);
-            SelectObject(hdcDest, hOld);
-            DeleteObject(hBitmap);
-            DeleteDC(hdcDest);
-            _ = ReleaseDC(hwnd, hdcSrc);
-            
-            return this.ScreenBitmap;
+                BitBlt(hdcDest, 0, 0, this.ScreenWidth, this.ScreenHeight, hdcSrc, 0, 0, SrcCopyCode);
+
+                BITMAPINFOHEADER bmi = new()
+                {
+                    biSize = (uint)Marshal.SizeOf<BITMAPINFOHEADER>(),
+                    biWidth = this.ScreenWidth,
+                    biHeight = -this.ScreenHeight,
+                    biPlanes = 1,
+                    biBitCount = 32,
+                    biCompression = 0
+                };
+
+                _ = GetDIBits(hdcDest, hBitmap, 0, (uint)this.ScreenHeight, this.ScreenBitmap!.GetPixels(), ref bmi, 0);
+
+                SelectObject(hdcDest, hOld);
+                DeleteObject(hBitmap);
+                DeleteDC(hdcDest);
+                _ = ReleaseDC(hwnd, hdcSrc);
+
+                return this.ScreenBitmap;
+            }
         }
     }
 }

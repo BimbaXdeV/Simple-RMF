@@ -143,7 +143,7 @@ namespace RMF_Client.Logic
 
         public static async Task Curtain(float delaySecs)
         {
-            for (int i = Console.GetCursorPosition().Top; i > 0; i--)
+            for (int i = Console.GetCursorPosition().Top; i >= 0; i--)
             {
                 await Task.Delay((int)(delaySecs * 1000));
                 Console.SetCursorPosition(0, i);
