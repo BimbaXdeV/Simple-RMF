@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace RMF_Client.Capture
 {
-    internal class LinuxCapturer : BaseCapturer
+    internal class X11Capturer : BaseCapturer
     {
-        protected override void UpdateScreenMetrics()
+        protected override void Initialize()
         {
             throw new NotImplementedException();
         }

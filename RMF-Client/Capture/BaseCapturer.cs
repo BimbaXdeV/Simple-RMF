@@ -19,10 +19,10 @@ namespace RMF_Client.Capture
 
         public BaseCapturer()
         {
-            UpdateScreenMetrics();
+            Initialize();
         }
 
-        protected abstract void UpdateScreenMetrics();
+        protected abstract void Initialize();
         protected abstract SKBitmap? GetScreenBitmap();
 
         public CapturedFrame? Capture(ScreenFormats format, byte quality)

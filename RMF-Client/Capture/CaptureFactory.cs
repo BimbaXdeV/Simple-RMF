@@ -15,15 +15,15 @@ namespace RMF_Client.Capture
         public static void CheckForUpdates()
         {
             // The denser the forest... If else, if else :D
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Provider?.GetType() != typeof(WindowsCapturer))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Provider?.GetType() != typeof(DXGICapturer))
             {
-                Provider = new WindowsCapturer();
+                Provider = new DXGICapturer();
                 return;
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Provider?.GetType() != typeof(LinuxCapturer))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Provider?.GetType() != typeof(X11Capturer))
             {
-                Provider = new LinuxCapturer();
+                Provider = new X11Capturer();
                 return;
             }
         }
