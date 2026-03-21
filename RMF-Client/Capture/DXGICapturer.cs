@@ -16,15 +16,26 @@ namespace RMF_Client.Capture
 {
     internal class DXGICapturer : BaseCapturer
     {
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDPIAware();
+        
+        [DllImport("user32.dll")]
+        private static extern int GetSystemMetrics(int nIndex);
+
         private ComPtr<ID3D11Device> Device;
         private ComPtr<ID3D11DeviceContext> Context;
         private ComPtr<IDXGIOutputDuplication> Duplication;
         private ComPtr<ID3D11Texture2D> Texture;
-
+         
         private uint AcquireTimeoutCode = 0x887A0027;
 
         protected override unsafe void Initialize()
         {
+            this.Device.Dispose();
+            this.Context.Dispose();
+            this.Duplication.Dispose();
+            this.Texture.Dispose();
+
             var d3d11 = D3D11.GetApi((INativeWindowSource)(INativeWindow)null!);
             var dxgi = DXGI.GetApi((INativeWindowSource)(INativeWindow)null!);
 
@@ -81,7 +92,27 @@ namespace RMF_Client.Capture
                 BindFlags = 0,
                 MiscFlags = 0
             };
-            this.Device.CreateTexture2D(ref textureDesc, null, this.Texture.GetAddressOf());
+            int hResult = this.Device.CreateTexture2D(ref textureDesc, null, this.Texture.GetAddressOf());
+            if (hResult != 0)
+            {
+                throw new Exception("Failed to create 2D texture!");
+            }
+        }
+
+        protected override void UpdateBitmapMetrics()
+        {
+            int ActualWidth = GetSystemMetrics(0);
+            int ActualHeight = GetSystemMetrics(1);
+
+            if (ActualWidth != this.ScreenWidth || ActualHeight != this.ScreenHeight)
+            {
+                this.ScreenWidth = ActualWidth;
+                this.ScreenHeight = ActualHeight;
+
+                this.ScreenBitmap?.Dispose();
+                this.ScreenBitmap = new SKBitmap(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+                Initialize();
+            }
         }
 
         protected override unsafe SKBitmap? GetScreenBitmap()

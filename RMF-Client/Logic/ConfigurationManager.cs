@@ -20,7 +20,7 @@ namespace RMF_Client.Logic
         public static int MinPacketBufferKB;
         public static int MaxPacketLengthKB;
 
-        public static int AutoMetricsUpdateRate;
+        public static int MetricsUpdateRate;
 
         // You don't need to parse all the configs from "~\RMF-Client\Storage\config.xml" manually, this method will do it for you;
         // To scale, simply add empty fields with "public" and "static" flags  ;)

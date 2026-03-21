@@ -11,5 +11,5 @@
 	<add key="MaxPacketLengthKB" value="128"/>
 	
 	<!-- Capture Settings -->
-	<add key="AutoMetricsUpdateRate" value="120"/>
+	<add key="MetricsUpdateRate" value="120"/>
 </Settings>
