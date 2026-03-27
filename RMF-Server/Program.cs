@@ -1,4 +1,7 @@
-﻿using RMF.Core.Events;
+﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
+using RMF.Core.Events;
 using RMF.Core.Packets;
 using RMF_Server.Channels;
 using RMF_Server.Commands;
@@ -14,6 +17,7 @@ namespace RMF_Server
 {
     internal class Program
     {
+        [STAThread]
         static async Task Main(string[] args)
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
@@ -57,16 +61,38 @@ namespace RMF_Server
             OpenTCP tcp = new();
             Task serverTask = tcp.RunServer(cts.Token);
 
-            try
+            Task activeLogic = Task.Run(async () =>
             {
-                await InputListener.StartListen(cts);
-            }
-            catch (OperationCanceledException)
-            {
-            }
+                await WindowManager.WaitForUIReady();
+                try
+                {
+                    await InputListener.StartListen(cts);
+                }
+                catch (OperationCanceledException)
+                {
+                }
 
-            cts.Cancel();
-            await Task.WhenAll(serverTask, loggingTask);
+                cts.Cancel();
+                await Task.WhenAll(serverTask, loggingTask);
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+                });
+            });
+
+            WindowManager.BuildAvaloniaApp()
+                         .AfterSetup(_ =>
+                         {
+                             Dispatcher.UIThread.Post(() => WindowManager.UIInitSource.TrySetResult());
+                         })
+                         .StartWithClassicDesktopLifetime(
+                             args: [],
+                             shutdownMode: Avalonia.Controls.ShutdownMode.OnExplicitShutdown
+                         );
+            WindowManager.ShowWindow();
+
+            await activeLogic;
             Logging.Output("The work process is completed. Goodbye!");
         }
     }

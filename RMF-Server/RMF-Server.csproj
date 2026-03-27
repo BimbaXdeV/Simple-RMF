@@ -17,6 +17,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="Avalonia" Version="11.3.12" />
+	  <PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
+	  <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
+	  <PackageReference Include="ReactiveUI.Avalonia" Version="11.4.12" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <ProjectReference Include="..\RMF.Core\RMF.Core.csproj" />
 	</ItemGroup>
 
@@ -28,6 +35,9 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Storage\extpaths.xml">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="UI\StreamingWindow.axaml">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>

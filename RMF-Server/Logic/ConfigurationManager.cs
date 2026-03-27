@@ -15,6 +15,11 @@ namespace RMF_Server.Logic
         private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "config.xml");
 
         public static string? AppTitle;
+        public static string? WindowTitle;
+        public static string? WindowTheme;
+        public static int WindowPriority;
+        public static int WindowWidth;
+        public static int WindowHeight;
 
         public static string? IPAddress;
         public static int Port;

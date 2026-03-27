@@ -3,6 +3,11 @@
 <Settings>
 	<!-- Appearance Settings -->
 	<add key="AppTitle" value="RMF-Server"/>
+	<add key="WindowTitle" value="RMF-Streamer"/>
+	<add key="WindowTheme" value="System"/>
+	<add key="WindowPriority" value="2"/>
+	<add key="WindowWidth" value="1280"/>
+	<add key="WindowHeight" value="720"/>
 	
 	<!-- Connection Settings -->
 	<add key="IPAddress" value="127.0.0.1"/>
