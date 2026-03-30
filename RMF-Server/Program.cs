@@ -64,6 +64,7 @@ namespace RMF_Server
             Task activeLogic = Task.Run(async () =>
             {
                 await WindowManager.WaitForUIReady();
+                // WindowManager.ShowWindow();
                 try
                 {
                     await InputListener.StartListen(cts);
@@ -90,7 +91,7 @@ namespace RMF_Server
                              args: [],
                              shutdownMode: Avalonia.Controls.ShutdownMode.OnExplicitShutdown
                          );
-            WindowManager.ShowWindow();
+
 
             await activeLogic;
             Logging.Output("The work process is completed. Goodbye!");

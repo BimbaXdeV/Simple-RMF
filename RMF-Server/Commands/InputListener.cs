@@ -102,6 +102,22 @@ namespace RMF_Server.Commands
                             }
                         }
 
+                        //else if (key.Key == ConsoleKey.LeftArrow)
+                        //{
+                        //    if (Console.CursorLeft > CommandSign.Length)
+                        //    {
+                        //        Console.CursorLeft--;
+                        //    }
+                        //}
+
+                        //else if (key.Key == ConsoleKey.RightArrow)
+                        //{
+                        //    if (Console.CursorLeft < InputBuffer!.Length || (SuggestionBuffer!.Length > 0 && Console.CursorLeft < InputBuffer.Length + SuggestionBuffer.Length))
+                        //    {
+                        //        Console.CursorLeft++;
+                        //    }
+                        //}
+
                         else
                         {
                             if (SuggestionBuffer!.Length > 0)
