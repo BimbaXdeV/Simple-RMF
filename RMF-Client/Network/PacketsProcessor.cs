@@ -78,13 +78,7 @@ namespace RMF_Client.Network
 
         private static void ProcessScreenshotRequest(ScreenshotRequest packet)
         {
-            ConnectionClientSession? session = SessionManager.Connection;
-            if (session?.Client == null || !session.Client.Client.Connected)
-            {
-                return;
-            }
-
-
+            ConnectionClientSession session = SessionManager.Connection!;
             IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(UpdateIfNullable: true);
             if (screenProvider == null)
             {
@@ -94,8 +88,7 @@ namespace RMF_Client.Network
             CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent);
             if (screenshot.HasValue)
             {
-
-                var frame = screenshot.Value;
+                CapturedFrame frame = screenshot.Value;
                 DesktopFramePacket desktopFramePacket = new()
                 {
                     FormatID = packet.FormatID,
@@ -111,6 +104,33 @@ namespace RMF_Client.Network
 
         private static void ProcessStreamingRequest(StreamingRequest packet)
         {
+            ConnectionClientSession session = SessionManager.Connection!;
+
+            // Streaming shutdown logic : if the packet includes "IsActive = false" and streaming event has already running
+            bool isEventActive = session.Events.IsRunning("StreamingEvent");
+            if (!packet.IsActive && isEventActive)
+            {
+                session.Events.ToggleEvent(session, "StreamingEvent");
+                return;
+            }
+
+            // Launch streaming loop
+            if (packet.IsActive && !isEventActive)
+            {
+                IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(UpdateIfNullable: true);
+                if (screenProvider == null)
+                {
+                    return;
+                }
+
+                session.Events.ToggleEvent(session, "StreamingEvent", new Dictionary<string, object>
+                {
+                    { "Provider", screenProvider },
+                    { "Format", (ScreenFormats)packet.FormatID },
+                    { "QualityPercent", packet.Quality },
+                    { "IntervalMsecs", packet.IntervalMsecs }
+                });
+            }
         }
     }
 }

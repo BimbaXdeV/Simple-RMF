@@ -35,6 +35,11 @@ namespace RMF.Core.Events
             }
         }
 
+        public bool IsRunning(string eventName)
+        {
+            return this.RunningTasks.ContainsKey(eventName);
+        }
+
         public void StopAllRunning()
         {
             foreach (var cts in this.RunningTasks.Values)

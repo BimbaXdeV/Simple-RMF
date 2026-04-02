@@ -6,8 +6,8 @@
 	<add key="WindowTitle" value="RMF-Streamer"/>
 	<add key="WindowTheme" value="System"/>
 	<add key="WindowPriority" value="2"/>
-	<add key="WindowWidth" value="1280"/>
-	<add key="WindowHeight" value="720"/>
+	<add key="WindowWidth" value="960"/>
+	<add key="WindowHeight" value="540"/>
 	
 	<!-- Connection Settings -->
 	<add key="IPAddress" value="127.0.0.1"/>
@@ -27,9 +27,11 @@
 	<add key="ChannelPacketsCapacity" value="200"/>
 	
 	<!-- Streaming Settings -->
+	<add key="ScreenshotFrameFormat" value="2"/>
 	<add key="ScreenshotQualityPercentage" value="90"/>
+	<add key="StreamingFrameFormat" value="1"/>
 	<add key="StreamingQualityPercentage" value="60"/>
-	<add key="DesktopSendingIntervalMsecs" value="0"/>
+	<add key="DesktopSendingIntervalMsecs" value="16"/>
 
 	<!-- Commands Settings -->
 	<add key="InlineCommandDefautSign" value="/"/>

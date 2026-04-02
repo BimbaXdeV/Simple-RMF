@@ -35,7 +35,7 @@ namespace RMF_Server.Packets
                     break;
 
                 case StreamFramePacket streamFramePacket:
-                    await ProcessStreamFramePacket(streamFramePacket, endPoint);
+                    ProcessStreamFramePacket(streamFramePacket, endPoint);
                     break;
             }
         }
@@ -93,12 +93,18 @@ namespace RMF_Server.Packets
             }
         }
 
-        private static async Task ProcessStreamFramePacket(StreamFramePacket packet, IPEndPoint endPoint)
+        private static void ProcessStreamFramePacket(StreamFramePacket packet, IPEndPoint endPoint)
         {
             if (SessionManager.Connections.TryGetValue(endPoint.ToString(), out ServerClientSession? session))
             {
-                session.LastFrame = packet.ImageData;
-                session.LastUpdate = DateTime.Now;
+                session.LastFrameUpdate = DateTime.Now;
+                if (packet.ImageData == null)
+                {
+                    Logging.Message($"Received an empty streaming frame from \"{endPoint}\", disconnecting...");
+                    SessionManager.Disconnect(endPoint.ToString());
+                    return;
+                }
+                WindowManager.UpdateFrame(packet.ImageData, packet.Width, packet.Height);
             }
         }
     }

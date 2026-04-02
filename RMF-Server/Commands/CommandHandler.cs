@@ -182,10 +182,9 @@ namespace RMF_Server.Commands
             string targetEndPoint = input.Split(' ')[1];
             if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
             {
-                Logging.Message("Sending request...");
                 ScreenshotRequest screenshotRequest = new()
                 {
-                    FormatID = (byte)ScreenFormats.Png,
+                    FormatID = (byte)ConfigurationManager.ScreenshotFrameFormat,
                     QualityPercent = (byte)ConfigurationManager.ScreenshotQualityPercentage
                 };
                 session.SendPacket(screenshotRequest);
@@ -194,6 +193,63 @@ namespace RMF_Server.Commands
             else
             {
                 Logging.Message($"No connection found named \"{targetEndPoint}\"");
+            }
+        }
+
+        private static void Stream(string input, CancellationTokenSource cts)
+        {
+            string targetEndPoint = input.Split(' ')[1];
+            if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
+            {
+                StreamingRequest streamingRequest = new()
+                {
+                    IsActive = true,
+                    FormatID = (byte)ConfigurationManager.StreamingFrameFormat,
+                    Quality = (byte)ConfigurationManager.StreamingQualityPercentage,
+                    IntervalMsecs = (short)ConfigurationManager.DesktopSendingIntervalMsecs
+                };
+                session.SendPacket(streamingRequest);
+                Logging.Message($"Successfully sent to {targetEndPoint}, waiting for starting stream...");
+                
+                WindowManager.ShowWindow();
+                WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle + " | " + targetEndPoint);
+            }
+            else
+            {
+                Logging.Message($"No connection found named \"{targetEndPoint}\"");
+            }
+        }
+
+        private static void Strstop(string input, CancellationTokenSource cts)
+        {
+            string targetEndPoint = input.Split(' ')[1];
+            try
+            {
+                if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
+                {
+                    if (session.Events.IsRunning("StreamingEvent"))
+                    {
+                        StreamingRequest streamingRequest = new()
+                        {
+                            IsActive = false
+                        };
+                        session.SendPacket(streamingRequest);
+                        Logging.Message($"Successfully sent to {targetEndPoint}, waiting for stopping stream...");
+                    }
+                    else
+                    {
+                        Logging.Message($"The connection \"{targetEndPoint}\" does not have an active stream");
+                    }
+                }
+                else
+                {
+                    Logging.Message($"No connection found named \"{targetEndPoint}\"");
+                }
+            }
+            finally
+            {
+                WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle ?? "");
+                WindowManager.HideWindow();
             }
         }
     }

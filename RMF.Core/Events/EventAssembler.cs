@@ -58,13 +58,16 @@ namespace RMF.Core.Events
         {
             foreach (string key in settings.Keys)
             {
-                PropertyInfo? field = backgroundEvent.GetType().GetProperty(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                if (field != null && field.CanWrite)
+                PropertyInfo? prop = backgroundEvent.GetType().GetProperty(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (prop != null && prop.CanWrite)
                 {
                     try
                     {
-                        object? convertedValue = Convert.ChangeType(settings[key], field.PropertyType);
-                        field.SetValue(backgroundEvent, convertedValue);
+                        Type targetType = prop.PropertyType;
+                        object rawValue = settings[key];
+                        
+                        object convertedValue = targetType.IsAssignableFrom(rawValue.GetType()) ? rawValue : Convert.ChangeType(rawValue, targetType);
+                        prop.SetValue(backgroundEvent, convertedValue);
                     }
                     catch
                     {

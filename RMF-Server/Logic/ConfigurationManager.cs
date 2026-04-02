@@ -35,7 +35,9 @@ namespace RMF_Server.Logic
 
         public static int ChannelPacketsCapacity;
 
+        public static int ScreenshotFrameFormat;
         public static int ScreenshotQualityPercentage;
+        public static int StreamingFrameFormat;
         public static int StreamingQualityPercentage;
         public static int DesktopSendingIntervalMsecs;
 

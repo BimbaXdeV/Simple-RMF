@@ -14,23 +14,23 @@ namespace RMF.Core.Events.Client
 {
     public class StreamingEvent : BackgroundEvent
     {
-        public IScreenProvider? Provider;
-        public ScreenFormats Format;
-        public byte QualityPercent;
-        public int IntervalMsecs;  // (default) 0 - without delay
+        public IScreenProvider? Provider { get; set; }
+        public ScreenFormats Format { get; set; }
+        public byte QualityPercent { get; set; }
+        public int IntervalMsecs { get; set; }  // (default) 0 - without delay
 
         private readonly StreamFramePacket PacketTemplate = new();
 
         private void SendActualFrame(ClientSession session)
         {
-            CapturedFrame frame = this.Provider?.Capture(this.Format, this.QualityPercent) ?? default;
-            if (frame.Buffer != null)
+            CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent);
+            if (frame != null && frame.Value is CapturedFrame f)
             {
-                this.PacketTemplate.FormatID = (byte)frame.Format;
-                this.PacketTemplate.Width = frame.Width;
-                this.PacketTemplate.Height = frame.Height;
-                this.PacketTemplate.ImageLength = frame.Length;
-                this.PacketTemplate.ImageData = frame.Buffer;
+                this.PacketTemplate.FormatID = (byte)f.Format;
+                this.PacketTemplate.Width = f.Width;
+                this.PacketTemplate.Height = f.Height;
+                this.PacketTemplate.ImageLength = f.Length;
+                this.PacketTemplate.ImageData = f.Buffer;
 
                 session.SendPacket(this.PacketTemplate);
             }
@@ -41,10 +41,7 @@ namespace RMF.Core.Events.Client
             while (!token.IsCancellationRequested)
             {
                 SendActualFrame(session);
-                if (this.IntervalMsecs > 0)
-                {
-                    await Task.Delay(this.IntervalMsecs, token);
-                }
+                await Task.Delay(this.IntervalMsecs, token);
             }
         }
     }

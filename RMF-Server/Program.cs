@@ -58,13 +58,13 @@ namespace RMF_Server
             Logging.CreateHistory(ConfigurationManager.LoggingHistoryLength);
 
             Task loggingTask = Logging.RunExecutor(cts.Token);
-            OpenTCP tcp = new();
-            Task serverTask = tcp.RunServer(cts.Token);
+            Task serverTask = new OpenTCP().RunServer(cts.Token);
 
             Task activeLogic = Task.Run(async () =>
             {
                 await WindowManager.WaitForUIReady();
-                // WindowManager.ShowWindow();
+                Logging.Output("UI Thread successfully initialized");
+                
                 try
                 {
                     await InputListener.StartListen(cts);

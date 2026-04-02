@@ -25,8 +25,7 @@ namespace RMF_Server.Storage
         public DateTime HandleStartTime { get; private set; }
         public DateTime LastTransferTime { get; private set; }
 
-        public byte[]? LastFrame { get; set; }
-        public DateTime? LastUpdate { get; set; }
+        public DateTime? LastFrameUpdate { get; set; }
 
         public ServerClientSession(TcpClient client, CancellationToken token) : base(client, token) { }
 

@@ -128,13 +128,11 @@ namespace RMF_Client.Logic
         {
             if (string.IsNullOrEmpty(newTitle))
             {
-                Console.WriteLine("Failed to update application title, received an empty string");
                 return;
             }
 
             if (newTitle.Length > MaxTitleLength)
             {
-                Console.WriteLine($"Failed to update application title, received too long string (max length: {MaxTitleLength})");
                 return;
             }
 

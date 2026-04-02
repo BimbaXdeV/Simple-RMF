@@ -24,9 +24,6 @@ namespace RMF_Server.Logic
         public static readonly TaskCompletionSource UIInitSource = new();
         public static Task WaitForUIReady() => UIInitSource.Task;
 
-        private static Thread? UIThread;
-        private static readonly Lock ThreadSetupLock = new();
-
         private static void CreateWindow()
         {
             Window = new StreamingWindow();
@@ -48,56 +45,10 @@ namespace RMF_Server.Logic
                              .LogToTrace();
         }
 
-        public static void StartUI(CancellationToken token)
-        {
-            lock (ThreadSetupLock)
-            {
-                if (UIThread != null)
-                {
-                    return;
-                }
-
-                //app.SetupWithoutStarting();
-
-                //ClassicDesktopStyleApplicationLifetime lifetime = new()
-                //{
-                //    ShutdownMode = ShutdownMode.OnExplicitShutdown
-                //};
-                //Application.Current!.ApplicationLifetime = lifetime;
-                try
-                {
-
-                    Thread uiThread = new(() =>
-                    {
-                        AppBuilder app = BuildAvaloniaApp();
-
-                        token.Register(() =>
-                        {
-                            Dispatcher.UIThread.Post(() =>
-                            {
-                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
-                                    lifetime.Shutdown();
-                            });
-                        });
-
-                        app.StartWithClassicDesktopLifetime(args: [], shutdownMode: ShutdownMode.OnExplicitShutdown);
-                    });
-
-                    uiThread.TrySetApartmentState(ApartmentState.STA);
-
-                    // Default name - "RMF-UI-Thread"
-                    uiThread.Name = string.IsNullOrEmpty(ConfigurationManager.WindowTitle) ? "RMF-UI-Thread" : ConfigurationManager.WindowTitle;
-
-                    // Default priority - 2 (Normal)
-                    uiThread.Priority = ConfigurationManager.WindowPriority >= 0 && ConfigurationManager.WindowPriority <= 4 ? (ThreadPriority)ConfigurationManager.WindowPriority : (ThreadPriority)2;
-                    uiThread.Start();
-                }
-                catch (Exception ex)
-                {
-                    Logging.Error($"UI Thread crashed with exception: {ex}");
-                }
-            }
-        }
+        //public static bool IsWindowOpen()
+        //{
+        //    return Window != null && Window.IsVisible;
+        //}
 
         public static void ShowWindow()
         {
@@ -108,13 +59,46 @@ namespace RMF_Server.Logic
                     CreateWindow();
                 }
 
-                Window!.Show();
+                if (!Window!.IsVisible)
+                {
+                    Window.Show();
+                }
             });
         }
 
         public static void HideWindow()
         {
-            Dispatcher.UIThread.InvokeAsync(() => Window?.Hide());
+
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (Window != null && Window.IsVisible)
+                {
+                    Window.Hide();
+                }
+            });
+        }
+
+        public static void SetWindowTitle(string newTitle)
+        {
+            if (Window == null)
+            {
+                Logging.Warning("Failed to update window title, the window instance is not initialized");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(newTitle))
+            {
+                Logging.Warning("Failed to update window title, received an empty string");
+                return;
+            }
+
+            if (newTitle.Length > AppearanceManager.MaxTitleLength)
+            {
+                Logging.Warning($"Failed to update window title, received too long string (max length: {AppearanceManager.MaxTitleLength})");
+                return;
+            }
+
+            Dispatcher.UIThread.InvokeAsync(() => Window.Title = newTitle);
         }
 
         public static void SetWindowTheme(string? theme)

@@ -11,7 +11,7 @@ namespace RMF_Server.Logic
 {
     internal static class AppearanceManager
     {
-        private static readonly int MaxTitleLength = 48;
+        public static readonly int MaxTitleLength = 48;
 
         public static void SetTitle(string newTitle)
         {
