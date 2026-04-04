@@ -24,14 +24,15 @@
 	<add key="ClientHeartbeatIntervalSecs" value="10"/>
 	
 	<!-- Channel Settings -->
-	<add key="ChannelPacketsCapacity" value="200"/>
+	<add key="ChannelPacketsCapacity" value="50"/>
 	
 	<!-- Streaming Settings -->
 	<add key="ScreenshotFrameFormat" value="2"/>
 	<add key="ScreenshotQualityPercentage" value="90"/>
-	<add key="StreamingFrameFormat" value="1"/>
-	<add key="StreamingQualityPercentage" value="60"/>
+	<add key="StreamingFrameFormat" value="0"/>
+	<add key="StreamingQualityPercentage" value="50"/>
 	<add key="DesktopSendingIntervalMsecs" value="16"/>
+	<add key="EnableStreamingStatsOverlay" value="true"/>
 
 	<!-- Commands Settings -->
 	<add key="InlineCommandDefautSign" value="/"/>

@@ -105,6 +105,7 @@ namespace RMF_Server.Packets
                     return;
                 }
                 WindowManager.UpdateFrame(packet.ImageData, packet.Width, packet.Height);
+                ArrayPool<byte>.Shared.Return(packet.ImageData);
             }
         }
     }

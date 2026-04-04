@@ -6,9 +6,11 @@ using RMF_Server.Logic;
 using RMF_Server.Storage;
 using System;
 using System.Collections.Generic;
+using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -75,7 +77,7 @@ namespace RMF_Server.Commands
             // Here will be the command handling logic
         }
 
-        public static void SearchHandle(string input, Command command, CancellationTokenSource cts)
+        public static async void SearchHandle(string input, Command command, CancellationTokenSource cts)
         {
             string[] inputCommandStructure = input.Split(' ');
             string commandName = inputCommandStructure[0];
@@ -100,13 +102,10 @@ namespace RMF_Server.Commands
                 return;
             }
 
-            if (processMethod.GetParameters().Length == 0)
+            object? processResult = processMethod.GetParameters().Length == 0 ? processMethod.Invoke(null, null) : processMethod.Invoke(null, [input, cts]);
+            if (processResult is Task taskResult)
             {
-                processMethod.Invoke(null, null);
-            }
-            else
-            {
-                processMethod.Invoke(null, [input, cts]);
+                await taskResult;
             }
         }
 
@@ -196,7 +195,7 @@ namespace RMF_Server.Commands
             }
         }
 
-        private static void Stream(string input, CancellationTokenSource cts)
+        private static async Task Stream(string input, CancellationTokenSource cts)
         {
             string targetEndPoint = input.Split(' ')[1];
             if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
@@ -211,7 +210,7 @@ namespace RMF_Server.Commands
                 session.SendPacket(streamingRequest);
                 Logging.Message($"Successfully sent to {targetEndPoint}, waiting for starting stream...");
                 
-                WindowManager.ShowWindow();
+                await WindowManager.ShowWindow();
                 WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle + " | " + targetEndPoint);
             }
             else
@@ -220,7 +219,7 @@ namespace RMF_Server.Commands
             }
         }
 
-        private static void Strstop(string input, CancellationTokenSource cts)
+        private static async Task Strstop(string input, CancellationTokenSource cts)
         {
             string targetEndPoint = input.Split(' ')[1];
             try
@@ -249,7 +248,7 @@ namespace RMF_Server.Commands
             finally
             {
                 WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle ?? "");
-                WindowManager.HideWindow();
+                await WindowManager.HideWindow();
             }
         }
     }

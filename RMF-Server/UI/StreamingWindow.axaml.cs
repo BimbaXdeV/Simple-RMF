@@ -14,10 +14,5 @@ namespace RMF_Server.UI
         {
             InitializeComponent();
         }
-
-        //public void InitializeComponent()
-        //{
-        //    AvaloniaXamlLoader.Load(this);
-        //}
     }
 }

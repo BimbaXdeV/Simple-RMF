@@ -16,6 +16,7 @@ using System.Net;
 using RMF_Client.Capture;
 using RMF.Core.Events;
 using RMF.Core.Screen;
+using RMF.Core.Interfaces;
 
 namespace RMF_Client.Network
 {

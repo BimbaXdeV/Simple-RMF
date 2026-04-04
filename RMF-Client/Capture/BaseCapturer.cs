@@ -1,4 +1,5 @@
-﻿using RMF.Core.Screen;
+﻿using RMF.Core.Interfaces;
+using RMF.Core.Screen;
 using RMF_Client.Logic;
 using RMF_Client.Storage;
 using SkiaSharp;
@@ -30,7 +31,7 @@ namespace RMF_Client.Capture
         protected abstract SKBitmap? GetScreenBitmap();
 
         public CapturedFrame? Capture(ScreenFormats format, byte quality)
-        {   
+        {
             if (this.ScreenWidth <= 0 || this.ScreenHeight <= 0 || this.MetricsUpdateStep++ % ConfigurationManager.MetricsUpdateRate == 0)
             {
                 UpdateBitmapMetrics();

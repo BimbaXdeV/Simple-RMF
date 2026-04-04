@@ -4,11 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Events
+namespace RMF.Core.Interfaces
 {
-    public enum ProcessModes : byte
+    public interface IReleasable
     {
-        Single = 0,
-        InfinityLoop = 1
+        void Release();
     }
 }

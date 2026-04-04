@@ -40,6 +40,7 @@ namespace RMF_Server.Logic
         public static int StreamingFrameFormat;
         public static int StreamingQualityPercentage;
         public static int DesktopSendingIntervalMsecs;
+        public static bool EnableStreamingStatsOverlay;
 
         public static string? InlineCommandDefautSign;
         public static bool InlineSuggestionsEnabled;

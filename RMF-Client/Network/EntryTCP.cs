@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Events;
+using RMF.Core.Interfaces;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Client.Logic;

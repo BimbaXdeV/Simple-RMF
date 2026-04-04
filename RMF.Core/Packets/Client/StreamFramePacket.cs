@@ -1,4 +1,5 @@
-﻿using RMF.Core.Network;
+﻿using RMF.Core.Interfaces;
+using RMF.Core.Network;
 using RMF.Core.Screen;
 using System;
 using System.Buffers;

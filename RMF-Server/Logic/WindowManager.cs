@@ -16,10 +16,11 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal class WindowManager
+    internal static class WindowManager
     {
         private static StreamingWindow? Window;
         private static StreamingViewModel ViewModel = new();
+        private static int isFrameProcessing = 0;
 
         public static readonly TaskCompletionSource UIInitSource = new();
         public static Task WaitForUIReady() => UIInitSource.Task;
@@ -27,13 +28,14 @@ namespace RMF_Server.Logic
         private static void CreateWindow()
         {
             Window = new StreamingWindow();
-            ViewModel = new StreamingViewModel();
-            Window.DataContext = ViewModel;
-
             Window.Title = ConfigurationManager.WindowTitle;
             Window.Width = ConfigurationManager.WindowWidth;
             Window.Height = ConfigurationManager.WindowHeight;
             SetWindowTheme(ConfigurationManager.WindowTheme);
+
+            ViewModel = new StreamingViewModel();
+            ViewModel.IsOverlayEnabled = ConfigurationManager.EnableStreamingStatsOverlay;
+            Window.DataContext = ViewModel;
 
             Window.Closed += (s, e) => Window = null;
         }
@@ -45,14 +47,9 @@ namespace RMF_Server.Logic
                              .LogToTrace();
         }
 
-        //public static bool IsWindowOpen()
-        //{
-        //    return Window != null && Window.IsVisible;
-        //}
-
-        public static void ShowWindow()
+        public static async Task ShowWindow()
         {
-            Dispatcher.UIThread.InvokeAsync(() =>
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 if (Window == null)
                 {
@@ -66,10 +63,10 @@ namespace RMF_Server.Logic
             });
         }
 
-        public static void HideWindow()
+        public static async Task HideWindow()
         {
 
-            Dispatcher.UIThread.InvokeAsync(() =>
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 if (Window != null && Window.IsVisible)
                 {
@@ -119,7 +116,22 @@ namespace RMF_Server.Logic
 
         public static void UpdateFrame(byte[] frame, int width, int height)
         {
-            ViewModel.UpdateFrame(frame, width, height);
+            if (Interlocked.CompareExchange(ref isFrameProcessing, 1, 0) == 1)
+            {
+                return;  // Skip this frame if another one is still being processed
+            }
+
+            try
+            {
+                Dispatcher.UIThread.Invoke(() =>
+                {
+                    ViewModel.UpdateFrame(frame, width, height, updateOverlay: ConfigurationManager.EnableStreamingStatsOverlay);
+                });
+            }
+            finally
+            {
+                Interlocked.Exchange(ref isFrameProcessing, 0);
+            }
         }
     }
 }

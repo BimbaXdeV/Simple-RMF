@@ -4,10 +4,28 @@
         Title="Simple-RMF Control Center"
         Width="100" Height="100">
 
-    <Grid RowDefinitions="Auto, *">
-        <Border Grid.Row="0" Background="Black" Margin="5">
+    <Grid>
+        <Border Background="Black">
             <Image Source="{Binding DisplaySource}" Stretch="Uniform" />
         </Border>
+
+		<Border HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="10"
+                Padding="8"
+                Background="#AA000000"
+                CornerRadius="4"
+                IsHitTestVisible="False"
+				IsVisible="{Binding IsOverlayEnabled}">
+
+			<Grid ColumnDefinitions="Auto, 10, Auto" RowDefinitions="Auto, Auto">
+				<TextBlock Grid.Row="0" Grid.Column="0" Text="FPS:" Foreground="#00FF00" FontSize="12" FontWeight="Bold"/>
+				<TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding DisplayFps}" Foreground="White" FontSize="12"/>
+
+				<TextBlock Grid.Row="1" Grid.Column="0" Text="FrameTime:" Foreground="#00FF00" FontSize="12" FontWeight="Bold"/>
+				<TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding DisplayFrameTime, StringFormat=\{0\} ms}" Foreground="White" FontSize="12"/>
+			</Grid>
+		</Border>
     </Grid>
 
 	<Window.Styles>

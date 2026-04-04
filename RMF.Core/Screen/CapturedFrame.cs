@@ -23,5 +23,13 @@ namespace RMF.Core.Screen
             this.Height = height;
             this.Format = format;
         }
+
+        public void Release()
+        {
+            if (this.Buffer != null)
+            {
+                ArrayPool<byte>.Shared.Return(this.Buffer);
+            }
+        }
     }
 }

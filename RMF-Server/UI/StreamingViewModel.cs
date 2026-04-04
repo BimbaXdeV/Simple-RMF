@@ -12,14 +12,40 @@ namespace RMF_Server.UI
 {
     public class StreamingViewModel : ReactiveObject
     {
-        private WriteableBitmap? DisplaySourceObj;
+        private WriteableBitmap? _displaySource;
         public WriteableBitmap? DisplaySource
         {
-            get => DisplaySourceObj;
-            set => this.RaiseAndSetIfChanged(ref DisplaySourceObj, value);
+            get => _displaySource;
+            set => this.RaiseAndSetIfChanged(ref _displaySource, value);
         }
 
-        public void UpdateFrame(byte[] frame, int width, int height)
+        private bool _isOverlayEnabled;
+        public bool IsOverlayEnabled
+        {
+            get => _isOverlayEnabled;
+            set => this.RaiseAndSetIfChanged(ref _isOverlayEnabled, value);
+        }
+
+        private int _displayFps;
+        public int DisplayFps
+        {
+            get => _displayFps;
+            set => this.RaiseAndSetIfChanged(ref _displayFps, value);
+        }
+
+        private float _displayFrameTime;
+        public float DisplayFrameTime
+        {
+            get => _displayFrameTime;
+            set => this.RaiseAndSetIfChanged(ref _displayFrameTime, value);
+        }
+
+        private DateTime HandleStartTime;
+        private int HandledFramesCount;
+        private int Fps;
+        private float FrameTimeMsecs;
+
+        public void UpdateFrame(byte[] frame, int width, int height, bool updateOverlay = false)
         {
             if (this.DisplaySource == null ||
                 this.DisplaySource.PixelSize.Width != width ||
@@ -33,16 +59,35 @@ namespace RMF_Server.UI
                 );
             }
 
+            DateTime currentTime = DateTime.Now;
+            if ((currentTime - this.HandleStartTime).TotalSeconds >= 1.0f)
+            {
+                this.HandleStartTime = currentTime;
+                this.Fps = this.HandledFramesCount;
+                this.HandledFramesCount = 0;
+
+                if (updateOverlay)
+                {
+                    this.DisplayFps = this.Fps;
+                    this.DisplayFrameTime = this.FrameTimeMsecs;
+                }
+            }
+
             using MemoryStream ms = new(frame);
             try
             {
+                WriteableBitmap previous = this.DisplaySource;
                 this.DisplaySource = WriteableBitmap.Decode(ms);
+                previous.Dispose();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to update frame in bitmap: {ex}");
             }
+
             this.RaisePropertyChanged(nameof(this.DisplaySource));
+            this.HandledFramesCount++;
+            this.FrameTimeMsecs = (float)(DateTime.Now - currentTime).TotalMilliseconds;
         }
     }
 }
