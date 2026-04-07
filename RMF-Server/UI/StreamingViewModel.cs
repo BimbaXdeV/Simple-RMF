@@ -1,9 +1,11 @@
 ﻿using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using ReactiveUI;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -39,6 +41,8 @@ namespace RMF_Server.UI
             get => _displayFrameTime;
             set => this.RaiseAndSetIfChanged(ref _displayFrameTime, value);
         }
+
+        public IPEndPoint? StreamingClientEndPoint;
 
         private DateTime HandleStartTime;
         private int HandledFramesCount;
@@ -79,6 +83,21 @@ namespace RMF_Server.UI
                 WriteableBitmap previous = this.DisplaySource;
                 this.DisplaySource = WriteableBitmap.Decode(ms);
                 previous.Dispose();
+
+                //using SKBitmap bitmap = SKBitmap.Decode(frame);
+                //int bitmapBytes = bitmap.ByteCount;
+
+                //using ILockedFramebuffer framebuffer = this.DisplaySource.Lock();
+
+                //unsafe
+                //{
+                //    Buffer.MemoryCopy(
+                //        (void*)bitmap.GetPixels(),
+                //        (void*)framebuffer.Address,
+                //        bitmapBytes,
+                //        bitmapBytes
+                //    );
+                //}
             }
             catch (Exception ex)
             {

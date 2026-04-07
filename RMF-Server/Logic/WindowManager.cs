@@ -4,11 +4,14 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using ReactiveUI.Avalonia;
+using RMF.Core.Packets;
 using RMF_Server.Debugger;
 using RMF_Server.UI;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -20,9 +23,17 @@ namespace RMF_Server.Logic
     {
         private static StreamingWindow? Window;
         private static StreamingViewModel ViewModel = new();
+
         private static int isFrameProcessing = 0;
 
         public static readonly TaskCompletionSource UIInitSource = new();
+
+        public static IPEndPoint? StreamingClientEndPoint
+        {
+            get => ViewModel.StreamingClientEndPoint;
+            set => ViewModel.StreamingClientEndPoint = value;
+        }
+
         public static Task WaitForUIReady() => UIInitSource.Task;
 
         private static void CreateWindow()
@@ -123,9 +134,10 @@ namespace RMF_Server.Logic
 
             try
             {
-                Dispatcher.UIThread.Invoke(() =>
+                Dispatcher.UIThread.Post(() =>
                 {
                     ViewModel.UpdateFrame(frame, width, height, updateOverlay: ConfigurationManager.EnableStreamingStatsOverlay);
+                    ArrayPool<byte>.Shared.Return(frame);
                 });
             }
             finally

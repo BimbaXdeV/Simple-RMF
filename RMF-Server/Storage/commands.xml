@@ -11,5 +11,5 @@
 	<!-- Client Management Commands -->
 	<add name="screen" description="Get actual screenshot from client desktop" paramname1="ip:port" paramtype1="string"/>
 	<add name="stream" description="Remotely connect to client desktop" paramname1="ip:port" paramtype1="string"/>
-	<add name="strstop" description="Stop the client streaming event" paramname1="ip:port" paramtype1="string"/>
+	<add name="dstream" description="Stop the client streaming event"/>
 </Commands>

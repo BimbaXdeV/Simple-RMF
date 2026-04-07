@@ -31,11 +31,8 @@ namespace RMF_Client.Network
 
             while (SessionManager.Connection?.Client.Connected == true)
             {
-                int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length, token);
-                if (bytesRead == 0)
-                {
-                    break;
-                }
+                await stream.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length, token);
+
                 short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                 int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
 
@@ -55,7 +52,11 @@ namespace RMF_Client.Network
                     packet.Deserialize(ref payloadReader);
                     PacketsProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
                 }
-                catch (Exception ex)
+
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception)
                 {
                     // Then, in place of all these stubs, I`ll put a log buffer to write them to a file
                 }
@@ -93,9 +94,8 @@ namespace RMF_Client.Network
 
                 await PacketListener(token);
             }
-            catch (OperationCanceledException)
-            {
-            }
+
+
             catch (Exception ex)
             {
                 // Just a crutch :D

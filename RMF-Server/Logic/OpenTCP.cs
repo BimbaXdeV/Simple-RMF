@@ -43,6 +43,13 @@ namespace RMF_Server.Logic
                     IPEndPoint? ipEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
                     string? endPoint = ipEndPoint?.ToString();
 
+                    if (SessionManager.Connections.Count >= ConfigurationManager.MaxConnections)
+                    {
+                        Logging.Warning($"A client {endPoint} attempted to connect to server with maximum capacity ({ConfigurationManager.MaxConnections}), access denied");
+                        client.Close();
+                        continue;
+                    }
+
                     if (ipEndPoint == null || string.IsNullOrEmpty(endPoint))
                     {
                         Logging.Warning($"Connection attempt from unknown address, access denied");
@@ -140,11 +147,7 @@ namespace RMF_Server.Logic
                 cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));
                 while (session.Client.Connected)
                 {
-                    int bytesRead = await stream.ReadAsync(headerBuffer.AsMemory(0, headerBuffer.Length), cts.Token);
-                    if (bytesRead == 0)
-                    {
-                        break;
-                    }
+                    await stream.ReadExactlyAsync(headerBuffer.AsMemory(0, headerBuffer.Length), cts.Token);
                         
                     cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));  // Time bomb :D
                     if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
@@ -179,6 +182,11 @@ namespace RMF_Server.Logic
             catch (OperationCanceledException)
             {
                 Logging.Warning($"Client {session.EndPoint} timed out waiting for packets, disconnecting...");
+            }
+
+            catch (EndOfStreamException)
+            {
+                Logging.Warning($"Client {session.EndPoint} has closed the connection");
             }
 
             catch (OverflowException)

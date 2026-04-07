@@ -219,30 +219,30 @@ namespace RMF_Server.Commands
             }
         }
 
-        private static async Task Strstop(string input, CancellationTokenSource cts)
+        private static async Task Dstream(string input, CancellationTokenSource cts)
         {
-            string targetEndPoint = input.Split(' ')[1];
             try
-            {
-                if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
+            {   
+                IPEndPoint? ipEndPoint = WindowManager.StreamingClientEndPoint;
+                if (ipEndPoint == null)
                 {
-                    if (session.Events.IsRunning("StreamingEvent"))
+                    Logging.Message("No active stream to stop...");
+                    return;
+                }
+                
+                string endPoint = ipEndPoint.ToString();
+                if (SessionManager.Connections.TryGetValue(endPoint, out ServerClientSession? session) && session != null)
+                {
+                    StreamingRequest streamingRequest = new()
                     {
-                        StreamingRequest streamingRequest = new()
-                        {
-                            IsActive = false
-                        };
-                        session.SendPacket(streamingRequest);
-                        Logging.Message($"Successfully sent to {targetEndPoint}, waiting for stopping stream...");
-                    }
-                    else
-                    {
-                        Logging.Message($"The connection \"{targetEndPoint}\" does not have an active stream");
-                    }
+                        IsActive = false
+                    };
+                    session.SendPacket(streamingRequest);
+                    Logging.Message($"Successfully sent to {endPoint}, waiting for stopping stream...");
                 }
                 else
                 {
-                    Logging.Message($"No connection found named \"{targetEndPoint}\"");
+                    Logging.Message($"No connection found named \"{endPoint}\"");
                 }
             }
             finally

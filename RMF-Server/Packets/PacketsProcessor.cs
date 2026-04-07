@@ -97,7 +97,19 @@ namespace RMF_Server.Packets
         {
             if (SessionManager.Connections.TryGetValue(endPoint.ToString(), out ServerClientSession? session))
             {
-                session.LastFrameUpdate = DateTime.Now;
+                IPEndPoint? actualStreamer = WindowManager.StreamingClientEndPoint;
+                if (actualStreamer == null)
+                {
+                    WindowManager.StreamingClientEndPoint = endPoint;
+                    Logging.Output($"Streaming session started with {endPoint}");
+                }
+                else if (session.EndPoint != WindowManager.StreamingClientEndPoint)
+                {
+                    Logging.Warning($"Received a streaming frame from \"{endPoint}\" while the streaming session is active with {WindowManager.StreamingClientEndPoint}, disconnecting...");
+                    SessionManager.Disconnect(endPoint.ToString());
+                    return;
+                }
+
                 if (packet.ImageData == null)
                 {
                     Logging.Message($"Received an empty streaming frame from \"{endPoint}\", disconnecting...");
@@ -105,7 +117,8 @@ namespace RMF_Server.Packets
                     return;
                 }
                 WindowManager.UpdateFrame(packet.ImageData, packet.Width, packet.Height);
-                ArrayPool<byte>.Shared.Return(packet.ImageData);
+                session.LastFrameUpdate = DateTime.Now;
+                // Array returns after use in WindowManager.UpdateFrame, so we don't return it here to avoid returning the same array twice
             }
         }
     }

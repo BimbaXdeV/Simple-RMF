@@ -36,6 +36,7 @@ namespace RMF.Core.Network
 
         public ReadOnlySpan<byte> ReadBytes(int count)
         {
+            EnsureCapacity(count);
             ReadOnlySpan<byte> result = this.Buffer.Slice(this.Position, count);
             this.Position += count;
             return result;

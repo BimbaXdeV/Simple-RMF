@@ -111,6 +111,7 @@ namespace RMF_Client.Network
             bool isEventActive = session.Events.IsRunning("StreamingEvent");
             if (!packet.IsActive && isEventActive)
             {
+                Console.WriteLine("Streaming shutdown requested by the server");
                 session.Events.ToggleEvent(session, "StreamingEvent");
                 return;
             }

@@ -46,7 +46,7 @@ namespace RMF.Core.Events
             {
                 cts.Cancel();
             }
-            this.RunningTasks.Clear();
+            // this.RunningTasks.Clear();
         }
     }
 }
