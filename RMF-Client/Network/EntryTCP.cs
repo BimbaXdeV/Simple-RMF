@@ -52,10 +52,6 @@ namespace RMF_Client.Network
                     packet.Deserialize(ref payloadReader);
                     PacketsProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
                 }
-
-                catch (OperationCanceledException)
-                {
-                }
                 catch (Exception)
                 {
                     // Then, in place of all these stubs, I`ll put a log buffer to write them to a file
@@ -95,6 +91,9 @@ namespace RMF_Client.Network
                 await PacketListener(token);
             }
 
+            catch (OperationCanceledException)
+            {
+            }
 
             catch (Exception ex)
             {

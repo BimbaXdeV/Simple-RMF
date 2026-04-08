@@ -122,7 +122,7 @@ namespace RMF_Client.Capture
                 OutduplFrameInfo frameInfo = default;
                 ComPtr<IDXGIResource> resource = default;
 
-                int hResult = this.Duplication.AcquireNextFrame(100, &frameInfo, resource.GetAddressOf());
+                int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
 
                 if (hResult == (int)this.AcquireTimeoutCode)
                 {
@@ -151,6 +151,7 @@ namespace RMF_Client.Capture
 
                         int rowLength = this.ScreenWidth * 4;
                         for (int y = 0; y < this.ScreenHeight; y++)
+
                         {
                             Unsafe.CopyBlock(destPtr, srcPtr, (uint)rowLength);
                             srcPtr += mapped.RowPitch;
