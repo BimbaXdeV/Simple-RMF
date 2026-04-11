@@ -39,6 +39,7 @@ namespace RMF_Server.Logic
         public static int ScreenshotQualityPercentage;
         public static int StreamingFrameFormat;
         public static int StreamingQualityPercentage;
+        public static int StreamingFrameUpdateRate;
         public static int DesktopSendingIntervalMsecs;
         public static bool EnableStreamingStatsOverlay;
 

@@ -31,6 +31,7 @@
 	<add key="ScreenshotQualityPercentage" value="90"/>
 	<add key="StreamingFrameFormat" value="0"/>
 	<add key="StreamingQualityPercentage" value="50"/>
+	<add key="StreamingFrameUpdateRate" value="300"/>
 	<add key="DesktopSendingIntervalMsecs" value="16"/>
 	<add key="EnableStreamingStatsOverlay" value="true"/>
 

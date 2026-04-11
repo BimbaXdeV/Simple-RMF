@@ -4,6 +4,7 @@ using RMF.Core.Screen;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace RMF.Core.Packets.Client
         public override short ID => 201;
 
         public byte FormatID { get; set; }
+        public int FrameUpdateRate { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public int ImageLength { get; set; }
@@ -23,6 +25,7 @@ namespace RMF.Core.Packets.Client
         public override void Deserialize(ref SpanReader reader)
         {
             this.FormatID = reader.ReadByte();
+            this.FrameUpdateRate = reader.ReadInt32();
             this.Width = reader.ReadInt32();
             this.Height = reader.ReadInt32();
             this.ImageLength = reader.ReadInt32();
@@ -37,6 +40,7 @@ namespace RMF.Core.Packets.Client
         protected override void WriteBody(BinaryWriter writer)
         {
             writer.Write(this.FormatID);
+            writer.Write(this.FrameUpdateRate);
             writer.Write(this.Width);
             writer.Write(this.Height);
             writer.Write(this.ImageLength);

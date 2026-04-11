@@ -9,6 +9,6 @@ namespace RMF.Core.Interfaces
 {
     public interface IScreenProvider
     {
-        public CapturedFrame? Capture(ScreenFormats format, byte quality);
+        public CapturedFrame? Capture(ScreenFormats format, byte quality, int frameUpdateRate);
     }
 }

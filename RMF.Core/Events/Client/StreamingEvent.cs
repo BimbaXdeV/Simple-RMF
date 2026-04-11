@@ -18,6 +18,7 @@ namespace RMF.Core.Events.Client
         public IScreenProvider? Provider { get; set; }
         public ScreenFormats Format { get; set; }
         public byte QualityPercent { get; set; }
+        public int FrameUpdateRate { get; set; }
         public int IntervalMsecs { get; set; }  // (default) 0 - without delay
 
         private readonly StreamFramePacket PacketTemplate = new();

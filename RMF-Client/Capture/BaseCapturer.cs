@@ -17,20 +17,42 @@ namespace RMF_Client.Capture
         protected int ScreenWidth;
         protected int ScreenHeight;
         protected SKBitmap? ScreenBitmap;
+        protected ScreenPatch[] ScreenPatches = new ScreenPatch[100];
+        protected IntPtr RawPixels;
         protected readonly Lock ScreenGetterLock = new();
 
         private int MetricsUpdateStep;
+        private int FramesUpdateStep;
 
         public BaseCapturer()
         {
             UpdateBitmapMetrics();
+            PrepareBitmap();
         }
 
         protected abstract void Initialize();
         protected abstract void UpdateBitmapMetrics();
-        protected abstract SKBitmap? GetScreenBitmap();
+        protected abstract void UpdateBitmapFrame();
+        protected abstract ScreenPatch GetActualFrame();
+        protected abstract Span<ScreenPatch> GetFrameUpdates();
 
-        public CapturedFrame? Capture(ScreenFormats format, byte quality)
+        protected void PrepareBitmap()
+        {
+            if (this.ScreenWidth <= 0 || this.ScreenHeight <= 0)
+            {
+                return;
+            }
+
+            this.ScreenBitmap?.Dispose();
+            this.ScreenBitmap = new SKBitmap();
+            this.ScreenBitmap.InstallPixels(
+                new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
+                this.RawPixels,
+                this.ScreenWidth * 4
+            );
+        }
+
+        public CapturedFrame? Capture(ScreenFormats format, byte quality, int frameUpdateRate = 0)
         {
             if (this.ScreenWidth <= 0 || this.ScreenHeight <= 0 || this.MetricsUpdateStep++ % ConfigurationManager.MetricsUpdateRate == 0)
             {
@@ -38,7 +60,22 @@ namespace RMF_Client.Capture
                 this.MetricsUpdateStep = 0;
             }
 
-            SKBitmap? bitmap = GetScreenBitmap();
+            // One full frame
+            if (this.FramesUpdateStep++ % frameUpdateRate == 0)
+            {
+                ScreenPatch? actualFrame = GetActualFrame();
+                //this.ScreenBitmap.
+
+                this.FramesUpdateStep = 0;
+            }
+
+            // Partial frame with updates only
+            else
+            {
+
+            }
+
+            SKBitmap? bitmap = GetFrameUpdates();
             if (bitmap == null)
             {
                 return null;
