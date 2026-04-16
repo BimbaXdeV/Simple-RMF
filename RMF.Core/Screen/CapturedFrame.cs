@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Interfaces;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,28 +8,37 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Screen
 {
-    public readonly struct CapturedFrame
+    public readonly record struct CapturedFrame : IReleasable
     {
-        public readonly byte[]? Buffer;
-        public readonly int Length;
-        public readonly int Width;
-        public readonly int Height;
+        public readonly ScreenPatch[] Rects;
         public readonly ScreenFormats Format;
+        public readonly bool IsFullFrame;
 
-        public CapturedFrame(byte[]? buffer, int length, int width, int height, ScreenFormats format)
+        public CapturedFrame(ScreenPatch[] rects, ScreenFormats format, bool isFullFrame)
         {
-            this.Buffer = buffer;
-            this.Length = length;
-            this.Width = width;
-            this.Height = height;
+            this.Rects = rects;
             this.Format = format;
+            this.IsFullFrame = isFullFrame;
         }
 
         public void Release()
         {
-            if (this.Buffer != null)
+            if (this.Rects == null)
             {
-                ArrayPool<byte>.Shared.Return(this.Buffer);
+                return;
+            }
+
+            for (int i = 0; i < this.Rects.Length; i++)
+            {
+                if (this.Rects[i].Data != null)
+                {
+                    ArrayPool<byte>.Shared.Return(this.Rects[i].Data);
+                }
+            }
+
+            if (this.IsFullFrame)
+            {
+                ArrayPool<ScreenPatch>.Shared.Return(this.Rects);
             }
         }
     }

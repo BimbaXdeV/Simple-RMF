@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-
 <Settings>
+	<!-- This file contains all the settings for the RMF-Server. It is read at startup and can be modified to change the behavior of the server -->
+	
 	<!-- Appearance Settings -->
 	<add key="AppTitle" value="RMF-Server"/>
 	<add key="WindowTitle" value="RMF-Streamer"/>

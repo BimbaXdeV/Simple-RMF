@@ -16,46 +16,76 @@ namespace RMF.Core.Packets.Client
         public override short ID => 201;
 
         public byte FormatID { get; set; }
-        public int FrameUpdateRate { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public int ImageLength { get; set; }
-        public byte[]? ImageData { get; set; }
+        public short PatchesCount { get; set; }
+        public ScreenPatch[]? Patches { get; set; }
 
         public override void Deserialize(ref SpanReader reader)
         {
             this.FormatID = reader.ReadByte();
-            this.FrameUpdateRate = reader.ReadInt32();
-            this.Width = reader.ReadInt32();
-            this.Height = reader.ReadInt32();
-            this.ImageLength = reader.ReadInt32();
-            if (this.ImageLength <= 0)
+            this.PatchesCount = reader.ReadInt16();
+
+            ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(this.PatchesCount);
+            for (int i = 0; i < this.PatchesCount; i++)
             {
-                throw new Exception("Invalid image length");
+                short x = reader.ReadInt16();
+                short y = reader.ReadInt16();
+                short width = reader.ReadInt16();
+                short height = reader.ReadInt16();
+                int length = reader.ReadInt32();
+
+                byte[] data = ArrayPool<byte>.Shared.Rent(length);
+                reader.ReadBytes(length).CopyTo(data);
+
+                patches[i] = new ScreenPatch(
+                    data,
+                    length,
+                    x,
+                    y,
+                    width,
+                    height
+                );
             }
-            this.ImageData = ArrayPool<byte>.Shared.Rent(this.ImageLength);
-            reader.ReadBytes(this.ImageLength).CopyTo(this.ImageData);
+
+            this.Patches = patches;
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
             writer.Write(this.FormatID);
-            writer.Write(this.FrameUpdateRate);
-            writer.Write(this.Width);
-            writer.Write(this.Height);
-            writer.Write(this.ImageLength);
-            if (this.ImageData != null)
+            writer.Write(this.PatchesCount);
+
+            for (int i = 0; i < this.PatchesCount; i++)
             {
-                writer.Write(this.ImageData, 0, this.ImageLength);
+                ScreenPatch patch = this.Patches![i];
+                writer.Write(patch.X);
+                writer.Write(patch.Y);
+                writer.Write(patch.Width);
+                writer.Write(patch.Height);
+                writer.Write(patch.Length);
+                if (patch.Data != null)
+                {
+                    writer.Write(patch.Data, 0, patch.Length);
+                }
             }
         }
 
         public void Release()
         {
-            if (this.ImageData != null)
+            if (this.Patches == null)
             {
-                ArrayPool<byte>.Shared.Return(this.ImageData);
+                return;
             }
+
+            for (int i = 0; i < this.PatchesCount; i++)
+            {
+                byte[] data = this.Patches[i].Data;
+                if (data != null)
+                {
+                    ArrayPool<byte>.Shared.Return(data);
+                }
+            }
+            ArrayPool<ScreenPatch>.Shared.Return(this.Patches);
+            this.PatchesCount = 0;
         }
     }
 }

@@ -186,19 +186,19 @@ namespace RMF_Client.Capture
             byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
             fixed (byte* destPtr = buffer)
             {
-                void* srcPtr = (void*)this.ScreenBitmap!.GetPixels();
-                Unsafe.CopyBlock(destPtr, srcPtr, (uint)size);
+                Unsafe.CopyBlock(destPtr, (void*)this.RawPixels, (uint)size);
             }
             return new ScreenPatch(
                 buffer,
+                size,
                 0,
                 0,
-                this.ScreenWidth,
-                this.ScreenHeight
+                (short)this.ScreenWidth,
+                (short)this.ScreenHeight
             );
         }
 
-        protected override unsafe Span<ScreenPatch> GetFrameUpdates()
+        protected override unsafe Memory<ScreenPatch> GetFrameUpdates()
         {
             lock (this.ScreenGetterLock)
             {
@@ -208,49 +208,75 @@ namespace RMF_Client.Capture
                 int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
                 if (hResult == this.AcquireTimeoutCode)
                 {
-                    // Don't be alarmed, this is not an allocation, but a simplified "Span<ScreenPatch>.Empty"
-                    return [];
+                    return Memory<ScreenPatch>.Empty;
                 }
 
                 if (hResult != 0)
                 {
                     Initialize();
-                    return [];
+                    return Memory<ScreenPatch>.Empty;
                 }
 
                 uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
                 if (metadataBufferSize > 0)
                 {
+                    // This is just a collection of metadata about dirty rectangles
                     byte[] buffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
 
                     fixed (byte* destPtr = buffer)
                     {
-                        uint requiredBufferSize = 0;
-                        hResult = this.Duplication.GetFrameDirtyRects(metadataBufferSize, (Box2D<int>*)destPtr, &requiredBufferSize);
-                        if (hResult == 0)
+                        try
                         {
-                            int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
-                            
-                            var rects = new Span<Box2D<int>>(destPtr, rectCount);
-                            int updatedPatches = 0;
-                            for (int i = 0; i < rectCount; i++)
+                            uint requiredBufferSize = 0;
+                            hResult = this.Duplication.GetFrameDirtyRects(metadataBufferSize, (Box2D<int>*)destPtr, &requiredBufferSize);
+                            if (hResult == 0)
                             {
-                                Box2D<int> rect = rects[i];
-                                this.ScreenPatches[updatedPatches++] = new ScreenPatch(
-                                    buffer,
-                                    rect.Min.X,
-                                    rect.Min.Y,
-                                    rect.Max.X - rect.Min.X,
-                                    rect.Max.Y - rect.Min.Y
-                                );
+                                int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
+
+                                Span<Box2D<int>> rects = new(destPtr, rectCount);
+                                int updatedPatches = 0;
+                                for (int i = 0; i < rectCount; i++)
+                                {
+                                    Box2D<int> rect = rects[i];
+                                    int width = rect.Max.X - rect.Min.X;
+                                    int height = rect.Max.Y - rect.Min.Y;
+                                    int rectSize = width * height * 4;
+
+                                    int screenRowLength = this.ScreenWidth * 4;
+                                    int patchRowLength = width * 4;
+
+                                    byte[] patchBuffer = ArrayPool<byte>.Shared.Rent(rectSize);
+                                    fixed (byte* fixedPatchPtr = patchBuffer)
+                                    {
+                                        byte* patchPtr = fixedPatchPtr;
+                                        byte* srcPtr = (byte*)this.RawPixels + (rect.Min.Y * this.ScreenWidth * 4) + (rect.Min.X * 4);
+                                        for (int y = 0; y < height; y++)
+                                        {
+                                            Unsafe.CopyBlock(patchPtr, srcPtr, (uint)(width * 4));
+                                            srcPtr += screenRowLength;
+                                            patchPtr += patchRowLength;
+                                        }
+                                    }
+
+                                    this.ScreenPatches![updatedPatches++] = new ScreenPatch(
+                                        buffer,
+                                        rectSize,
+                                        (short)rect.Min.X,
+                                        (short)rect.Min.Y,
+                                        (short)width,
+                                        (short)height
+                                    );
+                                }
+                                return this.ScreenPatches.AsMemory(0, updatedPatches);
                             }
-                            return this.ScreenPatches.AsSpan(0, updatedPatches);
                         }
-                        // If a success code 0 was not received, the array is sent to sleep
-                        ArrayPool<byte>.Shared.Return(buffer);
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(buffer);
+                        }
                     }
                 }
-                return [];
+                return Memory<ScreenPatch>.Empty;
             }
         }
 

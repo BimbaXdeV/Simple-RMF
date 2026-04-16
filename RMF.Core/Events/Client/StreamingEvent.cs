@@ -25,14 +25,11 @@ namespace RMF.Core.Events.Client
 
         private void SendActualFrame(ClientSession session)
         {
-            CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent);
+            CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent, this.FrameUpdateRate);
             if (frame != null && frame.Value is CapturedFrame f)
             {
                 this.PacketTemplate.FormatID = (byte)f.Format;
-                this.PacketTemplate.Width = f.Width;
-                this.PacketTemplate.Height = f.Height;
-                this.PacketTemplate.ImageLength = f.Length;
-                this.PacketTemplate.ImageData = f.Buffer;
+                this.PacketTemplate.ImageData = f.Rects[0].Data;
 
                 session.SendPacket(this.PacketTemplate);
             }

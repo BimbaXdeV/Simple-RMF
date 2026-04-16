@@ -1,4 +1,5 @@
-﻿using SkiaSharp;
+﻿using RMF.Core.Screen;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +20,17 @@ namespace RMF_Client.Capture
             throw new NotImplementedException();
         }
 
-        protected override SKBitmap? GetScreenBitmap()
+        protected override void UpdateBitmapFrame()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override ScreenPatch GetActualFrame()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Span<ScreenPatch> GetFrameUpdates()
         {
             throw new NotImplementedException();
         }
