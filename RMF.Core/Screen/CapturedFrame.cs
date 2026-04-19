@@ -11,12 +11,14 @@ namespace RMF.Core.Screen
     public readonly record struct CapturedFrame : IReleasable
     {
         public readonly ScreenPatch[] Rects;
+        public readonly short RectsCount;
         public readonly ScreenFormats Format;
         public readonly bool IsFullFrame;
 
-        public CapturedFrame(ScreenPatch[] rects, ScreenFormats format, bool isFullFrame)
+        public CapturedFrame(ScreenPatch[] rects, short rectsCount, ScreenFormats format, bool isFullFrame)
         {
             this.Rects = rects;
+            this.RectsCount = rectsCount;
             this.Format = format;
             this.IsFullFrame = isFullFrame;
         }
@@ -28,7 +30,7 @@ namespace RMF.Core.Screen
                 return;
             }
 
-            for (int i = 0; i < this.Rects.Length; i++)
+            for (int i = 0; i < this.RectsCount; i++)
             {
                 if (this.Rects[i].Data != null)
                 {

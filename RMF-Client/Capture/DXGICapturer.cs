@@ -110,11 +110,12 @@ namespace RMF_Client.Capture
 
             if (ActualWidth != this.ScreenWidth || ActualHeight != this.ScreenHeight)
             {
-                this.ScreenWidth = ActualWidth;
-                this.ScreenHeight = ActualHeight;
+                this.ScreenWidth = (short)ActualWidth;
+                this.ScreenHeight = (short)ActualHeight;
 
                 this.ScreenBitmap = new SKBitmap(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
                 Initialize();
+                Console.WriteLine($"Screen metrics updated: {this.ScreenWidth}x{this.ScreenHeight}");
             }
         }
 
@@ -193,8 +194,8 @@ namespace RMF_Client.Capture
                 size,
                 0,
                 0,
-                (short)this.ScreenWidth,
-                (short)this.ScreenHeight
+                this.ScreenWidth,
+                this.ScreenHeight
             );
         }
 

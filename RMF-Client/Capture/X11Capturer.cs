@@ -30,7 +30,7 @@ namespace RMF_Client.Capture
             throw new NotImplementedException();
         }
 
-        protected override Span<ScreenPatch> GetFrameUpdates()
+        protected override Memory<ScreenPatch> GetFrameUpdates()
         {
             throw new NotImplementedException();
         }

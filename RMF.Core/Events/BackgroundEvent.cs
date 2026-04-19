@@ -21,8 +21,9 @@ namespace RMF.Core.Events
                 await Task.Delay(1000, token);  // Small delay (1sec) to ensure the event is fully registered before execution
                 await HandleLogic(session, token);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"An error occurred while executing the background event: {ex}");
             }
             finally
             {

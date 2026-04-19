@@ -11,14 +11,33 @@ namespace RMF.Core.Events
     {
         private readonly Dictionary<string, CancellationTokenSource> RunningTasks = [];
 
-        public void ToggleEvent(ClientSession session, string eventName, Dictionary<string, object>? eventSettings = null)
+        //public void ToggleEvent(ClientSession session, string eventName, Dictionary<string, object>? eventSettings = null)
+        //{
+        //    if (this.RunningTasks.TryGetValue(eventName, out CancellationTokenSource? runningCts))
+        //    {
+        //        runningCts.Cancel();
+        //        this.RunningTasks.Remove(eventName);
+        //    }
+        //    else
+        //    {
+        //        BackgroundEvent? backgroundEvent = EventAssembler.GetEvent(eventName);
+        //        if (backgroundEvent != null)
+        //        {
+        //            if (eventSettings != null)
+        //            {
+        //                EventAssembler.ApplyEventSettings(backgroundEvent, eventSettings);
+        //            }
+
+        //            CancellationTokenSource newCts = new();
+        //            _ = Task.Run(() => backgroundEvent.ExecuteEvAsync(session, newCts.Token), newCts.Token);
+        //            this.RunningTasks[eventName] = newCts;
+        //        }
+        //    }
+        //}
+
+        public void StartEvent(ClientSession session, string eventName, Dictionary<string, object>? eventSettings = null)
         {
-            if (this.RunningTasks.TryGetValue(eventName, out CancellationTokenSource? runningCts))
-            {
-                runningCts.Cancel();
-                this.RunningTasks.Remove(eventName);
-            }
-            else
+            if (!this.RunningTasks.ContainsKey(eventName))
             {
                 BackgroundEvent? backgroundEvent = EventAssembler.GetEvent(eventName);
                 if (backgroundEvent != null)
@@ -27,11 +46,19 @@ namespace RMF.Core.Events
                     {
                         EventAssembler.ApplyEventSettings(backgroundEvent, eventSettings);
                     }
-
                     CancellationTokenSource newCts = new();
                     _ = Task.Run(() => backgroundEvent.ExecuteEvAsync(session, newCts.Token), newCts.Token);
                     this.RunningTasks[eventName] = newCts;
                 }
+            }
+        }
+
+        public void StopEvent(string eventName)
+        {
+            if (this.RunningTasks.TryGetValue(eventName, out CancellationTokenSource? runningCts))
+            {
+                runningCts.Cancel();
+                this.RunningTasks.Remove(eventName);
             }
         }
 
@@ -46,7 +73,6 @@ namespace RMF.Core.Events
             {
                 cts.Cancel();
             }
-            // this.RunningTasks.Clear();
         }
     }
 }

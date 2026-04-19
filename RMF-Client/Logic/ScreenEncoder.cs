@@ -31,21 +31,21 @@ namespace RMF_Client.Logic
             return image.Encode(encodedFormat, quality);
         }
 
-        public static SKData[] CompressImages(IEnumerable<SKImage> images, ScreenFormats format, byte quality)
-        {
-            SKData[] compressedImages = new SKData[images.Count()];
+        //public static SKData[] CompressImages(IEnumerable<SKImage> images, ScreenFormats format, byte quality)
+        //{
+        //    SKData[] compressedImages = new SKData[images.Count()];
 
-            int i = 0;
-            foreach (SKImage image in images)
-            {
-                SKData? compressedImage = CompressImage(image, format, quality);
-                if (compressedImage != null)
-                {
-                    compressedImages[i] = compressedImage;
-                }
-                i++;
-            }
-            return compressedImages;
-        }
+        //    int i = 0;
+        //    foreach (SKImage image in images)
+        //    {
+        //        SKData? compressedImage = CompressImage(image, format, quality);
+        //        if (compressedImage != null)
+        //        {
+        //            compressedImages[i] = compressedImage;
+        //        }
+        //        i++;
+        //    }
+        //    return compressedImages;
+        //}
     }
 }

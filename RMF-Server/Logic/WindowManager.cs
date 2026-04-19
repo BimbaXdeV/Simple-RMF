@@ -5,6 +5,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using ReactiveUI.Avalonia;
 using RMF.Core.Packets;
+using RMF.Core.Screen;
 using RMF_Server.Debugger;
 using RMF_Server.UI;
 using System;
@@ -125,9 +126,9 @@ namespace RMF_Server.Logic
             }
         }
 
-        public static void UpdateFrame(byte[] frame, int width, int height)
+        public static void UpdateBitmap(ScreenPatch[] patches, int patchCount, bool isFullFrame)
         {
-            if (Interlocked.CompareExchange(ref isFrameProcessing, 1, 0) == 1)
+            if (Interlocked.CompareExchange(ref isFrameProcessing, 1, 0) == 1 || patches.Length <= 0)
             {
                 return;  // Skip this frame if another one is still being processed
             }
@@ -136,8 +137,20 @@ namespace RMF_Server.Logic
             {
                 Dispatcher.UIThread.Post(() =>
                 {
-                    ViewModel.UpdateFrame(frame, width, height, updateOverlay: ConfigurationManager.EnableStreamingStatsOverlay);
-                    ArrayPool<byte>.Shared.Return(frame);
+                    if (isFullFrame && patchCount == 1)
+                    {
+                        ViewModel.UpdateFrame(patches[0], updateOverlay: ConfigurationManager.EnableStreamingStatsOverlay);
+                    }
+                    else
+                    {
+                        ViewModel.UpdatePatches(patches.AsSpan(0, patchCount), updateOverlay: ConfigurationManager.EnableStreamingStatsOverlay);
+                    }
+                    
+                    for (int i = 0; i < patches.Length; i++)
+                    {
+                        ArrayPool<byte>.Shared.Return(patches[i].Data);
+                    }
+                    ArrayPool<ScreenPatch>.Shared.Return(patches);
                 });
             }
             finally

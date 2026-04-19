@@ -14,8 +14,8 @@ namespace RMF_Client.Capture
 {
     internal abstract class BaseCapturer : IScreenProvider
     {
-        protected int ScreenWidth;
-        protected int ScreenHeight;
+        public short ScreenWidth;
+        public short ScreenHeight;
         protected SKBitmap? ScreenBitmap;
         protected ScreenPatch[]? ScreenPatches;
         protected IntPtr RawPixels;
@@ -74,7 +74,6 @@ namespace RMF_Client.Capture
             {
                 return;
             }
-            int maxPatches = (this.ScreenWidth * this.ScreenHeight);
             this.ScreenPatches = new ScreenPatch[ConfigurationManager.DesktopPatchesBufferSize];
         }
 
@@ -86,7 +85,7 @@ namespace RMF_Client.Capture
                 this.MetricsUpdateStep = 0;
             }
 
-            bool isFullFrame = this.FrameUpdateStep++ % frameUpdateRate == 0;
+            bool isFullFrame = frameUpdateRate <= 0 || this.FrameUpdateStep++ % frameUpdateRate == 0;
 
             if (isFullFrame)
             {
@@ -100,10 +99,10 @@ namespace RMF_Client.Capture
                 try
                 {
                     using SKImage image = SKImage.FromPixels(
-                    new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
-                    this.RawPixels,
-                    this.ScreenWidth * 4
-                );
+                        new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
+                        this.RawPixels,
+                        this.ScreenWidth * 4
+                    );
                     using SKData? compressedData = ScreenEncoder.CompressImage(image, format, quality);
                     int compressedSize = (int)compressedData!.Size;
 
@@ -116,6 +115,7 @@ namespace RMF_Client.Capture
 
                     return new CapturedFrame(
                         patches,
+                        1,
                         format,
                         isFullFrame
                     );
@@ -133,17 +133,15 @@ namespace RMF_Client.Capture
                 ReadOnlyMemory<ScreenPatch> updatedPatches = GetFrameUpdates();
                 if (updatedPatches.Length == 0)
                 {
+                    Console.WriteLine("No screen updates detected.");
                     return null;
                 }
 
                 try
                 {
-                    Parallel.For(0, updatedPatches.Length, this.Options!, (i) => {
+                    Parallel.For(0, updatedPatches.Length, this.Options!, (i) =>
+                    {
                         ScreenPatch patch = updatedPatches.Span[i];
-                        if (patch.Data.Length == 0)
-                        {
-                            return;
-                        }
 
                         int rowLength = this.ScreenWidth * 4;
                         IntPtr srcPtr = this.RawPixels + (patch.Y * rowLength) + (patch.X * 4);
@@ -163,6 +161,7 @@ namespace RMF_Client.Capture
 
                     return new CapturedFrame(
                         this.ScreenPatches!,
+                        (short)updatedPatches.Length,
                         format,
                         isFullFrame
                     );

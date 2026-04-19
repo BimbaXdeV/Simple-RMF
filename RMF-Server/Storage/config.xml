@@ -28,9 +28,9 @@
 	<add key="ChannelPacketsCapacity" value="50"/>
 	
 	<!-- Streaming Settings -->
-	<add key="ScreenshotFrameFormat" value="2"/>
+	<add key="ScreenshotFrameFormat" value="3"/>
 	<add key="ScreenshotQualityPercentage" value="90"/>
-	<add key="StreamingFrameFormat" value="0"/>
+	<add key="StreamingFrameFormat" value="1"/>
 	<add key="StreamingQualityPercentage" value="50"/>
 	<add key="StreamingFrameUpdateRate" value="300"/>
 	<add key="DesktopSendingIntervalMsecs" value="16"/>

@@ -205,6 +205,7 @@ namespace RMF_Server.Commands
                     IsActive = true,
                     FormatID = (byte)ConfigurationManager.StreamingFrameFormat,
                     Quality = (byte)ConfigurationManager.StreamingQualityPercentage,
+                    FrameUpdateRate = ConfigurationManager.StreamingFrameUpdateRate,
                     IntervalMsecs = (short)ConfigurationManager.DesktopSendingIntervalMsecs
                 };
                 session.SendPacket(streamingRequest);

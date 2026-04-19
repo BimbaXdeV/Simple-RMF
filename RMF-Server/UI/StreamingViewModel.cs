@@ -1,11 +1,15 @@
 ﻿using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using ReactiveUI;
+using RMF.Core.Screen;
+using RMF_Server.Debugger;
 using SkiaSharp;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,7 +53,7 @@ namespace RMF_Server.UI
         private int Fps;
         private float FrameTimeMsecs;
 
-        public void UpdateFrame(byte[] frame, int width, int height, bool updateOverlay = false)
+        private void ValidateSource(int width, int height)
         {
             if (this.DisplaySource == null ||
                 this.DisplaySource.PixelSize.Width != width ||
@@ -62,51 +66,135 @@ namespace RMF_Server.UI
                     Avalonia.Platform.AlphaFormat.Premul
                 );
             }
+        }
 
-            DateTime currentTime = DateTime.Now;
-            if ((currentTime - this.HandleStartTime).TotalSeconds >= 1.0f)
+        private DateTime UpdateStats(bool overlay = false)
+        {
+            DateTime updateTime = DateTime.Now;
+            if ((updateTime - this.HandleStartTime).TotalSeconds >= 1.0f)
             {
-                this.HandleStartTime = currentTime;
+                this.HandleStartTime = updateTime;
                 this.Fps = this.HandledFramesCount;
                 this.HandledFramesCount = 0;
 
-                if (updateOverlay)
+                if (overlay)
                 {
                     this.DisplayFps = this.Fps;
                     this.DisplayFrameTime = this.FrameTimeMsecs;
                 }
             }
+            return updateTime;
+        }
 
-            using MemoryStream ms = new(frame);
-            try
+        private void UpdateActuality(DateTime lastUpdatedTime)
+        {
+            this.HandledFramesCount++;
+            this.FrameTimeMsecs = (float)(DateTime.Now - lastUpdatedTime).TotalMilliseconds;
+        }
+
+        public unsafe void UpdateFrame(ScreenPatch frame, bool updateOverlay = false)
+        {
+            ValidateSource(frame.Width, frame.Height);
+            DateTime currentTime = UpdateStats(updateOverlay);
+
+            using (ILockedFramebuffer buffer = this.DisplaySource!.Lock())
             {
-                WriteableBitmap previous = this.DisplaySource;
-                this.DisplaySource = WriteableBitmap.Decode(ms);
-                previous.Dispose();
+                int screenRowLength = buffer.RowBytes;
+                byte* displayPtr = (byte*)buffer.Address;
 
-                //using SKBitmap bitmap = SKBitmap.Decode(frame);
-                //int bitmapBytes = bitmap.ByteCount;
+                using SKCodec codec = SKCodec.Create(new MemoryStream(frame.Data, 0, frame.Length));
+                if (codec == null)
+                {
+                    Logging.Warning($"Failed to decode screen frame");
+                    return;
+                }
 
-                //using ILockedFramebuffer framebuffer = this.DisplaySource.Lock();
+                SKImageInfo info = new(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-                //unsafe
-                //{
-                //    Buffer.MemoryCopy(
-                //        (void*)bitmap.GetPixels(),
-                //        (void*)framebuffer.Address,
-                //        bitmapBytes,
-                //        bitmapBytes
-                //    );
-                //}
+                byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
+                fixed (byte* decodedPtr = decodedPixels)
+                {
+                    codec.GetPixels(info, (IntPtr)decodedPtr);
+
+                    int frameRowLength = frame.Width * 4;
+                    if (frameRowLength == screenRowLength)
+                    {
+                        Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)(frameRowLength * frame.Height));
+                        return;
+                    }
+                    else
+                    {
+                        byte* destPtr = displayPtr;
+                        byte* srcPtr = decodedPtr;
+                        for (int y = 0; y < frame.Height; y++)
+                        {
+                            Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)frameRowLength);
+                            srcPtr += frameRowLength;
+                            destPtr += screenRowLength;
+                        }
+                    }
+                }
             }
-            catch (Exception ex)
+            //using MemoryStream ms = new(frame.Data);
+            //try
+            //{
+            //    WriteableBitmap previous = this.DisplaySource!;
+            //    this.DisplaySource = WriteableBitmap.Decode(ms);
+            //    previous.Dispose();
+
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Failed to update frame in bitmap: {ex}");
+            //}
+
+            this.RaisePropertyChanged(nameof(this.DisplaySource));
+            UpdateActuality(currentTime);
+        }
+
+        public unsafe void UpdatePatches(ReadOnlySpan<ScreenPatch> patches, bool updateOverlay = false)
+        {
+            DateTime currentTime = UpdateStats(updateOverlay);
+
+            using (ILockedFramebuffer buffer = this.DisplaySource!.Lock())
             {
-                Console.WriteLine($"Failed to update frame in bitmap: {ex}");
+                int screenRowLength = buffer.RowBytes;
+                byte* displayPtr = (byte*)buffer.Address;
+
+                for (int i = 0; i < patches.Length; i++)
+                {
+                    ScreenPatch patch = patches[i];
+                    using SKCodec codec = SKCodec.Create(new MemoryStream(patch.Data, 0, patch.Length));
+                    if (codec == null)
+                    {
+                        Logging.Warning($"Failed to decode screen patch");
+                        continue;
+                    }
+
+                    SKImageInfo info = new(patch.Width, patch.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+
+                    byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
+                    fixed (byte* decodedPtr = decodedPixels)
+                    {
+                        codec.GetPixels(info, (IntPtr)decodedPtr);
+
+                        int patchRowLength = patch.Width * 4;
+                        byte* destPtr = displayPtr + (patch.Y * patch.Width * 4) + (patch.X * 4);
+                        byte* srcPtr = decodedPtr;
+
+                        for (int y = 0; y < patch.Height; y++)
+                        {
+                            Unsafe.CopyBlock(destPtr, srcPtr, (uint)patchRowLength);
+                            srcPtr += patchRowLength;
+                            destPtr += screenRowLength;
+                        }
+                    }
+                    ArrayPool<byte>.Shared.Return(decodedPixels);
+                }
             }
 
             this.RaisePropertyChanged(nameof(this.DisplaySource));
-            this.HandledFramesCount++;
-            this.FrameTimeMsecs = (float)(DateTime.Now - currentTime).TotalMilliseconds;
+            UpdateActuality(currentTime);
         }
     }
 }

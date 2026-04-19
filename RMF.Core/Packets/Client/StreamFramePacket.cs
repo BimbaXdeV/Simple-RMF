@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,12 +16,14 @@ namespace RMF.Core.Packets.Client
     {
         public override short ID => 201;
 
+        public bool IsFullFrame { get; set; }
         public byte FormatID { get; set; }
         public short PatchesCount { get; set; }
         public ScreenPatch[]? Patches { get; set; }
 
         public override void Deserialize(ref SpanReader reader)
         {
+            this.IsFullFrame = reader.ReadBoolean();
             this.FormatID = reader.ReadByte();
             this.PatchesCount = reader.ReadInt16();
 
@@ -51,6 +54,7 @@ namespace RMF.Core.Packets.Client
 
         protected override void WriteBody(BinaryWriter writer)
         {
+            writer.Write(this.IsFullFrame);
             writer.Write(this.FormatID);
             writer.Write(this.PatchesCount);
 

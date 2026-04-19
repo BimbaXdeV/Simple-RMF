@@ -110,15 +110,16 @@ namespace RMF_Server.Packets
                     return;
                 }
 
-                if (packet.ImageData == null)
+                if (packet.Patches == null || packet.PatchesCount == 0)
                 {
                     Logging.Message($"Received an empty streaming frame from \"{endPoint}\", disconnecting...");
                     SessionManager.Disconnect(endPoint.ToString());
                     return;
                 }
-                WindowManager.UpdateFrame(packet.ImageData, packet.Width, packet.Height);
+
+                Console.WriteLine($"Received a streaming frame from {endPoint} : {packet.PatchesCount} patches, full frame: {packet.IsFullFrame}");
+                WindowManager.UpdateBitmap(packet.Patches, packet.PatchesCount, packet.IsFullFrame);
                 session.LastFrameUpdate = DateTime.Now;
-                // Array returns after use in WindowManager.UpdateFrame, so we don't return it here to avoid returning the same array twice
             }
         }
     }

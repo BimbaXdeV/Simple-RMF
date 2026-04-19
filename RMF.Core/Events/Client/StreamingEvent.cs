@@ -7,6 +7,7 @@ using RMF.Core.Screen;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,10 +27,14 @@ namespace RMF.Core.Events.Client
         private void SendActualFrame(ClientSession session)
         {
             CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent, this.FrameUpdateRate);
+            Console.WriteLine($"Captured frame: {frame.HasValue}, format: {this.Format}, quality: {this.QualityPercent}%, full frame: {frame?.IsFullFrame}");
             if (frame != null && frame.Value is CapturedFrame f)
             {
+                Console.WriteLine($"Captured frame: {f.Rects[0].Width}x{f.Rects[0].Height}, format: {this.Format}, quality: {this.QualityPercent}%");
                 this.PacketTemplate.FormatID = (byte)f.Format;
-                this.PacketTemplate.ImageData = f.Rects[0].Data;
+                this.PacketTemplate.Patches = f.Rects;
+                this.PacketTemplate.PatchesCount = f.RectsCount;
+                this.PacketTemplate.IsFullFrame = f.IsFullFrame;
 
                 session.SendPacket(this.PacketTemplate);
             }
