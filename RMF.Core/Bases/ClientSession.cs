@@ -36,6 +36,22 @@ namespace RMF.Core.Bases
             }
         }
 
+        public ClientSession(TcpClient client, int channelCapacity, CancellationToken token)
+        {
+            this.Client = client;
+            this.OutboundChannel = Channel.CreateBounded<Packet>(
+                new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1)
+                {
+                    FullMode = BoundedChannelFullMode.DropOldest
+                }
+            );
+
+            if (client.Connected)
+            {
+                RunProcessing(token);
+            }
+        }
+
         private async Task OutboundChannelWorker(CancellationToken token)
         {
             if (!this.IsRunning)

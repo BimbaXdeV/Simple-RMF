@@ -82,13 +82,13 @@ namespace RMF.Core.Packets.Client
 
             for (int i = 0; i < this.PatchesCount; i++)
             {
-                byte[] data = this.Patches[i].Data;
-                if (data != null)
+                if (this.Patches[i].Data != null)
                 {
-                    ArrayPool<byte>.Shared.Return(data);
+                    ArrayPool<byte>.Shared.Return(this.Patches[i].Data);
                 }
             }
             ArrayPool<ScreenPatch>.Shared.Return(this.Patches);
+            this.Patches = null;
             this.PatchesCount = 0;
         }
     }

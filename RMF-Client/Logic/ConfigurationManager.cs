@@ -20,6 +20,8 @@ namespace RMF_Client.Logic
         public static int MinPacketBufferKB;
         public static int MaxPacketLengthKB;
 
+        public static int ChannelPacketsCapacity;
+
         public static int MaxProcessorCores;
         public static int MetricsUpdateRate;
         public static int DesktopPatchesBufferSize;

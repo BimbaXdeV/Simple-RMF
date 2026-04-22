@@ -8,6 +8,7 @@ using SkiaSharp;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
@@ -110,174 +111,135 @@ namespace RMF_Client.Capture
 
             if (ActualWidth != this.ScreenWidth || ActualHeight != this.ScreenHeight)
             {
-                this.ScreenWidth = (short)ActualWidth;
-                this.ScreenHeight = (short)ActualHeight;
+                lock (this.CaptureProcessorLock)
+                {
+                    this.ScreenWidth = (short)ActualWidth;
+                    this.ScreenHeight = (short)ActualHeight;
 
-                this.ScreenBitmap = new SKBitmap(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
-                Initialize();
-                Console.WriteLine($"Screen metrics updated: {this.ScreenWidth}x{this.ScreenHeight}");
+                    this.ScreenBitmap?.Dispose();
+                    this.ScreenBitmap = new SKBitmap(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+                    //this.ScreenBitmap = new SKBitmap();
+                    //this.ScreenBitmap.InstallPixels(
+                    //    new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
+                    //    this.RawPixels,
+                    //    this.ScreenWidth * 4
+                    //);
+                    Initialize();
+                    Console.WriteLine($"Bitmap metrics updated! {this.ScreenWidth}x{this.ScreenHeight}");
+                }
             }
         }
 
         protected override unsafe void UpdateBitmapFrame()
         {
-            lock (this.ScreenGetterLock)
+            OutduplFrameInfo frameInfo = default;
+            ComPtr<IDXGIResource> resource = default;
+
+            int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
+
+
+            if (hResult == (int)this.AcquireTimeoutCode)
             {
-                OutduplFrameInfo frameInfo = default;
-                ComPtr<IDXGIResource> resource = default;
+                return;
+            }
 
-                int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
-                
+            if (hResult != 0)
+            {
+                Initialize();
+                return;
+            }
 
-                if (hResult == (int)this.AcquireTimeoutCode)
+            ComPtr<ID3D11Texture2D> texture = default;
+            resource.QueryInterface(out texture);
+
+            if (this.Texture.Handle != null && texture.Handle != null)
+            {
+                this.Context.CopyResource((ID3D11Resource*)this.Texture.Handle, (ID3D11Resource*)texture.Handle);
+
+                MappedSubresource mapped = default;
+                hResult = this.Context.Get().Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
+                if (hResult == 0 && mapped.PData != null)
                 {
-                    return;
-                }
+                    byte* srcPtr = (byte*)mapped.PData;
+                    byte* destPtr = (byte*)this.RawPixels;
 
-                if (hResult != 0)
-                {
-                    Initialize();
-                    return;
-                }
-
-                ComPtr<ID3D11Texture2D> texture = default;
-                resource.QueryInterface(out texture);
-
-                if (this.Texture.Handle != null && texture.Handle != null)
-                {
-                    this.Context.CopyResource((ID3D11Resource*)this.Texture.Handle, (ID3D11Resource*)texture.Handle);
-
-                    MappedSubresource mapped = default;
-                    hResult = this.Context.Get().Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
-                    if (hResult == 0 && mapped.PData != null)
+                    int rowLength = this.ScreenWidth * 4;
+                    if (mapped.RowPitch == rowLength)
                     {
-                        byte* srcPtr = (byte*)mapped.PData;
-                        byte* destPtr = (byte*)this.ScreenBitmap!.GetPixels();
-
-                        int rowLength = this.ScreenWidth * 4;
-                        if (mapped.RowPitch == rowLength)
-                        {
-                            Unsafe.CopyBlock(destPtr, srcPtr, (uint)(rowLength * ScreenHeight));
-                        }
-                        else
-                        {
-                            for (int y = 0; y < this.ScreenHeight; y++)
-                            {
-                                Unsafe.CopyBlock(destPtr, srcPtr, (uint)rowLength);
-                                srcPtr += mapped.RowPitch;
-                                destPtr += rowLength;
-                            }
-                        }
-
-                        this.Context.Unmap((ID3D11Resource*)this.Texture.Handle, 0);
+                        Unsafe.CopyBlock(destPtr, srcPtr, (uint)(rowLength * ScreenHeight));
                     }
+                    else
+                    {
+                        for (int y = 0; y < this.ScreenHeight; y++)
+                        {
+                            Unsafe.CopyBlock(destPtr, srcPtr, (uint)rowLength);
+                            srcPtr += mapped.RowPitch;
+                            destPtr += rowLength;
+                        }
+                    }
+                    this.Context.Unmap((ID3D11Resource*)this.Texture.Handle, 0);
                 }
-
-                resource.Dispose();
-                texture.Dispose();
-                this.Duplication.Get().ReleaseFrame();
             }
+
+            resource.Dispose();
+            texture.Dispose();
+            this.Duplication.Get().ReleaseFrame();
         }
 
-        protected override unsafe ScreenPatch GetActualFrame()
+        //protected override unsafe ScreenPatch GetActualFrame()
+        //{
+        //    UpdateBitmapFrame();
+
+        //    int size = this.ScreenWidth * this.ScreenHeight * 4;
+        //    byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
+        //    fixed (byte* destPtr = buffer)
+        //    {
+        //        Unsafe.CopyBlock(destPtr, (void*)this.RawPixels, (uint)size);
+        //    }
+        //    return new ScreenPatch(
+        //        buffer,
+        //        size,
+        //        0,
+        //        0,
+        //        this.ScreenWidth,
+        //        this.ScreenHeight
+        //    );
+        //}
+
+        protected override unsafe RectsMetadata? GetFrameUpdates()
         {
-            UpdateBitmapFrame();
+            OutduplFrameInfo frameInfo = default;
+            using ComPtr<IDXGIResource> resource = default;
 
-            int size = this.ScreenWidth * this.ScreenHeight * 4;
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
-            fixed (byte* destPtr = buffer)
+            int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
+            if (hResult != 0)
             {
-                Unsafe.CopyBlock(destPtr, (void*)this.RawPixels, (uint)size);
-            }
-            return new ScreenPatch(
-                buffer,
-                size,
-                0,
-                0,
-                this.ScreenWidth,
-                this.ScreenHeight
-            );
-        }
-
-        protected override unsafe Memory<ScreenPatch> GetFrameUpdates()
-        {
-            lock (this.ScreenGetterLock)
-            {
-                OutduplFrameInfo frameInfo = default;
-                using ComPtr<IDXGIResource> resource = default;
-
-                int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
                 if (hResult == this.AcquireTimeoutCode)
                 {
-                    return Memory<ScreenPatch>.Empty;
+                    Initialize();
                 }
+                return null;
+            }
 
+            uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
+            if (metadataBufferSize == 0)
+            {
+                return null;
+            }
+
+            byte[] metadatabuffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
+            uint requiredBufferSize = 0;
+
+            fixed (byte* destPtr = metadatabuffer)
+            {
+                hResult = this.Duplication.GetFrameDirtyRects(metadataBufferSize, (Box2D<int>*)destPtr, &requiredBufferSize);
                 if (hResult != 0)
                 {
-                    Initialize();
-                    return Memory<ScreenPatch>.Empty;
+                    return null;
                 }
 
-                uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
-                if (metadataBufferSize > 0)
-                {
-                    // This is just a collection of metadata about dirty rectangles
-                    byte[] buffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
-
-                    fixed (byte* destPtr = buffer)
-                    {
-                        try
-                        {
-                            uint requiredBufferSize = 0;
-                            hResult = this.Duplication.GetFrameDirtyRects(metadataBufferSize, (Box2D<int>*)destPtr, &requiredBufferSize);
-                            if (hResult == 0)
-                            {
-                                int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
-
-                                Span<Box2D<int>> rects = new(destPtr, rectCount);
-                                int updatedPatches = 0;
-                                for (int i = 0; i < rectCount; i++)
-                                {
-                                    Box2D<int> rect = rects[i];
-                                    int width = rect.Max.X - rect.Min.X;
-                                    int height = rect.Max.Y - rect.Min.Y;
-                                    int rectSize = width * height * 4;
-
-                                    int screenRowLength = this.ScreenWidth * 4;
-                                    int patchRowLength = width * 4;
-
-                                    byte[] patchBuffer = ArrayPool<byte>.Shared.Rent(rectSize);
-                                    fixed (byte* fixedPatchPtr = patchBuffer)
-                                    {
-                                        byte* patchPtr = fixedPatchPtr;
-                                        byte* srcPtr = (byte*)this.RawPixels + (rect.Min.Y * this.ScreenWidth * 4) + (rect.Min.X * 4);
-                                        for (int y = 0; y < height; y++)
-                                        {
-                                            Unsafe.CopyBlock(patchPtr, srcPtr, (uint)(width * 4));
-                                            srcPtr += screenRowLength;
-                                            patchPtr += patchRowLength;
-                                        }
-                                    }
-
-                                    this.ScreenPatches![updatedPatches++] = new ScreenPatch(
-                                        buffer,
-                                        rectSize,
-                                        (short)rect.Min.X,
-                                        (short)rect.Min.Y,
-                                        (short)width,
-                                        (short)height
-                                    );
-                                }
-                                return this.ScreenPatches.AsMemory(0, updatedPatches);
-                            }
-                        }
-                        finally
-                        {
-                            ArrayPool<byte>.Shared.Return(buffer);
-                        }
-                    }
-                }
-                return Memory<ScreenPatch>.Empty;
+                int rectCount = (int)(metadataBufferSize / sizeof(Box2D<int>));
+                return new RectsMetadata(metadatabuffer, rectCount);
             }
         }
 

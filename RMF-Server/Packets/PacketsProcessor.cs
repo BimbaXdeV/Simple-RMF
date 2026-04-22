@@ -117,7 +117,6 @@ namespace RMF_Server.Packets
                     return;
                 }
 
-                Console.WriteLine($"Received a streaming frame from {endPoint} : {packet.PatchesCount} patches, full frame: {packet.IsFullFrame}");
                 WindowManager.UpdateBitmap(packet.Patches, packet.PatchesCount, packet.IsFullFrame);
                 session.LastFrameUpdate = DateTime.Now;
             }

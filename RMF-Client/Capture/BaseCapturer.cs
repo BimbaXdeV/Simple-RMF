@@ -2,6 +2,7 @@
 using RMF.Core.Screen;
 using RMF_Client.Logic;
 using RMF_Client.Storage;
+using Silk.NET.Maths;
 using SkiaSharp;
 using System;
 using System.Buffers;
@@ -18,8 +19,8 @@ namespace RMF_Client.Capture
         public short ScreenHeight;
         protected SKBitmap? ScreenBitmap;
         protected ScreenPatch[]? ScreenPatches;
-        protected IntPtr RawPixels;
-        protected readonly Lock ScreenGetterLock = new();
+        protected IntPtr RawPixels => this.ScreenBitmap?.GetPixels() ?? IntPtr.Zero;
+        protected readonly Lock CaptureProcessorLock = new();
 
         private ParallelOptions? Options;
 
@@ -37,8 +38,8 @@ namespace RMF_Client.Capture
         protected abstract void Initialize();
         protected abstract void UpdateBitmapMetrics();
         protected abstract void UpdateBitmapFrame();
-        protected abstract ScreenPatch GetActualFrame();
-        protected abstract Memory<ScreenPatch> GetFrameUpdates();
+        // protected abstract ScreenPatch GetActualFrame();
+        protected abstract RectsMetadata? GetFrameUpdates();
 
         private void PrepareParallelOptions()
         {
@@ -60,12 +61,13 @@ namespace RMF_Client.Capture
             }
 
             this.ScreenBitmap?.Dispose();
-            this.ScreenBitmap = new SKBitmap();
-            this.ScreenBitmap.InstallPixels(
-                new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
-                this.RawPixels,
-                this.ScreenWidth * 4
-            );
+            this.ScreenBitmap = new SKBitmap(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+            //this.ScreenBitmap = new SKBitmap();
+            //this.ScreenBitmap.InstallPixels(
+            //    new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
+            //    this.RawPixels,
+            //    this.ScreenWidth * 4
+            //);
         }
 
         private void PreparePatchBuffer()
@@ -87,16 +89,11 @@ namespace RMF_Client.Capture
 
             bool isFullFrame = frameUpdateRate <= 0 || this.FrameUpdateStep++ % frameUpdateRate == 0;
 
-            if (isFullFrame)
+            lock (this.CaptureProcessorLock)
             {
-                ScreenPatch? actualFrame = GetActualFrame();
-                if (actualFrame == null)
-                {
-                    this.FrameUpdateStep = 0;
-                    return null;
-                }
+                UpdateBitmapFrame();
 
-                try
+                if (isFullFrame)
                 {
                     using SKImage image = SKImage.FromPixels(
                         new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
@@ -120,57 +117,63 @@ namespace RMF_Client.Capture
                         isFullFrame
                     );
                 }
-                finally
-                {
-                    this.FrameUpdateStep = 0;
-                    ArrayPool<byte>.Shared.Return(actualFrame.Value.Data);
-                }
-            }
 
-            // Partial frame with updates only
-            else
-            {
-                ReadOnlyMemory<ScreenPatch> updatedPatches = GetFrameUpdates();
-                if (updatedPatches.Length == 0)
+                // Partial frame with updates only
+                else
                 {
-                    Console.WriteLine("No screen updates detected.");
-                    return null;
-                }
-
-                try
-                {
-                    Parallel.For(0, updatedPatches.Length, this.Options!, (i) =>
+                    RectsMetadata? updatedPatches = GetFrameUpdates();
+                    if (!updatedPatches.HasValue || updatedPatches.Value.Count == 0)
                     {
-                        ScreenPatch patch = updatedPatches.Span[i];
+                        return null;
+                    }
+                    try
+                    {
+                        
+                        Parallel.For(0, updatedPatches.Value.Count, this.Options!, (int i) =>
+                        {
+                            Box2D<int> patch = updatedPatches.Value[i];
 
-                        int rowLength = this.ScreenWidth * 4;
-                        IntPtr srcPtr = this.RawPixels + (patch.Y * rowLength) + (patch.X * 4);
+                            int rowLength = this.ScreenWidth * 4;
+                            IntPtr srcPtr = this.RawPixels + (patch.Min.Y * rowLength) + (patch.Min.X * 4);
 
-                        using SKImage image = SKImage.FromPixels(
-                            new SKImageInfo(patch.Width, patch.Height, SKColorType.Bgra8888, SKAlphaType.Premul),
-                            srcPtr,
-                            rowLength
+                            using SKImage image = SKImage.FromPixels(
+                                new SKImageInfo(patch.Max.X, patch.Max.Y, SKColorType.Bgra8888, SKAlphaType.Premul),
+                                srcPtr,
+                                rowLength
+                            );
+                            using SKData? data = ScreenEncoder.CompressImage(image, format, quality);
+                            if (data == null)
+                            {
+                                Console.WriteLine("Failed to compress a patch!");
+                                return;
+                            }
+
+                            byte[] patchBuffer = ArrayPool<byte>.Shared.Rent((int)data!.Size);
+                            data.AsSpan().CopyTo(patchBuffer);
+
+                            this.ScreenPatches![i] = new ScreenPatch(
+                                patchBuffer,
+                                (int)data.Size,
+                                (short)patch.Min.X,
+                                (short)patch.Min.Y,
+                                (short)patch.Max.X,
+                                (short)patch.Max.Y
+                            );
+                        });
+
+                        return new CapturedFrame(
+                            this.ScreenPatches!,
+                            (short)updatedPatches.Value.Count,
+                            format,
+                            isFullFrame
                         );
-                        using SKData? data = ScreenEncoder.CompressImage(image, format, quality);
-
-                        byte[] buffer = ArrayPool<byte>.Shared.Rent((int)data!.Size);
-                        data.AsSpan().CopyTo(buffer);
-
-                        this.ScreenPatches![i] = new ScreenPatch(buffer, (int)data.Size, patch.X, patch.Y, patch.Width, patch.Height);
-                    });
-
-                    return new CapturedFrame(
-                        this.ScreenPatches!,
-                        (short)updatedPatches.Length,
-                        format,
-                        isFullFrame
-                    );
-                }
-                finally
-                {
-                    foreach (ScreenPatch patch in updatedPatches.Span)
+                    }
+                    finally
                     {
-                        ArrayPool<byte>.Shared.Return(patch.Data);
+                        if (updatedPatches is IReleasable releasable)
+                        {
+                            releasable.Release();
+                        }
                     }
                 }
             }

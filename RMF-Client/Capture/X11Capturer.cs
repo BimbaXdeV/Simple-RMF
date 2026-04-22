@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Screen;
+using Silk.NET.Maths;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -25,12 +26,12 @@ namespace RMF_Client.Capture
             throw new NotImplementedException();
         }
 
-        protected override ScreenPatch GetActualFrame()
-        {
-            throw new NotImplementedException();
-        }
+        //protected override ScreenPatch GetActualFrame()
+        //{
+        //    throw new NotImplementedException();
+        //}
 
-        protected override Memory<ScreenPatch> GetFrameUpdates()
+        protected override RectsMetadata? GetFrameUpdates()
         {
             throw new NotImplementedException();
         }

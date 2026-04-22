@@ -11,6 +11,9 @@
 	<add key="ConnectionRequestTimeoutSecs" value="10"/>
 	<add key="MinPacketBufferKB" value="12"/>
 	<add key="MaxPacketLengthKB" value="128"/>
+
+	<!-- Channel Settings -->
+	<add key="ChannelPacketsCapacity" value="5"/>
 	
 	<!-- Capture Settings -->
 	<add key="MaxProcessorCores" value="4"/>

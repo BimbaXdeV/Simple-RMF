@@ -22,21 +22,20 @@ namespace RMF.Core.Events.Client
         public int FrameUpdateRate { get; set; }
         public int IntervalMsecs { get; set; }  // (default) 0 - without delay
 
-        private readonly StreamFramePacket PacketTemplate = new();
-
         private void SendActualFrame(ClientSession session)
         {
             CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent, this.FrameUpdateRate);
-            Console.WriteLine($"Captured frame: {frame.HasValue}, format: {this.Format}, quality: {this.QualityPercent}%, full frame: {frame?.IsFullFrame}");
             if (frame != null && frame.Value is CapturedFrame f)
             {
-                Console.WriteLine($"Captured frame: {f.Rects[0].Width}x{f.Rects[0].Height}, format: {this.Format}, quality: {this.QualityPercent}%");
-                this.PacketTemplate.FormatID = (byte)f.Format;
-                this.PacketTemplate.Patches = f.Rects;
-                this.PacketTemplate.PatchesCount = f.RectsCount;
-                this.PacketTemplate.IsFullFrame = f.IsFullFrame;
+                StreamFramePacket streamFramePacket = new()
+                {
+                    FormatID = (byte)f.Format,
+                    Patches = f.Rects,
+                    PatchesCount = f.RectsCount,
+                    IsFullFrame = f.IsFullFrame,
+                };
 
-                session.SendPacket(this.PacketTemplate);
+                session.SendPacket(streamFramePacket);
             }
         }
 

@@ -152,7 +152,7 @@ namespace RMF_Server.UI
             UpdateActuality(currentTime);
         }
 
-        public unsafe void UpdatePatches(ReadOnlySpan<ScreenPatch> patches, bool updateOverlay = false)
+        public unsafe void UpdatePatches(ReadOnlySpan<ScreenPatch> patches, int patchCount, bool updateOverlay = false)
         {
             DateTime currentTime = UpdateStats(updateOverlay);
 
@@ -161,7 +161,7 @@ namespace RMF_Server.UI
                 int screenRowLength = buffer.RowBytes;
                 byte* displayPtr = (byte*)buffer.Address;
 
-                for (int i = 0; i < patches.Length; i++)
+                for (int i = 0; i < patchCount; i++)
                 {
                     ScreenPatch patch = patches[i];
                     using SKCodec codec = SKCodec.Create(new MemoryStream(patch.Data, 0, patch.Length));

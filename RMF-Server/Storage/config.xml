@@ -25,7 +25,7 @@
 	<add key="ClientHeartbeatIntervalSecs" value="10"/>
 	
 	<!-- Channel Settings -->
-	<add key="ChannelPacketsCapacity" value="50"/>
+	<add key="ChannelPacketsCapacity" value="5"/>
 	
 	<!-- Streaming Settings -->
 	<add key="ScreenshotFrameFormat" value="3"/>
