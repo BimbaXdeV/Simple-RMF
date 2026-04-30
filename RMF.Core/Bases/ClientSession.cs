@@ -59,12 +59,31 @@ namespace RMF.Core.Bases
                 return;
             }
 
-            await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
+            try
             {
-                await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
-                if (packet is IReleasable releasable)
+                await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
                 {
-                    releasable.Release();
+                    try
+                    {
+                        await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
+                    }
+                    finally
+                    {
+                        if (packet is IReleasable releasable)
+                        {
+                            releasable.Release();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                while (this.OutboundChannel.Reader.TryRead(out Packet? packet))
+                {
+                    if (packet is IReleasable releasable)
+                    {
+                        releasable.Release();
+                    }
                 }
             }
         }
@@ -73,7 +92,10 @@ namespace RMF.Core.Bases
         {
             if (this.IsRunning)
             {
-                this.OutboundChannel.Writer.TryWrite(packet);
+                if (!this.OutboundChannel.Writer.TryWrite(packet) && packet is IReleasable releasable)
+                {
+                    releasable.Release();
+                }
             }
         }
 

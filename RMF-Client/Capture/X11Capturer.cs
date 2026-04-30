@@ -21,17 +21,12 @@ namespace RMF_Client.Capture
             throw new NotImplementedException();
         }
 
-        protected override void UpdateBitmapFrame()
+        protected override ScreenPatch AcquireFrame()
         {
             throw new NotImplementedException();
         }
 
-        //protected override ScreenPatch GetActualFrame()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        protected override RectsMetadata? GetFrameUpdates()
+        protected override RectsMetadata? AcquireUpdates()
         {
             throw new NotImplementedException();
         }

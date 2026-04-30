@@ -94,6 +94,7 @@ namespace RMF_Server.UI
 
         public unsafe void UpdateFrame(ScreenPatch frame, bool updateOverlay = false)
         {
+
             ValidateSource(frame.Width, frame.Height);
             DateTime currentTime = UpdateStats(updateOverlay);
 
@@ -112,27 +113,38 @@ namespace RMF_Server.UI
                 SKImageInfo info = new(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
                 byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
-                fixed (byte* decodedPtr = decodedPixels)
+                try
                 {
-                    codec.GetPixels(info, (IntPtr)decodedPtr);
+                    fixed (byte* decodedPtr = decodedPixels)
+                    {
+                        codec.GetPixels(info, (IntPtr)decodedPtr);
 
-                    int frameRowLength = frame.Width * 4;
-                    if (frameRowLength == screenRowLength)
-                    {
-                        Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)(frameRowLength * frame.Height));
-                        return;
-                    }
-                    else
-                    {
-                        byte* destPtr = displayPtr;
-                        byte* srcPtr = decodedPtr;
-                        for (int y = 0; y < frame.Height; y++)
+                        int frameRowLength = frame.Width * 4;
+                        if (frameRowLength == screenRowLength)
                         {
-                            Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)frameRowLength);
-                            srcPtr += frameRowLength;
-                            destPtr += screenRowLength;
+                            Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)(frameRowLength * frame.Height));
                         }
+                        else
+                        {
+                            byte* destPtr = displayPtr;
+                            byte* srcPtr = decodedPtr;
+                            for (int y = 0; y < frame.Height; y++)
+                            {
+                                Unsafe.CopyBlock(destPtr, srcPtr, (uint)frameRowLength);
+                                srcPtr += frameRowLength;
+                                destPtr += screenRowLength;
+                            }
+                        }
+                        UpdateActuality(currentTime);
                     }
+                }
+                catch (Exception ex)
+                {
+                    Logging.Error($"Failed to write a new frame into bitmap: {ex}");
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(decodedPixels);
                 }
             }
             //using MemoryStream ms = new(frame.Data);
@@ -148,8 +160,10 @@ namespace RMF_Server.UI
             //    Console.WriteLine($"Failed to update frame in bitmap: {ex}");
             //}
 
-            this.RaisePropertyChanged(nameof(this.DisplaySource));
-            UpdateActuality(currentTime);
+            //this.RaisePropertyChanged(nameof(this.DisplaySource));
+            var displaySource = this.DisplaySource;
+            this.DisplaySource = null;
+            this.DisplaySource = displaySource;
         }
 
         public unsafe void UpdatePatches(ReadOnlySpan<ScreenPatch> patches, int patchCount, bool updateOverlay = false)
@@ -174,27 +188,40 @@ namespace RMF_Server.UI
                     SKImageInfo info = new(patch.Width, patch.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
                     byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
-                    fixed (byte* decodedPtr = decodedPixels)
+                    try
                     {
-                        codec.GetPixels(info, (IntPtr)decodedPtr);
-
-                        int patchRowLength = patch.Width * 4;
-                        byte* destPtr = displayPtr + (patch.Y * patch.Width * 4) + (patch.X * 4);
-                        byte* srcPtr = decodedPtr;
-
-                        for (int y = 0; y < patch.Height; y++)
+                        fixed (byte* decodedPtr = decodedPixels)
                         {
-                            Unsafe.CopyBlock(destPtr, srcPtr, (uint)patchRowLength);
-                            srcPtr += patchRowLength;
-                            destPtr += screenRowLength;
+                            codec.GetPixels(info, (IntPtr)decodedPtr);
+
+                            int patchRowLength = patch.Width * 4;
+                            byte* destPtr = displayPtr + (patch.Y * patch.Width * 4) + (patch.X * 4);
+                            byte* srcPtr = decodedPtr;
+
+                            for (int y = 0; y < patch.Height; y++)
+                            {
+                                Unsafe.CopyBlock(destPtr, srcPtr, (uint)patchRowLength);
+                                srcPtr += patchRowLength;
+                                destPtr += screenRowLength;
+                            }
                         }
                     }
-                    ArrayPool<byte>.Shared.Return(decodedPixels);
+                    catch (Exception ex)
+                    {
+                        Logging.Error($"Failed to write a dirty rectangle into bitmap: {ex}");
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(decodedPixels);
+                    }
                 }
             }
 
-            this.RaisePropertyChanged(nameof(this.DisplaySource));
+            //this.RaisePropertyChanged(nameof(this.DisplaySource));
             UpdateActuality(currentTime);
+            var displaySource = this.DisplaySource;
+            this.DisplaySource = null;
+            this.DisplaySource = displaySource;
         }
     }
 }

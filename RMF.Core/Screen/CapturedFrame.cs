@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Screen
 {
-    public readonly record struct CapturedFrame : IReleasable
+    public readonly record struct CapturedFrame
     {
         public readonly ScreenPatch[] Rects;
         public readonly short RectsCount;
@@ -21,27 +21,6 @@ namespace RMF.Core.Screen
             this.RectsCount = rectsCount;
             this.Format = format;
             this.IsFullFrame = isFullFrame;
-        }
-
-        public void Release()
-        {
-            if (this.Rects == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < this.RectsCount; i++)
-            {
-                if (this.Rects[i].Data != null)
-                {
-                    ArrayPool<byte>.Shared.Return(this.Rects[i].Data);
-                }
-            }
-
-            if (this.IsFullFrame)
-            {
-                ArrayPool<ScreenPatch>.Shared.Return(this.Rects);
-            }
         }
     }
 }

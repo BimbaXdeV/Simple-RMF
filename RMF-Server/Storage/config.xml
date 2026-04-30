@@ -33,7 +33,7 @@
 	<add key="StreamingFrameFormat" value="1"/>
 	<add key="StreamingQualityPercentage" value="50"/>
 	<add key="StreamingFrameUpdateRate" value="300"/>
-	<add key="DesktopSendingIntervalMsecs" value="16"/>
+	<add key="DesktopSendingIntervalMsecs" value="20"/>
 	<add key="EnableStreamingStatsOverlay" value="true"/>
 
 	<!-- Commands Settings -->

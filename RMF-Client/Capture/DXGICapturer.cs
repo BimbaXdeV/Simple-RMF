@@ -4,6 +4,8 @@ using Silk.NET.Core.Native;
 using Silk.NET.Direct3D11;
 using Silk.NET.DXGI;
 using Silk.NET.Maths;
+using Silk.NET.OpenGL;
+using Silk.NET.Vulkan;
 using SkiaSharp;
 using System;
 using System.Buffers;
@@ -90,7 +92,7 @@ namespace RMF_Client.Capture
                 Height = (uint)this.ScreenHeight,
                 MipLevels = 1,
                 ArraySize = 1,
-                Format = Format.FormatB8G8R8A8Unorm,
+                Format = Silk.NET.DXGI.Format.FormatB8G8R8A8Unorm,
                 SampleDesc = new SampleDesc(1, 0),
                 Usage = Usage.Staging,
                 CPUAccessFlags = (uint)CpuAccessFlag.Read,
@@ -130,60 +132,146 @@ namespace RMF_Client.Capture
             }
         }
 
-        protected override unsafe void UpdateBitmapFrame()
+        private unsafe bool TryUnloadTexture(ComPtr<ID3D11Texture2D> texture)
         {
-            OutduplFrameInfo frameInfo = default;
-            ComPtr<IDXGIResource> resource = default;
-
-            int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
-
-
-            if (hResult == (int)this.AcquireTimeoutCode)
+            if (texture.Handle == null || this.Texture.Handle == null)
             {
-                return;
+                return false;
             }
 
-            if (hResult != 0)
+            this.Context.CopyResource((ID3D11Resource*)this.Texture.Handle, (ID3D11Resource*)texture.Handle);
+
+            MappedSubresource mapped = default;
+            int hResult = this.Context.Get().Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
+            if (hResult != 0 || mapped.PData == null)
             {
-                Initialize();
-                return;
+                return false;
+            }
+
+            try
+            {
+                byte* srcPtr = (byte*)mapped.PData;
+                byte* destPtr = (byte*)this.RawPixels;
+                int rowLength = this.ScreenWidth * 4;
+
+                // Complete match of the bitmap and the resulting frame sizes
+                if (mapped.RowPitch == rowLength)
+                {
+                    Unsafe.CopyBlock(destPtr, srcPtr, (uint)(rowLength * ScreenHeight));
+                }
+
+                // A crutch that needed in cases where the video card suddenly decided to align the data by adding empty bytes
+                else
+                {
+                    for (int y = 0; y < this.ScreenHeight; y++)
+                    {
+                        Unsafe.CopyBlock(destPtr, srcPtr, (uint)rowLength);
+                        srcPtr += mapped.RowPitch;
+                        destPtr += rowLength;
+                    }
+                }
+                return true;
+            }
+            finally
+            {
+                this.Context.Unmap((ID3D11Resource*)this.Texture.Handle, 0);
+            }
+        }
+
+        private unsafe bool TryAcquireNextFrame(out OutduplFrameInfo frameInfo)
+        {
+            frameInfo = default;
+            ComPtr<IDXGIResource> resource = default;
+
+            fixed (OutduplFrameInfo* frameInfoPtr = &frameInfo)
+            {
+                int hResult = this.Duplication.AcquireNextFrame(10, frameInfoPtr, resource.GetAddressOf());
+
+                if (hResult != 0)
+                {
+                    if (hResult == (int)this.AcquireTimeoutCode)
+                    {
+                        Initialize();
+                    }
+                    return false;
+                }
             }
 
             ComPtr<ID3D11Texture2D> texture = default;
             resource.QueryInterface(out texture);
 
-            if (this.Texture.Handle != null && texture.Handle != null)
+            bool isUnloaded = TryUnloadTexture(texture);
+            this.Duplication.ReleaseFrame();
+            return isUnloaded;
+        }
+
+        protected override unsafe ScreenPatch AcquireFrame()
+        {
+            if (!TryAcquireNextFrame(out OutduplFrameInfo frameInfo))
             {
-                this.Context.CopyResource((ID3D11Resource*)this.Texture.Handle, (ID3D11Resource*)texture.Handle);
-
-                MappedSubresource mapped = default;
-                hResult = this.Context.Get().Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
-                if (hResult == 0 && mapped.PData != null)
-                {
-                    byte* srcPtr = (byte*)mapped.PData;
-                    byte* destPtr = (byte*)this.RawPixels;
-
-                    int rowLength = this.ScreenWidth * 4;
-                    if (mapped.RowPitch == rowLength)
-                    {
-                        Unsafe.CopyBlock(destPtr, srcPtr, (uint)(rowLength * ScreenHeight));
-                    }
-                    else
-                    {
-                        for (int y = 0; y < this.ScreenHeight; y++)
-                        {
-                            Unsafe.CopyBlock(destPtr, srcPtr, (uint)rowLength);
-                            srcPtr += mapped.RowPitch;
-                            destPtr += rowLength;
-                        }
-                    }
-                    this.Context.Unmap((ID3D11Resource*)this.Texture.Handle, 0);
-                }
+                return new ScreenPatch();
             }
 
-            resource.Dispose();
-            texture.Dispose();
-            this.Duplication.Get().ReleaseFrame();
+            int bufferSize = this.ScreenWidth * this.ScreenHeight * 4;
+            byte[] frameBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            fixed (byte* destPtr = frameBuffer)
+            {
+                Unsafe.CopyBlock(destPtr, (void*)this.RawPixels, (uint)bufferSize);
+            }
+
+            return new ScreenPatch(
+                frameBuffer,
+                bufferSize,
+                0,
+                0,
+                this.ScreenWidth,
+                this.ScreenHeight
+            );
+        }
+
+        protected override unsafe RectsMetadata? AcquireUpdates()
+        {
+            if (!TryAcquireNextFrame(out OutduplFrameInfo frameInfo))
+            {
+                return null;
+            }
+
+            uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
+            if (metadataBufferSize <= 0)
+            {
+                return null;
+            }
+
+            byte[] metadataBuffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
+            uint requiredBufferSize = 0;
+            bool isOwnershipTransfered = false;
+            try
+            {
+                fixed (byte* destPtr = metadataBuffer)
+                {
+                    int hResult = this.Duplication.GetFrameDirtyRects(
+                        metadataBufferSize,
+                        (Box2D<int>*)destPtr,
+                        &requiredBufferSize
+                    );
+
+                    if (hResult != 0)
+                    {
+                        return new RectsMetadata();
+                    }
+                }
+
+                int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
+                isOwnershipTransfered = true;  // There`s nothing left to break here (it seems)
+                return new RectsMetadata(metadataBuffer, rectCount);
+            }
+            finally
+            {
+                if (!isOwnershipTransfered)
+                {
+                    ArrayPool<byte>.Shared.Return(metadataBuffer);
+                }
+            }
         }
 
         //protected override unsafe ScreenPatch GetActualFrame()
@@ -206,95 +294,54 @@ namespace RMF_Client.Capture
         //    );
         //}
 
-        protected override unsafe RectsMetadata? GetFrameUpdates()
-        {
-            OutduplFrameInfo frameInfo = default;
-            using ComPtr<IDXGIResource> resource = default;
-
-            int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
-            if (hResult != 0)
-            {
-                if (hResult == this.AcquireTimeoutCode)
-                {
-                    Initialize();
-                }
-                return null;
-            }
-
-            uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
-            if (metadataBufferSize == 0)
-            {
-                return null;
-            }
-
-            byte[] metadatabuffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
-            uint requiredBufferSize = 0;
-
-            fixed (byte* destPtr = metadatabuffer)
-            {
-                hResult = this.Duplication.GetFrameDirtyRects(metadataBufferSize, (Box2D<int>*)destPtr, &requiredBufferSize);
-                if (hResult != 0)
-                {
-                    return null;
-                }
-
-                int rectCount = (int)(metadataBufferSize / sizeof(Box2D<int>));
-                return new RectsMetadata(metadatabuffer, rectCount);
-            }
-        }
-
-        //protected override unsafe SKBitmap? GetScreenBitmap()
+        //protected override unsafe RectsMetadata? GetFrameUpdates()
         //{
-        //    lock (this.ScreenGetterLock)
+        //    OutduplFrameInfo frameInfo = default;
+        //    ComPtr<IDXGIResource> resource = default;
+
+        //    int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
+        //    if (hResult != 0)
         //    {
-        //        OutduplFrameInfo frameInfo = default;
-        //        ComPtr<IDXGIResource> resource = default;
-
-        //        int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
-
-        //        if (hResult == (int)this.AcquireTimeoutCode)
-        //        {
-        //            return this.ScreenBitmap;
-        //        }
-
-        //        if (hResult != 0)
+        //        if (hResult == this.AcquireTimeoutCode)
         //        {
         //            Initialize();
-        //            return this.ScreenBitmap;
         //        }
+        //        return null;
+        //    }
 
-        //        ComPtr<ID3D11Texture2D> texture = default;
-        //        resource.QueryInterface(out texture);
+        //    uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
+        //    if (metadataBufferSize == 0)
+        //    {
+        //        return null;
+        //    }
 
-        //        if (this.Texture.Handle != null && texture.Handle != null)
+        //    byte[] metadatabuffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
+        //    uint requiredBufferSize = 0;
+        //    bool isMetadataTransfered = false;
+        //    try
+        //    {
+        //        fixed (byte* destPtr = metadatabuffer)
         //        {
-        //            this.Context.CopyResource((ID3D11Resource*)this.Texture.Handle, (ID3D11Resource*)texture.Handle);
-
-        //            MappedSubresource mapped = default;
-        //            hResult = this.Context.Get().Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
-        //            if (hResult == 0 && mapped.PData != null)
+        //            hResult = this.Duplication.GetFrameDirtyRects(metadataBufferSize, (Box2D<int>*)destPtr, &requiredBufferSize);
+        //            if (hResult != 0)
         //            {
-        //                byte* srcPtr = (byte*)mapped.PData;
-        //                byte* destPtr = (byte*)this.ScreenBitmap!.GetPixels();
-
-        //                int rowLength = this.ScreenWidth * 4;
-
-        //                for (int y = 0; y < this.ScreenHeight; y++)
-
-        //                {
-        //                    Unsafe.CopyBlock(destPtr, srcPtr, (uint)rowLength);
-        //                    srcPtr += mapped.RowPitch;
-        //                    destPtr += rowLength;
-        //                }
-
-        //                this.Context.Unmap((ID3D11Resource*)this.Texture.Handle, 0);
+        //                return null;
         //            }
-        //        }
 
+        //            isMetadataTransfered = true;  // There`s nothing left to break here (it seems)
+        //            int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
+        //            return new RectsMetadata(metadatabuffer, rectCount);
+        //        }
+        //    }
+        //    finally
+        //    {
         //        resource.Dispose();
-        //        texture.Dispose();
-        //        this.Duplication.Get().ReleaseFrame();
-        //        return this.ScreenBitmap;
+        //        this.Duplication.ReleaseFrame();
+
+        //        if (!isMetadataTransfered)
+        //        {
+        //            ArrayPool<byte>.Shared.Return(metadatabuffer);
+        //        }
         //    }
         //}
     }

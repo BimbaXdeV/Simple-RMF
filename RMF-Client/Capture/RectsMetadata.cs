@@ -15,6 +15,12 @@ namespace RMF_Client.Capture
         public byte[] Data { get; init; }
         public int Count { get; init; }
 
+        public RectsMetadata()
+        {
+            this.Data = [];
+            this.Count = 0;
+        }
+
         public RectsMetadata(byte[] data, int count)
         {
             this.Data = data;
