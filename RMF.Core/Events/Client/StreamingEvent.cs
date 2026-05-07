@@ -7,6 +7,8 @@ using RMF.Core.Screen;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -20,7 +22,7 @@ namespace RMF.Core.Events.Client
         public ScreenFormats Format { get; set; }
         public byte QualityPercent { get; set; }
         public int FrameUpdateRate { get; set; }
-        public int IntervalMsecs { get; set; }  // (default) 0 - without delay
+        public int TargetFPS { get; set; }
 
         private void SendActualFrame(ClientSession session)
         {
@@ -41,10 +43,22 @@ namespace RMF.Core.Events.Client
 
         protected override async Task HandleLogic(ClientSession session, CancellationToken token)
         {
+            double targetFrameRateTick = 1000.0 / this.TargetFPS;
+            Stopwatch sw = new();
+
             while (!token.IsCancellationRequested)
             {
+                sw.Restart();
+
                 SendActualFrame(session);
-                await Task.Delay(this.IntervalMsecs, token);
+
+                double elapsedMsecs = sw.Elapsed.TotalMilliseconds;
+                double remainingMsecs = targetFrameRateTick - elapsedMsecs;
+
+                if (remainingMsecs > 0)
+                {
+                    await Task.Delay((int)Math.Round(remainingMsecs), token);
+                }
             }
         }
     }

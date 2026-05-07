@@ -42,7 +42,7 @@ namespace RMF.Core.Bases
             this.OutboundChannel = Channel.CreateBounded<Packet>(
                 new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1)
                 {
-                    FullMode = BoundedChannelFullMode.DropOldest
+                    FullMode = BoundedChannelFullMode.Wait
                 }
             );
 
@@ -90,12 +90,29 @@ namespace RMF.Core.Bases
 
         public void SendPacket(Packet packet)
         {
-            if (this.IsRunning)
+            if (!this.IsRunning)
             {
-                if (!this.OutboundChannel.Writer.TryWrite(packet) && packet is IReleasable releasable)
+                if (packet is IReleasable releasable)
                 {
                     releasable.Release();
                 }
+                return;
+            }
+
+            if (this.OutboundChannel.Writer.TryWrite(packet))
+            {
+                return;
+            }
+
+            this.OutboundChannel.Reader.TryRead(out Packet? oldestPacket);
+            if (oldestPacket != null && oldestPacket is IReleasable releasableOldest)
+            {
+                releasableOldest.Release();
+            }
+
+            if (!this.OutboundChannel.Writer.TryWrite(packet) && packet is IReleasable releasableDuplication)
+            {
+                releasableDuplication.Release();
             }
         }
 

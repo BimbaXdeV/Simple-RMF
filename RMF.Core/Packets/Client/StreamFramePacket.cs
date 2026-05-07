@@ -89,9 +89,9 @@ namespace RMF.Core.Packets.Client
 
             for (int i = 0; i < this.PatchesCount; i++)
             {
-                if (this.Patches[i].Data != null)
+                if (this.Patches[i].Data != null && this.Patches[i] is IReleasable releasable)
                 {
-                    ArrayPool<byte>.Shared.Return(this.Patches[i].Data);
+                    releasable.Release();
                 }
             }
             ArrayPool<ScreenPatch>.Shared.Return(this.Patches);

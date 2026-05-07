@@ -15,10 +15,8 @@ namespace RMF_Client.Logic
 
         public static SKData? CompressImage(SKImage image, ScreenFormats format, byte quality)
         {
-            Console.WriteLine($"{image.Width} {image.Height} {format} {quality}");
             if (image.Width <= 0 || image.Height <= 0 || format == ScreenFormats.Raw)
             {
-                Console.WriteLine("Invalid borders");
                 return null;
             }
 

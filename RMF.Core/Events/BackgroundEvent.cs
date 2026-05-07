@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Bases;
+using RMF.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Events
 {
-    public abstract class BackgroundEvent
+    public abstract class BackgroundEvent : IEvent
     {
         public bool IsEvRunning { get; private set; } = false;
 
         protected abstract Task HandleLogic(ClientSession session, CancellationToken token);
         
-        public async Task ExecuteEvAsync(ClientSession session, CancellationToken token)
+        public async Task ExecuteAsync(ClientSession session, CancellationToken token)
         {
             this.IsEvRunning = true;
             try
@@ -23,7 +24,7 @@ namespace RMF.Core.Events
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while executing the background event: {ex}");
+                Console.WriteLine(ex);
             }
             finally
             {

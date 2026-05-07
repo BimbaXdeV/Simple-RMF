@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -45,7 +46,7 @@ namespace RMF.Core.Events
             return (initializedEventsCounter, foundEvents.Length);
         }
 
-        public static BackgroundEvent? GetEvent(string name)
+        public static IEvent? GetEvent(string name)
         {
             if (EventTypes.TryGetValue(name, out Type? backgroundEvent))
             {
@@ -54,7 +55,7 @@ namespace RMF.Core.Events
             return null;
         }
 
-        public static void ApplyEventSettings(BackgroundEvent backgroundEvent, Dictionary<string, object> settings)
+        public static void ApplyEventSettings(IEvent backgroundEvent, Dictionary<string, object> settings)
         {
             foreach (string key in settings.Keys)
             {

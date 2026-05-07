@@ -103,7 +103,8 @@ namespace RMF_Server.UI
                 int screenRowLength = buffer.RowBytes;
                 byte* displayPtr = (byte*)buffer.Address;
 
-                using SKCodec codec = SKCodec.Create(new MemoryStream(frame.Data, 0, frame.Length));
+                using MemoryStream ms = new(frame.Data, 0, frame.Length);
+                using SKCodec codec = SKCodec.Create(ms);
                 if (codec == null)
                 {
                     Logging.Warning($"Failed to decode screen frame");
@@ -178,7 +179,8 @@ namespace RMF_Server.UI
                 for (int i = 0; i < patchCount; i++)
                 {
                     ScreenPatch patch = patches[i];
-                    using SKCodec codec = SKCodec.Create(new MemoryStream(patch.Data, 0, patch.Length));
+                    using MemoryStream ms = new(patch.Data, 0, patch.Length);
+                    using SKCodec codec = SKCodec.Create(ms);
                     if (codec == null)
                     {
                         Logging.Warning($"Failed to decode screen patch");

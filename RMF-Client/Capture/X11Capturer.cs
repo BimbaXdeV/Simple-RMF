@@ -26,7 +26,7 @@ namespace RMF_Client.Capture
             throw new NotImplementedException();
         }
 
-        protected override RectsMetadata? AcquireUpdates()
+        protected override RectsMetadata? AcquireUpdates(byte[] destinationFrameBuffer, int frameSize)
         {
             throw new NotImplementedException();
         }

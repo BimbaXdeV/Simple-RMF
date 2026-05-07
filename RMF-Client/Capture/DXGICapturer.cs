@@ -136,15 +136,17 @@ namespace RMF_Client.Capture
         {
             if (texture.Handle == null || this.Texture.Handle == null)
             {
+                Console.WriteLine("Invalid texture handle! Cannot unload the texture for reading.");
                 return false;
             }
 
             this.Context.CopyResource((ID3D11Resource*)this.Texture.Handle, (ID3D11Resource*)texture.Handle);
 
             MappedSubresource mapped = default;
-            int hResult = this.Context.Get().Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
+            int hResult = this.Context.Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
             if (hResult != 0 || mapped.PData == null)
             {
+                Console.WriteLine($"Failed to map the texture for reading! HResult: {hResult}");
                 return false;
             }
 
@@ -189,20 +191,19 @@ namespace RMF_Client.Capture
 
                 if (hResult != 0)
                 {
+                    Console.WriteLine($"Failed to acquire next frame! HResult: {hResult}");
                     if (hResult == (int)this.AcquireTimeoutCode)
                     {
                         Initialize();
                     }
+                    this.Duplication.ReleaseFrame();
                     return false;
                 }
             }
 
             ComPtr<ID3D11Texture2D> texture = default;
             resource.QueryInterface(out texture);
-
-            bool isUnloaded = TryUnloadTexture(texture);
-            this.Duplication.ReleaseFrame();
-            return isUnloaded;
+            return TryUnloadTexture(texture);
         }
 
         protected override unsafe ScreenPatch AcquireFrame()
@@ -212,65 +213,82 @@ namespace RMF_Client.Capture
                 return new ScreenPatch();
             }
 
-            int bufferSize = this.ScreenWidth * this.ScreenHeight * 4;
-            byte[] frameBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-            fixed (byte* destPtr = frameBuffer)
+            try
             {
-                Unsafe.CopyBlock(destPtr, (void*)this.RawPixels, (uint)bufferSize);
-            }
+                int bufferSize = this.ScreenWidth * this.ScreenHeight * 4;
+                byte[] frameBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                fixed (byte* destPtr = frameBuffer)
+                {
+                    Unsafe.CopyBlock(destPtr, (void*)this.RawPixels, (uint)bufferSize);
+                }
 
-            return new ScreenPatch(
-                frameBuffer,
-                bufferSize,
-                0,
-                0,
-                this.ScreenWidth,
-                this.ScreenHeight
-            );
+                return new ScreenPatch(
+                    frameBuffer,
+                    bufferSize,
+                    0,
+                    0,
+                    this.ScreenWidth,
+                    this.ScreenHeight
+                );
+            }
+            finally
+            {
+                this.Duplication.ReleaseFrame();
+            }
         }
 
-        protected override unsafe RectsMetadata? AcquireUpdates()
+        protected override unsafe RectsMetadata? AcquireUpdates(byte[] destinationFrameBuffer, int frameSize)
         {
             if (!TryAcquireNextFrame(out OutduplFrameInfo frameInfo))
             {
                 return null;
             }
 
-            uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
-            if (metadataBufferSize <= 0)
-            {
-                return null;
-            }
-
-            byte[] metadataBuffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
-            uint requiredBufferSize = 0;
-            bool isOwnershipTransfered = false;
             try
             {
-                fixed (byte* destPtr = metadataBuffer)
-                {
-                    int hResult = this.Duplication.GetFrameDirtyRects(
-                        metadataBufferSize,
-                        (Box2D<int>*)destPtr,
-                        &requiredBufferSize
-                    );
+                Marshal.Copy(this.RawPixels, destinationFrameBuffer, 0, frameSize);
 
-                    if (hResult != 0)
-                    {
-                        return new RectsMetadata();
-                    }
+                uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
+                if (metadataBufferSize <= 0)
+                {
+                    Console.WriteLine("No metadata available for the acquired frame!");
+                    return null;
                 }
 
-                int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
-                isOwnershipTransfered = true;  // There`s nothing left to break here (it seems)
-                return new RectsMetadata(metadataBuffer, rectCount);
+                byte[] metadataBuffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
+                uint requiredBufferSize = 0;
+                bool isOwnershipTransfered = false;
+                try
+                {
+                    fixed (byte* destPtr = metadataBuffer)
+                    {
+                        int hResult = this.Duplication.GetFrameDirtyRects(
+                            metadataBufferSize,
+                            (Box2D<int>*)destPtr,
+                            &requiredBufferSize
+                        );
+
+                        if (hResult != 0)
+                        {
+                            return new RectsMetadata();
+                        }
+                    }
+
+                    int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
+                    isOwnershipTransfered = true;  // There`s nothing left to break here (it seems)
+                    return new RectsMetadata(metadataBuffer, rectCount);
+                }
+                finally
+                {
+                    if (!isOwnershipTransfered)
+                    {
+                        ArrayPool<byte>.Shared.Return(metadataBuffer);
+                    }
+                }
             }
             finally
             {
-                if (!isOwnershipTransfered)
-                {
-                    ArrayPool<byte>.Shared.Return(metadataBuffer);
-                }
+                this.Duplication.ReleaseFrame();
             }
         }
 

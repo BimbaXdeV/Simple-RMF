@@ -15,8 +15,8 @@ namespace RMF.Core.Packets.Server
         public bool IsActive { get; set; }        // 0 - no, 1 - yes
         public byte FormatID { get; set; }        // Check ScreenFormats enum for supported formats
         public byte Quality { get; set; }         // 1-100% of source screenshot quality
-        public int FrameUpdateRate { get; set; }   // How many frames does it take to refresh the entire screen (this is necessary for synchronization)
-        public short IntervalMsecs { get; set; }  // Interval between sending rectangles in milliseconds
+        public int FrameUpdateRate { get; set; }  // How many frames does it take to refresh the entire screen (this is necessary for synchronization)
+        public short TargetFPS { get; set; }      // Maximum screen refresh rate
 
         public override void Deserialize(ref SpanReader reader)
         {
@@ -24,7 +24,7 @@ namespace RMF.Core.Packets.Server
             this.FormatID = reader.ReadByte();
             this.Quality = reader.ReadByte();
             this.FrameUpdateRate = reader.ReadInt32();
-            this.IntervalMsecs = reader.ReadInt16();
+            this.TargetFPS = reader.ReadInt16();
         }
 
         protected override void WriteBody(BinaryWriter writer)
@@ -33,7 +33,7 @@ namespace RMF.Core.Packets.Server
             writer.Write(this.FormatID);
             writer.Write(this.Quality);
             writer.Write(this.FrameUpdateRate);
-            writer.Write(this.IntervalMsecs);
+            writer.Write(this.TargetFPS);
         }
     }
 }

@@ -131,7 +131,7 @@ namespace RMF_Client.Network
                     { "Format", (ScreenFormats)packet.FormatID },
                     { "QualityPercent", packet.Quality },
                     { "FrameUpdateRate", packet.FrameUpdateRate },
-                    { "IntervalMsecs", packet.IntervalMsecs }
+                    { "TargetFPS", packet.TargetFPS }
                 });
             }
         }
