@@ -1,5 +1,7 @@
 ﻿using RMF.Core.Bases;
+using RMF.Core.Interfaces;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,29 +11,54 @@ namespace RMF.Core.Events
 {
     public class EventController
     {
-        private readonly Dictionary<string, CancellationTokenSource> RunningTasks = [];
+        private readonly ConcurrentDictionary<string, EventContainer> RunningTasks = [];
 
-        public void ToggleEvent(ClientSession session, string eventName, Dictionary<string, object>? eventSettings = null)
+        public void StartEvent(ClientSession session, string eventName, Dictionary<string, object>? eventSettings = null)
         {
-            if (this.RunningTasks.TryGetValue(eventName, out CancellationTokenSource? runningCts))
+            if (!this.RunningTasks.ContainsKey(eventName))
             {
-                runningCts.Cancel();
-                this.RunningTasks.Remove(eventName);
-            }
-            else
-            {
-                BackgroundEvent? backgroundEvent = EventAssembler.GetEvent(eventName);
+                IEvent? backgroundEvent = EventAssembler.GetEvent(eventName);
                 if (backgroundEvent != null)
                 {
                     if (eventSettings != null)
                     {
                         EventAssembler.ApplyEventSettings(backgroundEvent, eventSettings);
                     }
-
                     CancellationTokenSource newCts = new();
-                    _ = Task.Run(() => backgroundEvent.ExecuteEvAsync(session, newCts.Token), newCts.Token);
-                    this.RunningTasks[eventName] = newCts;
+                    EventContainer container = new(backgroundEvent, newCts);
+
+                    if (this.RunningTasks.TryAdd(eventName, container))
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await backgroundEvent.ExecuteAsync(session, newCts.Token);
+                            }
+                            finally
+                            {
+                                this.RunningTasks.TryRemove(eventName, out _);
+                                newCts.Dispose();
+                            }
+
+                            //_ = Task.Run(() => backgroundEvent.ExecuteAsync(session, newCts.Token), newCts.Token);
+                            //this.RunningTasks[eventName] = new EventContainer(backgroundEvent, newCts);
+                        }, newCts.Token);
+                    }
+                    else
+                    {
+                        newCts.Dispose();
+                    }
                 }
+            }
+        }
+
+        public void StopEvent(string eventName)
+        {
+            if (this.RunningTasks.TryGetValue(eventName, out EventContainer? container))
+            {
+                container.Cts?.Cancel();
+                this.RunningTasks.Remove(eventName, out _);
             }
         }
 
@@ -42,11 +69,10 @@ namespace RMF.Core.Events
 
         public void StopAllRunning()
         {
-            foreach (var cts in this.RunningTasks.Values)
+            foreach (EventContainer container in this.RunningTasks.Values)
             {
-                cts.Cancel();
+                container.Cts?.Cancel();
             }
-            // this.RunningTasks.Clear();
         }
     }
 }

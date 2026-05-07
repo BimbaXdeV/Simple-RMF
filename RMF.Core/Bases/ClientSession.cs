@@ -36,6 +36,22 @@ namespace RMF.Core.Bases
             }
         }
 
+        public ClientSession(TcpClient client, int channelCapacity, CancellationToken token)
+        {
+            this.Client = client;
+            this.OutboundChannel = Channel.CreateBounded<Packet>(
+                new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1)
+                {
+                    FullMode = BoundedChannelFullMode.Wait
+                }
+            );
+
+            if (client.Connected)
+            {
+                RunProcessing(token);
+            }
+        }
+
         private async Task OutboundChannelWorker(CancellationToken token)
         {
             if (!this.IsRunning)
@@ -43,21 +59,60 @@ namespace RMF.Core.Bases
                 return;
             }
 
-            await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
+            try
             {
-                await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
-                if (packet is IReleasable releasable)
+                await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
                 {
-                    releasable.Release();
+                    try
+                    {
+                        await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
+                    }
+                    finally
+                    {
+                        if (packet is IReleasable releasable)
+                        {
+                            releasable.Release();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                while (this.OutboundChannel.Reader.TryRead(out Packet? packet))
+                {
+                    if (packet is IReleasable releasable)
+                    {
+                        releasable.Release();
+                    }
                 }
             }
         }
 
         public void SendPacket(Packet packet)
         {
-            if (this.IsRunning)
+            if (!this.IsRunning)
             {
-                this.OutboundChannel.Writer.TryWrite(packet);
+                if (packet is IReleasable releasable)
+                {
+                    releasable.Release();
+                }
+                return;
+            }
+
+            if (this.OutboundChannel.Writer.TryWrite(packet))
+            {
+                return;
+            }
+
+            this.OutboundChannel.Reader.TryRead(out Packet? oldestPacket);
+            if (oldestPacket != null && oldestPacket is IReleasable releasableOldest)
+            {
+                releasableOldest.Release();
+            }
+
+            if (!this.OutboundChannel.Writer.TryWrite(packet) && packet is IReleasable releasableDuplication)
+            {
+                releasableDuplication.Release();
             }
         }
 

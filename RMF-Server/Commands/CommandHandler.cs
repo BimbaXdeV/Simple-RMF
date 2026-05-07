@@ -205,7 +205,8 @@ namespace RMF_Server.Commands
                     IsActive = true,
                     FormatID = (byte)ConfigurationManager.StreamingFrameFormat,
                     Quality = (byte)ConfigurationManager.StreamingQualityPercentage,
-                    IntervalMsecs = (short)ConfigurationManager.DesktopSendingIntervalMsecs
+                    FrameUpdateRate = ConfigurationManager.StreamingFrameUpdateRate,
+                    TargetFPS = (short)ConfigurationManager.StreamingTargetFPS
                 };
                 session.SendPacket(streamingRequest);
                 Logging.Message($"Successfully sent to {targetEndPoint}, waiting for starting stream...");

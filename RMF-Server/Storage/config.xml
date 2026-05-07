@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-
 <Settings>
+	<!-- This file contains all the settings for the RMF-Server. It is read at startup and can be modified to change the behavior of the server -->
+	
 	<!-- Appearance Settings -->
 	<add key="AppTitle" value="RMF-Server"/>
 	<add key="WindowTitle" value="RMF-Streamer"/>
@@ -24,14 +25,15 @@
 	<add key="ClientHeartbeatIntervalSecs" value="10"/>
 	
 	<!-- Channel Settings -->
-	<add key="ChannelPacketsCapacity" value="50"/>
+	<add key="ChannelPacketsCapacity" value="5"/>
 	
 	<!-- Streaming Settings -->
-	<add key="ScreenshotFrameFormat" value="2"/>
+	<add key="ScreenshotFrameFormat" value="3"/>
 	<add key="ScreenshotQualityPercentage" value="90"/>
-	<add key="StreamingFrameFormat" value="0"/>
+	<add key="StreamingFrameFormat" value="1"/>
 	<add key="StreamingQualityPercentage" value="50"/>
-	<add key="DesktopSendingIntervalMsecs" value="16"/>
+	<add key="StreamingFrameUpdateRate" value="0"/>
+	<add key="StreamingTargetFPS" value="60"/>
 	<add key="EnableStreamingStatsOverlay" value="true"/>
 
 	<!-- Commands Settings -->

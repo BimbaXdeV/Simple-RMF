@@ -4,9 +4,12 @@ using RMF.Core.Screen;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RMF.Core.Packets.Client
 {
@@ -14,44 +17,86 @@ namespace RMF.Core.Packets.Client
     {
         public override short ID => 201;
 
+        public bool IsFullFrame { get; set; }
         public byte FormatID { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public int ImageLength { get; set; }
-        public byte[]? ImageData { get; set; }
+        public short PatchesCount { get; set; }
+        public ScreenPatch[]? Patches { get; set; }
 
         public override void Deserialize(ref SpanReader reader)
         {
+            this.IsFullFrame = reader.ReadBoolean();
             this.FormatID = reader.ReadByte();
-            this.Width = reader.ReadInt32();
-            this.Height = reader.ReadInt32();
-            this.ImageLength = reader.ReadInt32();
-            if (this.ImageLength <= 0)
+            this.PatchesCount = reader.ReadInt16();
+
+            Console.WriteLine("Patches: " + this.PatchesCount);
+            ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(this.PatchesCount);
+            for (int i = 0; i < this.PatchesCount; i++)
             {
-                throw new Exception("Invalid image length");
+                short x = reader.ReadInt16();
+                short y = reader.ReadInt16();
+                short width = reader.ReadInt16();
+                short height = reader.ReadInt16();
+                int length = reader.ReadInt32();
+
+                byte[] data = ArrayPool<byte>.Shared.Rent(length);
+                reader.ReadBytes(length).CopyTo(data);
+
+                Console.WriteLine($"X: {x}, Y: {y}, W: {width}, H: {height}, L: {length} ({data.Length})");
+
+                patches[i] = new ScreenPatch(
+                    data,
+                    length,
+                    x,
+                    y,
+                    width,
+                    height
+                );
             }
-            this.ImageData = ArrayPool<byte>.Shared.Rent(this.ImageLength);
-            reader.ReadBytes(this.ImageLength).CopyTo(this.ImageData);
+
+            this.Patches = patches;
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
+            writer.Write(this.IsFullFrame);
             writer.Write(this.FormatID);
-            writer.Write(this.Width);
-            writer.Write(this.Height);
-            writer.Write(this.ImageLength);
-            if (this.ImageData != null)
+            writer.Write(this.PatchesCount);
+
+            Console.WriteLine("Patches: " + this.PatchesCount);
+            for (int i = 0; i < this.PatchesCount; i++)
             {
-                writer.Write(this.ImageData, 0, this.ImageLength);
+                ScreenPatch patch = this.Patches![i];
+                writer.Write(patch.X);
+                writer.Write(patch.Y);
+                writer.Write(patch.Width);
+                writer.Write(patch.Height);
+                writer.Write(patch.Length);
+                if (patch.Data != null)
+                {
+                    writer.Write(patch.Data, 0, patch.Length);
+                }
+
+                Console.WriteLine($"X: {patch.X}, Y: {patch.Y}, W: {patch.Width}, H: {patch.Height}, L: {patch.Length} ({patch.Data?.Length})");
             }
         }
 
         public void Release()
         {
-            if (this.ImageData != null)
+            if (this.Patches == null)
             {
-                ArrayPool<byte>.Shared.Return(this.ImageData);
+                return;
             }
+
+            for (int i = 0; i < this.PatchesCount; i++)
+            {
+                if (this.Patches[i].Data != null && this.Patches[i] is IReleasable releasable)
+                {
+                    releasable.Release();
+                }
+            }
+            ArrayPool<ScreenPatch>.Shared.Return(this.Patches);
+            this.Patches = null;
+            this.PatchesCount = 0;
         }
     }
 }

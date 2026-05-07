@@ -7,6 +7,9 @@ using RMF.Core.Screen;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,31 +21,44 @@ namespace RMF.Core.Events.Client
         public IScreenProvider? Provider { get; set; }
         public ScreenFormats Format { get; set; }
         public byte QualityPercent { get; set; }
-        public int IntervalMsecs { get; set; }  // (default) 0 - without delay
-
-        private readonly StreamFramePacket PacketTemplate = new();
+        public int FrameUpdateRate { get; set; }
+        public int TargetFPS { get; set; }
 
         private void SendActualFrame(ClientSession session)
         {
-            CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent);
+            CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent, this.FrameUpdateRate);
             if (frame != null && frame.Value is CapturedFrame f)
             {
-                this.PacketTemplate.FormatID = (byte)f.Format;
-                this.PacketTemplate.Width = f.Width;
-                this.PacketTemplate.Height = f.Height;
-                this.PacketTemplate.ImageLength = f.Length;
-                this.PacketTemplate.ImageData = f.Buffer;
+                StreamFramePacket streamFramePacket = new()
+                {
+                    FormatID = (byte)f.Format,
+                    Patches = f.Rects,
+                    PatchesCount = f.RectsCount,
+                    IsFullFrame = f.IsFullFrame,
+                };
 
-                session.SendPacket(this.PacketTemplate);
+                session.SendPacket(streamFramePacket);
             }
         }
 
         protected override async Task HandleLogic(ClientSession session, CancellationToken token)
         {
+            double targetFrameRateTick = 1000.0 / this.TargetFPS;
+            Stopwatch sw = new();
+
             while (!token.IsCancellationRequested)
             {
+                sw.Restart();
+
                 SendActualFrame(session);
-                await Task.Delay(this.IntervalMsecs, token);
+
+                double elapsedMsecs = sw.Elapsed.TotalMilliseconds;
+                double remainingMsecs = targetFrameRateTick - elapsedMsecs;
+
+                if (remainingMsecs > 0)
+                {
+                    await Task.Delay((int)Math.Round(remainingMsecs), token);
+                }
             }
         }
     }

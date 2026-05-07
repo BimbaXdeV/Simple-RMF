@@ -8,6 +8,8 @@ namespace RMF.Core.Interfaces
 {
     public interface IReleasable
     {
+        // Not to be confused with "IDisposable"!
+        // This is for objects that are pooled and need to be released back to the pool, not for unmanaged resources.
         void Release();
     }
 }

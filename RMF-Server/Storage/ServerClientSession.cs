@@ -28,6 +28,7 @@ namespace RMF_Server.Storage
         public DateTime? LastFrameUpdate { get; set; }
 
         public ServerClientSession(TcpClient client, CancellationToken token) : base(client, token) { }
+        public ServerClientSession(TcpClient client, int channelCapacity, CancellationToken token) : base (client, channelCapacity, token) { }
 
         public bool IsRateLimitExceed(int maxRate)
         {

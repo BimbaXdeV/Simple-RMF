@@ -27,7 +27,7 @@ namespace RMF_Client
                 { "endpointMachine", HardwareAnalyser.GetMachineName() },
                 { "endpointUsername", HardwareAnalyser.GetUsername() },
                 { "endpointOS", HardwareAnalyser.GetOS() },
-                { "endpointArch", HardwareAnalyser.GetArchitecture() },
+                { "endpointArchitecture", HardwareAnalyser.GetArchitecture() },
                 { "configurationsLoaded", configurationsLoaded + " / " + totalConfigurations },
                 { "packetsLoaded", packetsLoaded + " / " + totalPackets },
                 { "eventsLoaded", eventsLoaded + " / " + totalEvents }

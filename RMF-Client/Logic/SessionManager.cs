@@ -16,7 +16,7 @@ namespace RMF_Client.Logic
         {
             try
             {
-                Connection = new ConnectionClientSession(client, token);
+                Connection = new ConnectionClientSession(client, ConfigurationManager.ChannelPacketsCapacity, token);
             }
             catch (Exception)
             {

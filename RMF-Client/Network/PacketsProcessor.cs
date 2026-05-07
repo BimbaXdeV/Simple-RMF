@@ -70,7 +70,7 @@ namespace RMF_Client.Network
             NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
             if (stream != null)
             {
-                SessionManager.Connection!.Events.ToggleEvent(SessionManager.Connection, "HeartbeatEvent", new Dictionary<string, object>
+                SessionManager.Connection!.Events.StartEvent(SessionManager.Connection, "HeartbeatEvent", new Dictionary<string, object>
                 {
                     { "IntervalSecs", packet.IntervalSecs }
                 });
@@ -86,17 +86,17 @@ namespace RMF_Client.Network
                 return;
             }
 
-            CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent);
+            CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent, 0);
             if (screenshot.HasValue)
             {
                 CapturedFrame frame = screenshot.Value;
                 DesktopFramePacket desktopFramePacket = new()
                 {
                     FormatID = packet.FormatID,
-                    Width = frame.Width,
-                    Height = frame.Height,
-                    ImageLength = frame.Length,
-                    ImageData = frame.Buffer
+                    Width = frame.Rects[0].Width,
+                    Height = frame.Rects[0].Height,
+                    ImageLength = frame.Rects[0].Length,
+                    ImageData = frame.Rects[0].Data
                 };
 
                 session.SendPacket(desktopFramePacket);
@@ -112,7 +112,7 @@ namespace RMF_Client.Network
             if (!packet.IsActive && isEventActive)
             {
                 Console.WriteLine("Streaming shutdown requested by the server");
-                session.Events.ToggleEvent(session, "StreamingEvent");
+                session.Events.StopEvent("StreamingEvent");
                 return;
             }
 
@@ -125,12 +125,13 @@ namespace RMF_Client.Network
                     return;
                 }
 
-                session.Events.ToggleEvent(session, "StreamingEvent", new Dictionary<string, object>
+                session.Events.StartEvent(session, "StreamingEvent", new Dictionary<string, object>
                 {
                     { "Provider", screenProvider },
                     { "Format", (ScreenFormats)packet.FormatID },
                     { "QualityPercent", packet.Quality },
-                    { "IntervalMsecs", packet.IntervalMsecs }
+                    { "FrameUpdateRate", packet.FrameUpdateRate },
+                    { "TargetFPS", packet.TargetFPS }
                 });
             }
         }

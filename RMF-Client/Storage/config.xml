@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Settings>
+	<!-- This file contains all the settings for the RMF-Client. It is read at startup and can be modified to change the behavior of the client -->
+	
 	<!-- Appearance Settings -->
 	<add key="AppTitle" value="RMF-Client"/>
 
@@ -9,7 +11,12 @@
 	<add key="ConnectionRequestTimeoutSecs" value="10"/>
 	<add key="MinPacketBufferKB" value="12"/>
 	<add key="MaxPacketLengthKB" value="128"/>
+
+	<!-- Channel Settings -->
+	<add key="ChannelPacketsCapacity" value="5"/>
 	
 	<!-- Capture Settings -->
+	<add key="MaxProcessorCores" value="4"/>
 	<add key="MetricsUpdateRate" value="120"/>
+	<add key="DesktopPatchesBufferSize" value="64"/>
 </Settings>

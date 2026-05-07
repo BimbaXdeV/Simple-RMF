@@ -21,7 +21,7 @@ namespace RMF_Server.Channels
     {
         private static readonly Dictionary<int, Channel<PacketContext>> Channels = new();
 
-        private static async Task OpenChannel(Channel<PacketContext> channel, int id = 0)
+        private static async Task InboundChannelWorker(Channel<PacketContext> channel, int id = 0)
         {
             ChannelReader<PacketContext> reader = channel.Reader;
 
@@ -92,7 +92,7 @@ namespace RMF_Server.Channels
                     Logging.Warning($"Failed to initialize channel for key {k}");
                     continue;
                 }
-                _ = Task.Run(() => OpenChannel(rawChannel));
+                _ = Task.Run(() => InboundChannelWorker(rawChannel));
                 initializedChannelsCounter++;
             }
             return (initializedChannelsCounter, channelKeys.Count);
