@@ -40,9 +40,6 @@ namespace RMF.Core.Events
                                 this.RunningTasks.TryRemove(eventName, out _);
                                 newCts.Dispose();
                             }
-
-                            //_ = Task.Run(() => backgroundEvent.ExecuteAsync(session, newCts.Token), newCts.Token);
-                            //this.RunningTasks[eventName] = new EventContainer(backgroundEvent, newCts);
                         }, newCts.Token);
                     }
                     else

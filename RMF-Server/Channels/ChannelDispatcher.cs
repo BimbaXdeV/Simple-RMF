@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using static System.Collections.Specialized.BitVector32;
 
 namespace RMF_Server.Channels
 {

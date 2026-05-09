@@ -14,7 +14,13 @@ namespace RMF_Client.Storage
 {
     internal class ConnectionClientSession : ClientSession
     {
-        public ConnectionClientSession(TcpClient client, CancellationToken token) : base(client, token) { }
-        public ConnectionClientSession(TcpClient client, int channelCapacity, CancellationToken token) : base (client, channelCapacity, token) { }
+        public DateTime ConnectedTime { get; private set; }
+
+        public ConnectionClientSession(
+            TcpClient client,
+            int channelCapacity = 0,
+            bool collectingStats = false,
+            CancellationToken token = default
+        ) : base(client, channelCapacity, collectingStats, token) { }
     }
 }

@@ -12,37 +12,34 @@ namespace RMF_Server.Storage
 {
     internal class ServerClientSession : ClientSession
     {
-        //public TcpClient Client { get; set; }
-        //private Channel<Packet> OutboundChannel = Channel.CreateUnbounded<Packet>();
-        //private ChannelWriter<Packet> Writer => this.OutboundChannel.Writer;
-        //public EventController Events { get; } = new();
+        public int _rateLimitCounter;
+        private long _lastResetTicks;
 
-        //public string EndPoint { get; set; } = "";
-        //public string IPAddress { get; set; } = "0.0.0.0";
-        //public ushort Port { get; set; } = 0;
-
-        public int PacketsCount { get; private set; }
-        public DateTime HandleStartTime { get; private set; }
-        public DateTime LastTransferTime { get; private set; }
-
-        public DateTime? LastFrameUpdate { get; set; }
-
-        public ServerClientSession(TcpClient client, CancellationToken token) : base(client, token) { }
-        public ServerClientSession(TcpClient client, int channelCapacity, CancellationToken token) : base (client, channelCapacity, token) { }
+        public ServerClientSession(
+            TcpClient client,
+            int channelCapacity = 0,
+            bool collectingStats = false,
+            CancellationToken token = default
+        ) : base(client, channelCapacity, collectingStats, token)
+        {
+            this._lastResetTicks = DateTime.UtcNow.Ticks;
+        }
 
         public bool IsRateLimitExceed(int maxRate)
         {
-            DateTime currentTime = DateTime.UtcNow;
-            this.LastTransferTime = currentTime;
+            long currentTicks = DateTime.UtcNow.Ticks;
+            long lastReset = Interlocked.Read(ref this._lastResetTicks);
 
-            if ((currentTime - this.HandleStartTime).TotalSeconds >= 1.0f)
+            if (currentTicks - lastReset >= TimeSpan.TicksPerSecond)
             {
-                this.PacketsCount = 0;
-                this.HandleStartTime = currentTime;
+                if (Interlocked.CompareExchange(ref _lastResetTicks, currentTicks, lastReset) == lastReset)
+                {
+                    Interlocked.Exchange(ref this._rateLimitCounter, 0);
+                }
             }
 
-            this.PacketsCount++;
-            return this.PacketsCount > maxRate;
+            int currentRate = Interlocked.Increment(ref this._rateLimitCounter);
+            return currentRate > maxRate;
         }
     }
 }

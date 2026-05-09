@@ -106,6 +106,13 @@ namespace RMF_Server.Logic
             {
                 Logging.Separator();
                 Logging.Warning("Cancellation requested, stopping server...");
+
+                if (ConfigurationManager.EnableRelativeParting)
+                {
+                    EndOfEventsPacket endOfEventsPacket = new();
+                    SessionManager.BroadcastPacket(endOfEventsPacket , CancellationToken.None);
+                    await WaitForParting(ConfigurationManager.PartingTimeoutSecs);
+                }
             }
             catch (Exception ex)
             {
@@ -116,23 +123,6 @@ namespace RMF_Server.Logic
                 Shutdown();
             }
         }
-
-        public void Shutdown()
-        {
-            Logging.Output("The server is shutting down...");
-            if (!SessionManager.Connections.IsEmpty)
-            {
-                SessionManager.ClearConnections();
-            }
-            this.Server?.Stop();
-            Logging.Output("The server successfully stoped");
-        }
-
-        //private static async Task ClientDowntime(TcpClient client, string endPoint, int connectionDurationSecs)
-        //{
-        //    await Task.Delay(connectionDurationSecs * 1000);
-        //    SessionManager.Disconnect(client, endPoint);
-        //}
 
         private static async Task ClientHandler(ServerClientSession session, CancellationToken token)
         {
@@ -170,6 +160,11 @@ namespace RMF_Server.Logic
                     {
                         PacketContext context = new(session.EndPoint!, id, packetLength, payload);
                         await ChannelDispatcher.SendPacket(context);  // The packet will be processed in the channel, so we can immediately start waiting for the next packet without worrying about the processing time of the current
+
+                        if (session.CollectingStats)
+                        {
+                            session.IncrementReceivedPackets();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -196,12 +191,39 @@ namespace RMF_Server.Logic
 
             catch (Exception ex)
             {
-                Logging.Error($"Failed to start client event loop: {ex}");
+                Logging.Error($"Failed to handle client event loop: {ex}");
             }
             finally
             {
                 SessionManager.Disconnect(session.EndPoint?.ToString() ?? "");
             }
+        }
+
+        public async Task WaitForParting(int timeoutSecs)
+        {
+            Logging.Output("The server is parting...");
+            DateTime deadline = DateTime.Now + TimeSpan.FromSeconds(timeoutSecs);
+            while (SessionManager.Connections.IsEmpty == false && DateTime.Now < deadline)
+            {
+                await Task.Delay(1000);
+            }
+
+            if (SessionManager.Connections.IsEmpty == false)
+            {
+                Logging.Warning($"The server parting timeout has expired, {SessionManager.Connections.Count} clients are still connected");
+            }
+            Logging.Output("The server successfully parted");
+        }   
+
+        public void Shutdown()
+        {
+            Logging.Output("The server is shutting down...");
+            if (!SessionManager.Connections.IsEmpty)
+            {
+                SessionManager.ClearConnections();
+            }
+            this.Server?.Stop();
+            Logging.Output("The server successfully stoped");
         }
     }
 }

@@ -17,26 +17,27 @@ namespace RMF_Client.Network
 {
     internal class EntryTCP
     {
-        private async Task PacketListener(CancellationToken token)
+        private static async Task PacketListener()
         {
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Connected");
 
-            NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
-            if (stream == null)
+            ConnectionClientSession? session = SessionManager.Connection;
+            NetworkStream? stream = session?.Client.GetStream();
+            if (session == null || stream == null)
             {
                 return;
             }
 
             byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
 
-            while (SessionManager.Connection?.Client.Connected == true)
+            while (session.Client.Connected)
             {
-                await stream.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length, token);
+                await stream.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length, CancellationToken.None);
 
                 short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                 int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
 
-                byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
+                byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, CancellationToken.None);
                 Packet? packet = PacketsAssembler.GetPacket(id);
 
                 try
@@ -44,6 +45,11 @@ namespace RMF_Client.Network
                     if (packet == null)
                     {
                         continue;
+                    }
+
+                    if (session.CollectingStats)
+                    {
+                        session.IncrementReceivedPackets();
                     }
 
                     ReadOnlySpan<byte> payloadSpan = payload.AsSpan(0, packetLength);
@@ -88,18 +94,18 @@ namespace RMF_Client.Network
                     { "endpointPort", port.ToString() }
                 });
 
-                await PacketListener(token);
+                await PacketListener();
             }
 
             catch (OperationCanceledException)
             {
             }
 
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Just a crutch :D
-                Console.WriteLine(ex);
-                await Task.Delay(5000, token);
+                //Console.WriteLine(ex);
+                //await Task.Delay(5000, token);
             }
             finally
             {

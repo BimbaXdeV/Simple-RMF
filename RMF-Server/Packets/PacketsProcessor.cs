@@ -37,6 +37,10 @@ namespace RMF_Server.Packets
                 case StreamFramePacket streamFramePacket:
                     ProcessStreamFramePacket(streamFramePacket, endPoint);
                     break;
+
+                case PartingPacket partingPacket:
+                    ProcessPartingPacket(partingPacket, endPoint);
+                    break;
             }
         }
 
@@ -83,7 +87,7 @@ namespace RMF_Server.Packets
                 {
                     Directory.CreateDirectory(directory);
                 }
-                
+
                 await File.WriteAllBytesAsync(savePath, packet.ImageData.AsMemory(0, packet.ImageLength));
                 Logging.Message($"Screenshot from {endPoint} successfully saved on path: \"{savePath}\"");
             }
@@ -118,8 +122,14 @@ namespace RMF_Server.Packets
                 }
 
                 WindowManager.UpdateBitmap(packet.Patches, packet.PatchesCount, packet.IsFullFrame);
-                session.LastFrameUpdate = DateTime.Now;
             }
+        }
+
+        private static void ProcessPartingPacket(PartingPacket packet, IPEndPoint endPoint)
+        {
+            Logging.Output($"Received a parting packet from {endPoint} with status code: \"{packet.StatusCode}\" ({Enum.GetName(typeof(PartingStatusCodes), packet.StatusCode)})");
+            Logging.Output($"Total {endPoint} uptime: {packet.UptimeSecs / 60}m | received: {packet.ReceivedPackets} | sent: {packet.SentPackets}");
+            SessionManager.Disconnect(endPoint.ToString());
         }
     }
 }

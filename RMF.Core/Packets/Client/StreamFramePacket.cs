@@ -28,7 +28,6 @@ namespace RMF.Core.Packets.Client
             this.FormatID = reader.ReadByte();
             this.PatchesCount = reader.ReadInt16();
 
-            Console.WriteLine("Patches: " + this.PatchesCount);
             ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(this.PatchesCount);
             for (int i = 0; i < this.PatchesCount; i++)
             {
@@ -40,8 +39,6 @@ namespace RMF.Core.Packets.Client
 
                 byte[] data = ArrayPool<byte>.Shared.Rent(length);
                 reader.ReadBytes(length).CopyTo(data);
-
-                Console.WriteLine($"X: {x}, Y: {y}, W: {width}, H: {height}, L: {length} ({data.Length})");
 
                 patches[i] = new ScreenPatch(
                     data,
@@ -62,7 +59,6 @@ namespace RMF.Core.Packets.Client
             writer.Write(this.FormatID);
             writer.Write(this.PatchesCount);
 
-            Console.WriteLine("Patches: " + this.PatchesCount);
             for (int i = 0; i < this.PatchesCount; i++)
             {
                 ScreenPatch patch = this.Patches![i];
@@ -75,8 +71,6 @@ namespace RMF.Core.Packets.Client
                 {
                     writer.Write(patch.Data, 0, patch.Length);
                 }
-
-                Console.WriteLine($"X: {patch.X}, Y: {patch.Y}, W: {patch.Width}, H: {patch.Height}, L: {patch.Length} ({patch.Data?.Length})");
             }
         }
 

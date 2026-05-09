@@ -120,14 +120,7 @@ namespace RMF_Client.Capture
 
                     this.ScreenBitmap?.Dispose();
                     this.ScreenBitmap = new SKBitmap(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
-                    //this.ScreenBitmap = new SKBitmap();
-                    //this.ScreenBitmap.InstallPixels(
-                    //    new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
-                    //    this.RawPixels,
-                    //    this.ScreenWidth * 4
-                    //);
                     Initialize();
-                    Console.WriteLine($"Bitmap metrics updated! {this.ScreenWidth}x{this.ScreenHeight}");
                 }
             }
         }
@@ -136,7 +129,6 @@ namespace RMF_Client.Capture
         {
             if (texture.Handle == null || this.Texture.Handle == null)
             {
-                Console.WriteLine("Invalid texture handle! Cannot unload the texture for reading.");
                 return false;
             }
 
@@ -146,7 +138,6 @@ namespace RMF_Client.Capture
             int hResult = this.Context.Map((ID3D11Resource*)this.Texture.Handle, 0, Map.Read, 0, &mapped);
             if (hResult != 0 || mapped.PData == null)
             {
-                Console.WriteLine($"Failed to map the texture for reading! HResult: {hResult}");
                 return false;
             }
 
@@ -191,7 +182,6 @@ namespace RMF_Client.Capture
 
                 if (hResult != 0)
                 {
-                    Console.WriteLine($"Failed to acquire next frame! HResult: {hResult}");
                     if (hResult == (int)this.AcquireTimeoutCode)
                     {
                         Initialize();
@@ -251,7 +241,6 @@ namespace RMF_Client.Capture
                 uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
                 if (metadataBufferSize <= 0)
                 {
-                    Console.WriteLine("No metadata available for the acquired frame!");
                     return null;
                 }
 

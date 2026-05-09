@@ -1,6 +1,7 @@
 ﻿using RMF_Server.Debugger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,9 +30,12 @@ namespace RMF_Server.Logic
         public static int MaxPacketRate;
         public static int ReceiveTimeoutSecs;
 
+        public static bool EnableCollectingSessionStats;
         public static bool EnableWelcomeHandshake;
         public static bool EnableClientHeartbeat;
         public static int ClientHeartbeatIntervalSecs;
+        public static bool EnableRelativeParting;
+        public static int PartingTimeoutSecs;
 
         public static int ChannelPacketsCapacity;
 

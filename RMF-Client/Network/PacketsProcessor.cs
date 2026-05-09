@@ -41,6 +41,10 @@ namespace RMF_Client.Network
                 case StreamingRequest streamingRequest:
                     ProcessStreamingRequest(streamingRequest);
                     break;
+
+                case EndOfEventsPacket endOfEventsPacket:
+                    ProcessEndOfEventsPacket(endOfEventsPacket);
+                    break;
             }
         }
 
@@ -54,7 +58,7 @@ namespace RMF_Client.Network
         {
             IPEndPoint? remoteEndpoint = SessionManager.Connection?.Client.Client.RemoteEndPoint as IPEndPoint;
             int localPort = remoteEndpoint?.Port ?? -1;
-            
+
             AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
             {
                 { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).ToString("HH:mm:ss") },
@@ -111,7 +115,6 @@ namespace RMF_Client.Network
             bool isEventActive = session.Events.IsRunning("StreamingEvent");
             if (!packet.IsActive && isEventActive)
             {
-                Console.WriteLine("Streaming shutdown requested by the server");
                 session.Events.StopEvent("StreamingEvent");
                 return;
             }
@@ -134,6 +137,23 @@ namespace RMF_Client.Network
                     { "TargetFPS", packet.TargetFPS }
                 });
             }
+        }
+
+        private static void ProcessEndOfEventsPacket(EndOfEventsPacket packet)
+        {
+            ConnectionClientSession session = SessionManager.Connection!;
+            session.Events.StopAllRunning();
+
+            //TimeSpan sessionUptime = DateTime.UtcNow - session.ConnectedTime;
+            //PartingPacket partingPacket = new()
+            //{
+            //    StatusCode = 0,
+            //    UptimeSecs = (long)sessionUptime.TotalSeconds,
+            //    ReceivedPackets = session.TotalPacketsReceived,
+            //    SentPackets = session.TotalPacketsSent,
+            //    LastTransferedTimestamp = new DateTimeOffset(session.LastTransferTime).ToUnixTimeMilliseconds()
+            //};
+            //session.SendPacket(partingPacket);
         }
     }
 }

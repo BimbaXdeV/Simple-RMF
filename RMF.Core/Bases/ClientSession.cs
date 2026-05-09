@@ -17,7 +17,7 @@ namespace RMF.Core.Bases
 {
     public abstract class ClientSession
     {
-        public TcpClient Client { get; }
+        public TcpClient Client { get; private set; }
         public IPEndPoint? EndPoint => this.Client.Client.RemoteEndPoint as IPEndPoint;
         protected NetworkStream? Stream => this.Client.Connected ? this.Client.GetStream() : null;
 
@@ -25,26 +25,32 @@ namespace RMF.Core.Bases
         protected Channel<Packet> OutboundChannel { get; private set; }
         public bool IsRunning { get; private set; }
 
-        public ClientSession(TcpClient client, CancellationToken token)
-        {
-            this.Client = client;
-            this.OutboundChannel = Channel.CreateUnbounded<Packet>();
+        public bool CollectingStats { get; private set; }
+        private long _totalPacketsSent;
+        public long TotalPacketsSent => Interlocked.Read(ref this._totalPacketsSent);
 
-            if (client.Connected)
-            {
-                RunProcessing(token);
-            }
-        }
+        private long _totalPacketsReceived;
+        public long TotalPacketsReceived => Interlocked.Read(ref this._totalPacketsReceived);
+        
+        private long _lastTransferTimeTicks;
+        public long LastTransferTimeTicks => Interlocked.Read(ref this._lastTransferTimeTicks);
+        public DateTime LastTransferTime => new(Interlocked.Read(ref this._lastTransferTimeTicks));
 
-        public ClientSession(TcpClient client, int channelCapacity, CancellationToken token)
+        public ClientSession(
+            TcpClient client,
+            int channelCapacity = 0,
+            bool collectingStats = false,
+            CancellationToken token = default
+        )
         {
             this.Client = client;
             this.OutboundChannel = Channel.CreateBounded<Packet>(
-                new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1)
+                new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1000)
                 {
                     FullMode = BoundedChannelFullMode.Wait
                 }
             );
+            this.CollectingStats = collectingStats;
 
             if (client.Connected)
             {
@@ -66,6 +72,11 @@ namespace RMF.Core.Bases
                     try
                     {
                         await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
+
+                        if (this.CollectingStats)
+                        {
+                            IncrementSendPackets();
+                        }
                     }
                     finally
                     {
@@ -132,6 +143,18 @@ namespace RMF.Core.Bases
             this.OutboundChannel.Writer.TryComplete();
             this.Events.StopAllRunning();
             this.Client.Close();
+        }
+
+        public void IncrementSendPackets()
+        {
+            Interlocked.Increment(ref this._totalPacketsSent);
+            Interlocked.Exchange(ref this._lastTransferTimeTicks, DateTime.UtcNow.Ticks);
+        }
+
+        public void IncrementReceivedPackets()
+        {
+            Interlocked.Increment(ref this._totalPacketsReceived);
+            Interlocked.Exchange(ref this._lastTransferTimeTicks, DateTime.UtcNow.Ticks);
         }
     }
 }

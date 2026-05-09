@@ -36,7 +36,12 @@ namespace RMF_Server.Logic
 
         public static ServerClientSession? NewConnection(TcpClient client, string endPoint, CancellationToken token)
         {
-            ServerClientSession session = new(client, ConfigurationManager.ChannelPacketsCapacity, token);
+            ServerClientSession session = new(
+                client,
+                channelCapacity: ConfigurationManager.ChannelPacketsCapacity,
+                collectingStats: ConfigurationManager.EnableCollectingSessionStats,
+                token: token
+            );
             if (Connections.TryAdd(endPoint, session))
             {
                 return session;
