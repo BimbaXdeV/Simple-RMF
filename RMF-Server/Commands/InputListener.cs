@@ -157,6 +157,9 @@ namespace RMF_Server.Commands
                     await Task.Delay(ConfigurationManager.InputListenerDelayMsecs, token);
                 }
             }
+            catch (OperationCanceledException)
+            {
+            }
             finally
             {
                 InputBuffer?.Clear();

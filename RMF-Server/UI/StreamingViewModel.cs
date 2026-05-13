@@ -1,5 +1,6 @@
 ﻿using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using ReactiveUI;
 using RMF.Core.Screen;
 using RMF_Server.Debugger;
@@ -100,9 +101,6 @@ namespace RMF_Server.UI
 
             using (ILockedFramebuffer buffer = this.DisplaySource!.Lock())
             {
-                int screenRowLength = buffer.RowBytes;
-                byte* displayPtr = (byte*)buffer.Address;
-
                 using MemoryStream ms = new(frame.Data, 0, frame.Length);
                 using SKCodec codec = SKCodec.Create(ms);
                 if (codec == null)
@@ -112,59 +110,99 @@ namespace RMF_Server.UI
                 }
 
                 SKImageInfo info = new(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
-
-                byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
-                try
+                if (info.RowBytes == buffer.RowBytes)
                 {
-                    fixed (byte* decodedPtr = decodedPixels)
+                    codec.GetPixels(info, buffer.Address);
+                }
+                else
+                {
+                    byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
+                    try
                     {
-                        codec.GetPixels(info, (IntPtr)decodedPtr);
+                        fixed (byte* decodedPtr = decodedPixels)
+                        {
+                            byte* displayPtr = (byte*)buffer.Address;
+                            codec.GetPixels(info, (IntPtr)decodedPtr);
 
-                        int frameRowLength = frame.Width * 4;
-                        if (frameRowLength == screenRowLength)
-                        {
-                            Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)(frameRowLength * frame.Height));
-                        }
-                        else
-                        {
-                            byte* destPtr = displayPtr;
-                            byte* srcPtr = decodedPtr;
-                            for (int y = 0; y < frame.Height; y++)
+                            int frameRowLength = frame.Width * 4;
+                            int screenRowLength = buffer.RowBytes;
+
+                            if (frameRowLength == screenRowLength)
                             {
-                                Unsafe.CopyBlock(destPtr, srcPtr, (uint)frameRowLength);
-                                srcPtr += frameRowLength;
-                                destPtr += screenRowLength;
+                                Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)(frameRowLength * frame.Height));
+                            }
+                            else
+                            {
+                                byte* destPtr = displayPtr;
+                                byte* srcPtr = decodedPtr;
+                                for (int y = 0; y < frame.Height; y++)
+                                {
+                                    Unsafe.CopyBlock(destPtr, srcPtr, (uint)frameRowLength);
+                                    srcPtr += frameRowLength;
+                                    destPtr += screenRowLength;
+                                }
                             }
                         }
-                        UpdateActuality(currentTime);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logging.Error($"Failed to write a new frame into bitmap: {ex}");
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(decodedPixels);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Logging.Error($"Failed to write a new frame into bitmap: {ex}");
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(decodedPixels);
-                }
+
+                UpdateActuality(currentTime);
+                var displaySource = this.DisplaySource;
+                this.DisplaySource = null;
+                this.DisplaySource = displaySource;
+
+                //Dispatcher.UIThread.Post(() =>
+                //{
+                //    this.RaisePropertyChanged(string.Empty);
+                //}, DispatcherPriority.Render);
+
+                //    byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
+                //    try
+                //    {
+                //        fixed (byte* decodedPtr = decodedPixels)
+                //        {
+                //            codec.GetPixels(info, (IntPtr)decodedPtr);
+
+                //            int frameRowLength = frame.Width * 4;
+                //            if (frameRowLength == screenRowLength)
+                //            {
+                //                Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)(frameRowLength * frame.Height));
+                //            }
+                //            else
+                //            {
+                //                byte* destPtr = displayPtr;
+                //                byte* srcPtr = decodedPtr;
+                //                for (int y = 0; y < frame.Height; y++)
+                //                {
+                //                    Unsafe.CopyBlock(destPtr, srcPtr, (uint)frameRowLength);
+                //                    srcPtr += frameRowLength;
+                //                    destPtr += screenRowLength;
+                //                }
+                //            }
+                //            UpdateActuality(currentTime);
+                //        }
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        Logging.Error($"Failed to write a new frame into bitmap: {ex}");
+                //    }
+                //    finally
+                //    {
+                //        ArrayPool<byte>.Shared.Return(decodedPixels);
+                //    }
+                //}
+                //var displaySource = this.DisplaySource;
+                //this.DisplaySource = null;
+                //this.DisplaySource = displaySource;
             }
-            //using MemoryStream ms = new(frame.Data);
-            //try
-            //{
-            //    WriteableBitmap previous = this.DisplaySource!;
-            //    this.DisplaySource = WriteableBitmap.Decode(ms);
-            //    previous.Dispose();
-
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine($"Failed to update frame in bitmap: {ex}");
-            //}
-
-            //this.RaisePropertyChanged(nameof(this.DisplaySource));
-            var displaySource = this.DisplaySource;
-            this.DisplaySource = null;
-            this.DisplaySource = displaySource;
         }
 
         public unsafe void UpdatePatches(ReadOnlySpan<ScreenPatch> patches, int patchCount, bool updateOverlay = false)
@@ -219,7 +257,6 @@ namespace RMF_Server.UI
                 }
             }
 
-            //this.RaisePropertyChanged(nameof(this.DisplaySource));
             UpdateActuality(currentTime);
             var displaySource = this.DisplaySource;
             this.DisplaySource = null;

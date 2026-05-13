@@ -63,6 +63,7 @@ namespace RMF_Server.Commands
                             return false;
                         }
                         break;
+
                     default:
                         Logging.Warning($"Unknown parameter type for \"{param.Name}\"");
                         return false;

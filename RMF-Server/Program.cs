@@ -25,7 +25,8 @@ namespace RMF_Server
             Logging.Separator();
 
             Logging.Output("Initializing components...");
-            
+            LifecycleController.Initialize();
+
             (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
             Logging.Message($"Configuration fields: {configurationsLoaded} / {totalConfigurations}", leftOffset: Logging.LogHeaderLength);
 
@@ -48,17 +49,16 @@ namespace RMF_Server
             // Transferring fields data from server configurations to core packet configurations
             SettingsSynchronizer.Upload(typeof(ConfigurationManager), typeof(PacketConfigurations));
 
-            using CancellationTokenSource cts = new();
             Console.CancelKeyPress += (sender, e) =>
             {
                 e.Cancel = true;
-                cts.Cancel();
+                LifecycleController.Input!.Cancel();
             };
 
             Logging.CreateHistory(ConfigurationManager.LoggingHistoryLength);
 
-            Task loggingTask = Logging.RunExecutor(cts.Token);
-            Task serverTask = new OpenTCP().RunServer(cts.Token);
+            Task loggingTask = Logging.RunExecutor(LifecycleController.Output!.Token);
+            Task serverTask = new OpenTCP().RunServer(LifecycleController.Server!.Token);
 
             Task activeLogic = Task.Run(async () =>
             {
@@ -67,19 +67,19 @@ namespace RMF_Server
                 
                 try
                 {
-                    await InputListener.StartListen(cts);
+                    await InputListener.StartListen(LifecycleController.Input!);
                 }
-                catch (OperationCanceledException)
+                finally
                 {
+                    // Stopping the server listener, closing sockets, and cleaning up client sessions
+                    await LifecycleController.BaseShutdown();
+
+                    // Terminate the blocking Avalonia Application
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+                    });
                 }
-
-                cts.Cancel();
-                await Task.WhenAll(serverTask, loggingTask);
-
-                Dispatcher.UIThread.Post(() =>
-                {
-                    (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
-                });
             });
 
             WindowManager.BuildAvaloniaApp()
@@ -92,8 +92,12 @@ namespace RMF_Server
                              shutdownMode: Avalonia.Controls.ShutdownMode.OnExplicitShutdown
                          );
 
+            await Task.WhenAll(activeLogic, serverTask).ConfigureAwait(false);
+            LifecycleController.FinalShutdown();
+            await loggingTask.ConfigureAwait(false);
 
-            await activeLogic;
+            Logging.Output("Cleaning up resources...");
+            LifecycleController.DisposeAll();
             Logging.Output("The work process is completed. Goodbye!");
         }
     }

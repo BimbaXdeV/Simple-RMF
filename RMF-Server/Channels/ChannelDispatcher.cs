@@ -1,10 +1,10 @@
-﻿using RMF.Core.Interfaces;
+﻿using DynamicData;
+using RMF.Core.Interfaces;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
 using RMF_Server.Packets;
-using RMF_Server.Storage;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -13,22 +13,20 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Channels;
-using System.Threading.Tasks;
-using static System.Collections.Specialized.BitVector32;
 
 namespace RMF_Server.Channels
 {
     internal static class ChannelDispatcher
     {
-        private static readonly Dictionary<int, Channel<PacketContext>> Channels = new();
+        private static readonly Dictionary<int, ChannelContext> Channels = [];
 
-        private static async Task InboundChannelWorker(Channel<PacketContext> channel, int id = 0)
+        private static async Task InboundChannelWorker(Channel<PacketContext> channel, int id = 0, CancellationToken? token = null)
         {
             ChannelReader<PacketContext> reader = channel.Reader;
 
             try
             {
-                await foreach (PacketContext context in reader.ReadAllAsync())
+                await foreach (PacketContext context in reader.ReadAllAsync(token ?? CancellationToken.None))
                 {
                     Packet? packet = PacketsAssembler.GetPacket(context.ID);
                     if (packet == null)
@@ -67,7 +65,7 @@ namespace RMF_Server.Channels
             finally
             {
                 channel.Writer.Complete();
-                Logging.Message($"Channel for key {id} has been closed");
+                Logging.Output($"Channel for key {id} has been closed");
             }
         }
 
@@ -83,18 +81,25 @@ namespace RMF_Server.Channels
             int initializedChannelsCounter = 0;
             foreach (int k in channelKeys)
             {
+                if (Channels.ContainsKey(k))
+                {
+                    Logging.Warning($"Failed to open channel for key {k}, it already exists");
+                    continue;
+                }
+
                 Channel<PacketContext> rawChannel = Channel.CreateBounded<PacketContext>(new BoundedChannelOptions(ConfigurationManager.ChannelPacketsCapacity)
                 {
                     FullMode = BoundedChannelFullMode.DropOldest,
                     SingleReader = true
                 });
-                if (!Channels.TryAdd(k, rawChannel))
-                {
-                    Logging.Warning($"Failed to initialize channel for key {k}");
-                    continue;
-                }
-                _ = Task.Run(() => InboundChannelWorker(rawChannel));
-                initializedChannelsCounter++;
+                CancellationTokenSource cts = new();
+                Task workerTask = InboundChannelWorker(rawChannel, id: k, token: cts.Token);
+
+                Channels[k] = new ChannelContext(
+                    rawChannel,
+                    workerTask,
+                    cts
+                );
             }
             return (initializedChannelsCounter, channelKeys.Count);
         }
@@ -109,26 +114,33 @@ namespace RMF_Server.Channels
                 ArrayPool<byte>.Shared.Return(context.Payload);
                 return;
             }
-            await Channels[channelKey].Writer.WriteAsync(context);
+            await Channels[channelKey].Channel.Writer.WriteAsync(context);
         }
 
-        public static void CloseAll()
+        public static async Task CloseChannels()
         {
-            foreach (Channel<PacketContext> c in Channels.Values)
+            int terminateChannelsCounter = 0;
+            int totalActiveChannels = Channels.Count;
+            
+            List<Task> terminationTasks = [];
+            foreach (ChannelContext context in Channels.Values)
             {
-                c.Writer.Complete();
+                if (!context.Worker.IsCompleted)
+                {
+                    context.TokenSource.Cancel();
+                    terminationTasks.Add(context.Worker);
+                    terminateChannelsCounter++;
+                }
             }
+            await Task.WhenAll(terminationTasks);
+
+            Logging.Output($"Successfully closed {terminateChannelsCounter} channels out of {totalActiveChannels} active");
             Channels.Clear();
         }
 
         public static bool IsChannelExists(int key)
         {
             return Channels.ContainsKey(key);
-        }
-
-        public static Channel<PacketContext>? GetChannel(int key)
-        {
-            return Channels.GetValueOrDefault(key);
         }
     }
 }

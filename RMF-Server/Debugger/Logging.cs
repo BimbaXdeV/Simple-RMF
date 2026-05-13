@@ -63,7 +63,7 @@ namespace RMF_Server.Debugger
             NextHistoryIndex = (NextHistoryIndex + 1) % History.Length;
             if (NextHistoryIndex == 0)
             {
-                Logging.Output("The log history buffer is full, older logs will be overwritten", toHistory: false);
+                Output("The log history buffer is full, older logs will be overwritten", toHistory: false);
             }
         }
 
@@ -95,14 +95,14 @@ namespace RMF_Server.Debugger
         {
             if (IsExecutorRunning)
             {
-                Logging.Warning("The logging executor has already been launched previously, a duplicate cannot be started");
+                Warning("The logging executor has already been launched previously, a duplicate cannot be started");
                 return;
             }
 
             IsExecutorRunning = true;
             try
             {
-                while (!token.IsCancellationRequested)
+                while (!token.IsCancellationRequested || !LogQueue.IsEmpty)
                 {
                     if (!IsAdminTyping && LogQueue.TryDequeue(out string? log))
                     {
@@ -110,13 +110,20 @@ namespace RMF_Server.Debugger
                     }
                     else
                     {
-                        await Task.Delay(ConfigurationManager.LoggingHandlerDelayMsecs);
+                        try
+                        {
+                            await Task.Delay(ConfigurationManager.LoggingHandlerDelayMsecs, CancellationToken.None);
+                        }
+                        catch (Exception)
+                        {
+                        }
                     }
                 }
             }
             finally
             {
                 IsExecutorRunning = false;
+                Output("Logging output executor has been stopped, subsequent logs will be output out of order");
             }
         }
 

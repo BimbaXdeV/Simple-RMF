@@ -17,7 +17,7 @@ namespace RMF_Client.Network
 {
     internal class EntryTCP
     {
-        private static async Task PacketListener()
+        private static async Task PacketListener(CancellationToken token)
         {
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Connected");
 
@@ -32,12 +32,12 @@ namespace RMF_Client.Network
 
             while (session.Client.Connected)
             {
-                await stream.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length, CancellationToken.None);
+                await stream.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length, token);
 
                 short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                 int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
 
-                byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, CancellationToken.None);
+                byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
                 Packet? packet = PacketsAssembler.GetPacket(id);
 
                 try
@@ -94,7 +94,7 @@ namespace RMF_Client.Network
                     { "endpointPort", port.ToString() }
                 });
 
-                await PacketListener();
+                await PacketListener(token);
             }
 
             catch (OperationCanceledException)

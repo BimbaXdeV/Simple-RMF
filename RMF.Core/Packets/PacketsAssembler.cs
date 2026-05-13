@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Packets.Client;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -42,7 +43,7 @@ namespace RMF.Core.Packets
 
         public static short[] GetClientPacketsIDs()
         {
-            string clientNamespace = typeof(RMF.Core.Packets.Client.HeartbeatPacket).Namespace!;
+            string clientNamespace = typeof(HeartbeatPacket).Namespace!;
             return PacketTypes.Where(item => item.Value.Namespace == clientNamespace).Select(item => item.Key).ToArray();
         }
     }

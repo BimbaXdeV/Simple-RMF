@@ -18,7 +18,7 @@ namespace RMF.Core.Bases
     public abstract class ClientSession
     {
         public TcpClient Client { get; private set; }
-        public IPEndPoint? EndPoint => this.Client.Client.RemoteEndPoint as IPEndPoint;
+        public IPEndPoint? EndPoint => this.Client.Client?.RemoteEndPoint as IPEndPoint ?? null;
         protected NetworkStream? Stream => this.Client.Connected ? this.Client.GetStream() : null;
 
         public EventController Events { get; private set; } = new();

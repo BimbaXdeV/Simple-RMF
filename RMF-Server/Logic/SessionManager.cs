@@ -69,8 +69,6 @@ namespace RMF_Server.Logic
 
         public static void ClearConnections()
         {
-            Logging.Output("Connections are being cleared...");
-
             int disconnectedClientsCount = 0;
             int totalConnectedClients = Connections.Count;
 
@@ -81,7 +79,7 @@ namespace RMF_Server.Logic
                 disconnectedClientsCount++;
             }
             Connections.Clear();
-            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count()}");
+            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count}");
             Logging.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
         }
     }
