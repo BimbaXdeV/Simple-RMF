@@ -70,8 +70,8 @@ namespace RMF_Server.Logic
 
             if (ConfigurationManager.EnableRelativeParting)
             {
-                EndOfEventsPacket endOfEventsPacket = new();
-                SessionManager.BroadcastPacket(endOfEventsPacket, CancellationToken.None);
+                EndOfEventsRequest endOfEventsRequest = new();
+                SessionManager.BroadcastPacket(endOfEventsRequest, CancellationToken.None);
                 await WaitForParting(ConfigurationManager.PartingTimeoutSecs);
             }
 

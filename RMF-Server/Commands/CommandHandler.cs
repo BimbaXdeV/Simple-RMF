@@ -1,4 +1,5 @@
-﻿using RMF.Core.Bases;
+﻿using Avalonia.Media;
+using RMF.Core.Bases;
 using RMF.Core.Packets.Server;
 using RMF.Core.Screen;
 using RMF_Server.Debugger;
@@ -103,7 +104,22 @@ namespace RMF_Server.Commands
                 return;
             }
 
-            object? processResult = processMethod.GetParameters().Length == 0 ? processMethod.Invoke(null, null) : processMethod.Invoke(null, [input, cts]);
+
+            ParameterInfo[] processParams = processMethod.GetParameters();
+            object[] assembledParams = new object[processParams.Length];
+            foreach (ParameterInfo p in processParams)
+            {
+                if (p.ParameterType == typeof(string))
+                {
+                    assembledParams[p.Position] = input;
+                }
+                else if (p.ParameterType == typeof(CancellationTokenSource))
+                {
+                    assembledParams[p.Position] = cts;
+                }
+            }
+
+            object? processResult = processMethod.Invoke(null, assembledParams);
             if (processResult is Task taskResult)
             {
                 await taskResult;
@@ -113,7 +129,7 @@ namespace RMF_Server.Commands
         // All command processors
         private static void Cmlst()
         {
-            Logging.Message("Available inline commands:");
+            Logging.Message("* Available inline commands:");
             if (CommandManager.GetAllCommands().Count == 0)
             {
                 Logging.Message("No commands have been loaded...");
@@ -137,13 +153,31 @@ namespace RMF_Server.Commands
                 return;
             }
 
-            Logging.Message("Active connections list:");
-            int maxCounterLength = connections.Length.ToString().Length;
-            int counter = 1;
+            int maxAddr = 0;
+            int maxPort = 0;
+            int maxRecv = 0;
+            int maxSent = 0;
             foreach (ServerClientSession c in connections)
             {
-                Logging.Message($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {c.EndPoint} | Last packet: {c.LastTransferTime}");
-                counter++;
+                maxAddr = Math.Max(maxAddr, c.EndPoint?.Address.ToString().Length ?? 0);
+                maxPort = Math.Max(maxPort, c.EndPoint?.Port.ToString().Length ?? 0);
+                maxRecv = Math.Max(maxRecv, c.TotalPacketsReceived.ToString().Length);
+                maxSent = Math.Max(maxSent, c.TotalPacketsSent.ToString().Length);
+            }
+            int maxCount = connections.Length.ToString().Length;
+
+            Logging.Message("* Active connections list:");
+            for (int i = 0; i < connections.Length; i++)
+            {
+                ServerClientSession c = connections[i];
+
+                string index = (i + 1).ToString().PadLeft(maxCount);
+                string ipAddress = c.EndPoint?.Address.ToString().PadLeft(maxAddr) ?? string.Empty;
+                string port = c.EndPoint?.Port.ToString().PadRight(maxPort) ?? string.Empty;
+                string receivedPackets = c.TotalPacketsReceived.ToString().PadRight(maxRecv);
+                string sentPackets = c.TotalPacketsSent.ToString().PadRight(maxSent);
+
+                Logging.Message($"{index}. {ipAddress}:{port} | Recv: {receivedPackets} | Sent: {sentPackets} | Last act: {c.LastTransferTime.ToLocalTime():HH:mm:ss}");
             }
         }
 
@@ -156,7 +190,7 @@ namespace RMF_Server.Commands
                 return;
             }
 
-            Logging.Message("Banned IPs list:");
+            Logging.Message("* Banned IPs list:");
             int maxCounterLength = bannedIPs.Length.ToString().Length;
             int counter = 1;
             foreach (string ip in bannedIPs)
@@ -177,7 +211,7 @@ namespace RMF_Server.Commands
             cts.Cancel();
         }
 
-        private static void Screen(string input, CancellationTokenSource cts)
+        private static void Screen(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
             if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
@@ -196,7 +230,7 @@ namespace RMF_Server.Commands
             }
         }
 
-        private static async Task Stream(string input, CancellationTokenSource cts)
+        private static async Task Stream(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
             if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
@@ -210,7 +244,7 @@ namespace RMF_Server.Commands
                     TargetFPS = (short)ConfigurationManager.StreamingTargetFPS
                 };
                 session.SendPacket(streamingRequest);
-                Logging.Message($"Successfully sent to {targetEndPoint}, waiting for starting stream...");
+                Logging.Message($"* Successfully sent to {targetEndPoint}, waiting for starting stream...");
                 
                 await WindowManager.ShowWindow();
                 WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle + " | " + targetEndPoint);
@@ -221,7 +255,7 @@ namespace RMF_Server.Commands
             }
         }
 
-        private static async Task Dstream(string input, CancellationTokenSource cts)
+        private static async Task Dstream()
         {
             try
             {   
@@ -240,7 +274,7 @@ namespace RMF_Server.Commands
                         IsActive = false
                     };
                     session.SendPacket(streamingRequest);
-                    Logging.Message($"Successfully sent to {endPoint}, waiting for stopping stream...");
+                    Logging.Message($"* Successfully sent to {endPoint}, waiting for stopping stream...");
                 }
                 else
                 {

@@ -40,13 +40,13 @@ namespace RMF_Client.Network
                 byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
                 Packet? packet = PacketsAssembler.GetPacket(id);
 
+                if (packet == null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    if (packet == null)
-                    {
-                        continue;
-                    }
-
                     if (session.CollectingStats)
                     {
                         session.IncrementReceivedPackets();

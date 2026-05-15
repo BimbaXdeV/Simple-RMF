@@ -22,10 +22,6 @@ namespace RMF.Core.Events
                 await Task.Delay(1000, token);  // Small delay (1sec) to ensure the event is fully registered before execution
                 await HandleLogic(session, token);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
             finally
             {
                 this.IsEvRunning = false;

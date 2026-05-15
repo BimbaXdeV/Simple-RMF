@@ -127,8 +127,8 @@ namespace RMF_Server.Packets
 
         private static void ProcessPartingPacket(PartingPacket packet, IPEndPoint endPoint)
         {
-            Logging.Output($"Received a parting packet from {endPoint} with status code: \"{packet.StatusCode}\" ({Enum.GetName(typeof(PartingStatusCodes), packet.StatusCode)})");
-            Logging.Output($"Total {endPoint} uptime: {packet.UptimeSecs / 60}m | received: {packet.ReceivedPackets} | sent: {packet.SentPackets}");
+            Logging.Output($"Received a parting packet from {endPoint} with status code {packet.StatusCode} ({Enum.GetName(typeof(PartingStatusCodes), packet.StatusCode)})");
+            Logging.Message($"Total {endPoint} uptime: {TimeSpan.FromSeconds(packet.UptimeSecs).ToString(@"dd\.hh\:mm\:ss")} | received: {packet.ReceivedPackets} | sent: {packet.SentPackets}", leftOffset: Logging.LogHeaderLength);
             SessionManager.Disconnect(endPoint.ToString());
         }
     }

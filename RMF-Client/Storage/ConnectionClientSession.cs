@@ -21,6 +21,9 @@ namespace RMF_Client.Storage
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
-        ) : base(client, channelCapacity, collectingStats, token) { }
+        ) : base(client, channelCapacity, collectingStats, token)
+        {
+            this.ConnectedTime = DateTime.UtcNow;
+        }
     }
 }

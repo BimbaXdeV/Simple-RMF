@@ -77,9 +77,10 @@ namespace RMF_Server.Logic
 
                     if (ConfigurationManager.EnableWelcomeHandshake)
                     {
+                        DateTime connectionTime = DateTime.UtcNow;
                         HandshakePacket handshakePacket = new()
                         {
-                            ConnectionTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                            ConnectionTimestamp = new DateTimeOffset(connectionTime).ToUnixTimeMilliseconds(),
                             SessionID = SessionManager.GetSessionID(endPoint),
                             RemoteIP = ipEndPoint.Address.ToString(),
                             RemotePort = ipEndPoint.Port,
@@ -164,11 +165,6 @@ namespace RMF_Server.Logic
                     }
                 }
             }
-            catch (OperationCanceledException)
-            {
-                Logging.Warning($"Client {session.EndPoint} timed out waiting for packets, disconnecting...");
-            }
-
             catch (EndOfStreamException)
             {
                 Logging.Warning($"Client {session.EndPoint} has closed the connection");
@@ -177,6 +173,11 @@ namespace RMF_Server.Logic
             catch (OverflowException)
             {
                 Logging.Error($"Payload buffer overflow detected from client {session.EndPoint}, disconnecting...");
+            }
+
+            catch (Exception ex) when (ex is IOException || ex is SocketException)
+            {
+                // Client disconnected abruptly, or there was a network error, we just disconnect it
             }
 
             catch (Exception ex)

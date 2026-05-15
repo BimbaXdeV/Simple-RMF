@@ -34,7 +34,7 @@ namespace RMF.Core.Bases
         
         private long _lastTransferTimeTicks;
         public long LastTransferTimeTicks => Interlocked.Read(ref this._lastTransferTimeTicks);
-        public DateTime LastTransferTime => new(Interlocked.Read(ref this._lastTransferTimeTicks));
+        public DateTime LastTransferTime => new(Interlocked.Read(ref this._lastTransferTimeTicks), DateTimeKind.Utc);
 
         public ClientSession(
             TcpClient client,

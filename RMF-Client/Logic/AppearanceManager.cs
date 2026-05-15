@@ -120,7 +120,7 @@ namespace RMF_Client.Logic
             Console.SetCursorPosition(0, ClientLogoHeight);
             foreach (string l in toolbarLines)
             {
-                Console.WriteLine(l.PadRight(Console.WindowWidth - 1));
+                Console.WriteLine(l.PadRight(Console.WindowWidth));
             }
         }
 

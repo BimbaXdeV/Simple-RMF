@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Packets.Server
 {
-    public class EndOfEventsPacket : Packet
+    public class EndOfEventsRequest : Packet
     {
         public override short ID => 304;
 

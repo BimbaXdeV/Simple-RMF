@@ -42,8 +42,8 @@ namespace RMF_Client.Network
                     ProcessStreamingRequest(streamingRequest);
                     break;
 
-                case EndOfEventsPacket endOfEventsPacket:
-                    ProcessEndOfEventsPacket(endOfEventsPacket);
+                case EndOfEventsRequest endOfEventsRequest:
+                    ProcessEndOfEventsRequest(endOfEventsRequest);
                     break;
             }
         }
@@ -61,7 +61,7 @@ namespace RMF_Client.Network
 
             AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
             {
-                { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).ToString("HH:mm:ss") },
+                { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).UtcDateTime.ToString("HH:mm:ss") },
                 { "endpointID", packet.SessionID.ToString() },
                 { "endpointIP", packet.RemoteIP ?? "0.0.0.0" },
                 { "endpointPort", $"{localPort} ({packet.RemotePort})" },
@@ -139,21 +139,21 @@ namespace RMF_Client.Network
             }
         }
 
-        private static void ProcessEndOfEventsPacket(EndOfEventsPacket packet)
+        private static void ProcessEndOfEventsRequest(EndOfEventsRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
             session.Events.StopAllRunning();
 
-            //TimeSpan sessionUptime = DateTime.UtcNow - session.ConnectedTime;
-            //PartingPacket partingPacket = new()
-            //{
-            //    StatusCode = 0,
-            //    UptimeSecs = (long)sessionUptime.TotalSeconds,
-            //    ReceivedPackets = session.TotalPacketsReceived,
-            //    SentPackets = session.TotalPacketsSent,
-            //    LastTransferedTimestamp = new DateTimeOffset(session.LastTransferTime).ToUnixTimeMilliseconds()
-            //};
-            //session.SendPacket(partingPacket);
+            long clientUptime = session.ConnectedTime != default ? (long)(DateTime.UtcNow - session.ConnectedTime).TotalSeconds : -1;
+            PartingPacket partingPacket = new()
+            {
+                StatusCode = 0,
+                UptimeSecs = clientUptime,
+                ReceivedPackets = session.TotalPacketsReceived,
+                SentPackets = session.TotalPacketsSent,
+                LastTransferedTimestamp = new DateTimeOffset(session.LastTransferTime).ToUnixTimeMilliseconds()
+            };
+            session.SendPacket(partingPacket);
         }
     }
 }
