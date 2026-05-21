@@ -1,7 +1,8 @@
 ﻿using RMF.Core.Events;
+using RMF.Core.Interfaces;
 using RMF.Core.Packets;
-using RMF_Client.Collectors;
 using RMF_Client.Logic;
+using RMF_Client.Monitors;
 using RMF_Client.Network;
 using RMF_Server.Logic;
 
@@ -22,16 +23,27 @@ namespace RMF_Client
             SettingsSynchronizer.Upload(typeof(ConfigurationManager), typeof(PacketConfigurations));
 
             AppearanceManager.LoadToolbar();
-            AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+            IHardwareMonitor? hardwareMonitor = MonitoringFactory.GetActualMonitor(updateIfNullable: true);
+            if (hardwareMonitor != null)
             {
-                { "endpointMachine", HardwareAnalyser.GetMachineName() },
-                { "endpointUsername", HardwareAnalyser.GetUsername() },
-                { "endpointOS", HardwareAnalyser.GetOS() },
-                { "endpointArchitecture", HardwareAnalyser.GetArchitecture() },
-                { "configurationsLoaded", configurationsLoaded + " / " + totalConfigurations },
-                { "packetsLoaded", packetsLoaded + " / " + totalPackets },
-                { "eventsLoaded", eventsLoaded + " / " + totalEvents }
-            });
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointMachine", hardwareMonitor.MachineName() },
+                    { "endpointUsername", hardwareMonitor.Username() },
+                    { "endpointOS", hardwareMonitor.OSName() },
+                    { "endpointArchitecture", $"({hardwareMonitor.CPUArchitecture()}) {hardwareMonitor.CPUName()}" },
+                    { "endpointVideoprovider", hardwareMonitor.GPUName() },
+                    { "endpointMemory", "RAM: " + hardwareMonitor.RAMCapacityGB() + " GB, VRAM: " + hardwareMonitor.VRAMCapacityGB() + " GB" },
+                    { "configurationsLoaded", configurationsLoaded + " / " + totalConfigurations },
+                    { "packetsLoaded", packetsLoaded + " / " + totalPackets },
+                    { "eventsLoaded", eventsLoaded + " / " + totalEvents }
+                });
+            }
+            else
+            {
+                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + "| Unsupported OS");
+            }
+            AppearanceManager.DisplayToolbar();
 
             using CancellationTokenSource cts = new();
             Console.CancelKeyPress += (sender, e) =>

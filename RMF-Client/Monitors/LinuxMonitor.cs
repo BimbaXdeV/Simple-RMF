@@ -1,34 +1,31 @@
-﻿using RMF.Core.Screen;
-using Silk.NET.Maths;
-using SkiaSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Client.Capture
+namespace RMF_Client.Monitors
 {
     [SupportedOSPlatform("linux")]
-    internal class X11Capturer : BaseCapturer
+    internal class LinuxMonitor : BaseMonitor
     {
-        protected override void Initialize()
+        public override string CPUName()
         {
             throw new NotImplementedException();
         }
 
-        protected override void UpdateBitmapMetrics()
+        public override string GPUName()
         {
             throw new NotImplementedException();
         }
 
-        protected override ScreenPatch AcquireFrame()
+        public override double RAMCapacityGB()
         {
             throw new NotImplementedException();
         }
 
-        protected override RectsMetadata? AcquireUpdates(byte[] destinationFrameBuffer, int frameSize)
+        public override double VRAMCapacityGB()
         {
             throw new NotImplementedException();
         }

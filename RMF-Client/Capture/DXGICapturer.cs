@@ -16,11 +16,13 @@ using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace RMF_Client.Capture
 {
+    [SupportedOSPlatform("windows")]
     internal class DXGICapturer : BaseCapturer
     {
         [DllImport("user32.dll")]

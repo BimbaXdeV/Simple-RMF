@@ -10,7 +10,9 @@
 	<add key="" link="endpointMachine" name="Client machine" default="Unknown"/>
 	<add key="" link="endpointUsername" name="Client username" default="Unknown"/>
 	<add key="" link="endpointOS" name="Client OS" default="Undefined"/>
-	<add key="" link="endpointArchitecture" name="Client architecture" default="Undefined"/>
+	<add key="" link="endpointArchitecture" name="Client architecture" default="(x?) Undefined"/>
+	<add key="" link="endpointVideoprovider" name="Client video provider" default="Undefined"/>
+	<add key="" link="endpointMemory" name="Client memory" default="RAM: 0 GB, VRAM: 0 GB"/>
 	
 	<add key="" link="configsLoaded" name="Configurations" default="0 / 0"/>
 	<add key="" link="packetsLoaded" name="Network packets" default="0 / 0"/>

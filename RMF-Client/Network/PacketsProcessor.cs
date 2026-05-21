@@ -84,7 +84,7 @@ namespace RMF_Client.Network
         private static void ProcessScreenshotRequest(ScreenshotRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
-            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(UpdateIfNullable: true);
+            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(updateIfNullable: true);
             if (screenProvider == null)
             {
                 return;
@@ -122,7 +122,7 @@ namespace RMF_Client.Network
             // Launch streaming loop
             if (packet.IsActive && !isEventActive)
             {
-                IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(UpdateIfNullable: true);
+                IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(updateIfNullable: true);
                 if (screenProvider == null)
                 {
                     return;

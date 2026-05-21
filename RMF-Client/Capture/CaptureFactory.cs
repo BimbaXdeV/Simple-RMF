@@ -28,9 +28,9 @@ namespace RMF_Client.Capture
             }
         }
 
-        public static IScreenProvider? GetActualProvider(bool UpdateIfNullable = false)
+        public static IScreenProvider? GetActualProvider(bool updateIfNullable = false)
         {
-            if (UpdateIfNullable && Provider == null)
+            if (updateIfNullable && Provider == null)
             {
                 CheckForUpdates();  // If you are writing a looping periodic checker, you do not need this call
             }
