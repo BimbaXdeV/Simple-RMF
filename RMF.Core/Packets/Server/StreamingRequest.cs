@@ -10,7 +10,7 @@ namespace RMF.Core.Packets.Server
 {
     public class StreamingRequest : Packet
     {
-        public override short ID => 302;
+        public override short ID => 304;
 
         public bool IsActive { get; set; }        // 0 - no, 1 - yes
         public byte FormatID { get; set; }        // Check ScreenFormats enum for supported formats

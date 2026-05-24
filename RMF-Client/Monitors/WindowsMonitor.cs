@@ -89,7 +89,7 @@ namespace RMF_Client.Monitors
             return Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\WinSAT", "PrimaryAdapterString", null)?.ToString() ?? "Unknown";
         }
 
-        public override double RAMCapacityGB()
+        public override double RAMCapacity()
         {
             MEMORYSTATUSEX memoryStatus = new()
             {
@@ -98,17 +98,17 @@ namespace RMF_Client.Monitors
 
             if (GlobalMemoryStatusEx(ref memoryStatus))
             {
-                return Math.Round(memoryStatus.ullTotalPhys / 1024.0 / 1024.0 / 1024.0, 2);
+                return memoryStatus.ullTotalPhys;
             }
             return default;
         }
 
-        public override double VRAMCapacityGB()
+        public override double VRAMCapacity()
         {
             AdapterDesc1? desc = GetVideoAdapterDesc();
             if (desc != null && desc.HasValue)
             {
-                return Math.Round((double)desc.Value.DedicatedVideoMemory / 1024.0 / 1024.0 / 1024.0, 2);
+                return desc.Value.DedicatedVideoMemory;
             }
             return 0;
         }

@@ -26,8 +26,8 @@ namespace RMF_Server.Packets
                     ProcessHeartbeatPacket(heartbeatPacket, endPoint);
                     break;
 
-                case SystemInfoPacket systemInfoPacket:
-                    ProcessSystemInfoPacket(systemInfoPacket, endPoint);
+                case ClientInfoPacket clientInfoPacket:
+                    ProcessClientInfoPacket(clientInfoPacket, endPoint);
                     break;
 
                 case DesktopFramePacket desktopFramePacket:
@@ -57,13 +57,23 @@ namespace RMF_Server.Packets
 
         private static void ProcessHeartbeatPacket(HeartbeatPacket packet, IPEndPoint endPoint)
         {
-            double delay = (DateTime.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(packet.Timestamp)).TotalMilliseconds;
+            double delay = (DateTime.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(packet.TurnedTimestamp)).TotalMilliseconds;
             Logging.Message($"Received heartbeat from {endPoint} : {delay}ms delay");
         }
 
-        private static void ProcessSystemInfoPacket(SystemInfoPacket packet, IPEndPoint endPoint)
+        private static void ProcessClientInfoPacket(ClientInfoPacket packet, IPEndPoint endPoint)
         {
-            Logging.Message($"Info about {endPoint} - Name: {packet.MachineName}, User: {packet.Username}, OS: {packet.OS}, Architecture: {packet.Architecture}");
+            double ramCaparityGB = packet.RAMCapacity / 1024.0 / 1024.0 / 1024.0;
+            double vramCaparityGB = packet.VRAMCapacity / 1024.0 / 1024.0 / 1024.0;
+
+            Logging.Message(
+                "Info about " + endPoint + "\n" +
+                "- Machine name: " + packet.MachineName + "\n" +
+                "- Username:     " + packet.OSName + "\n" +
+                "- CPU:          (" + packet.CPUArchitecture + ") " + packet.CPUName + "\n" +
+                "- GPU:          " + packet.GPUName + "\n" +
+                "- Memory:       RAM: " + Math.Round(ramCaparityGB, 2) + " GB, VRAM: " + Math.Round(vramCaparityGB, 2) + " GB"
+            );
         }
 
         private static async Task ProcessDesktopFramePacket(DesktopFramePacket packet, IPEndPoint endPoint)

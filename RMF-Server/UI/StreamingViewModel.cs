@@ -158,50 +158,6 @@ namespace RMF_Server.UI
                 var displaySource = this.DisplaySource;
                 this.DisplaySource = null;
                 this.DisplaySource = displaySource;
-
-                //Dispatcher.UIThread.Post(() =>
-                //{
-                //    this.RaisePropertyChanged(string.Empty);
-                //}, DispatcherPriority.Render);
-
-                //    byte[] decodedPixels = ArrayPool<byte>.Shared.Rent(info.BytesSize);
-                //    try
-                //    {
-                //        fixed (byte* decodedPtr = decodedPixels)
-                //        {
-                //            codec.GetPixels(info, (IntPtr)decodedPtr);
-
-                //            int frameRowLength = frame.Width * 4;
-                //            if (frameRowLength == screenRowLength)
-                //            {
-                //                Unsafe.CopyBlock(displayPtr, decodedPtr, (uint)(frameRowLength * frame.Height));
-                //            }
-                //            else
-                //            {
-                //                byte* destPtr = displayPtr;
-                //                byte* srcPtr = decodedPtr;
-                //                for (int y = 0; y < frame.Height; y++)
-                //                {
-                //                    Unsafe.CopyBlock(destPtr, srcPtr, (uint)frameRowLength);
-                //                    srcPtr += frameRowLength;
-                //                    destPtr += screenRowLength;
-                //                }
-                //            }
-                //            UpdateActuality(currentTime);
-                //        }
-                //    }
-                //    catch (Exception ex)
-                //    {
-                //        Logging.Error($"Failed to write a new frame into bitmap: {ex}");
-                //    }
-                //    finally
-                //    {
-                //        ArrayPool<byte>.Shared.Return(decodedPixels);
-                //    }
-                //}
-                //var displaySource = this.DisplaySource;
-                //this.DisplaySource = null;
-                //this.DisplaySource = displaySource;
             }
         }
 

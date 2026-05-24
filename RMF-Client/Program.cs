@@ -26,6 +26,9 @@ namespace RMF_Client
             IHardwareMonitor? hardwareMonitor = MonitoringFactory.GetActualMonitor(updateIfNullable: true);
             if (hardwareMonitor != null)
             {
+                double ramCapacityGB = hardwareMonitor.RAMCapacity() / 1024.0 / 1024.0 / 1024.0;
+                double vramCapacityGB = hardwareMonitor.VRAMCapacity() / 1024.0 / 1024.0 / 1024.0;
+
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointMachine", hardwareMonitor.MachineName() },
@@ -33,8 +36,8 @@ namespace RMF_Client
                     { "endpointOS", hardwareMonitor.OSName() },
                     { "endpointArchitecture", $"({hardwareMonitor.CPUArchitecture()}) {hardwareMonitor.CPUName()}" },
                     { "endpointVideoprovider", hardwareMonitor.GPUName() },
-                    { "endpointMemory", "RAM: " + hardwareMonitor.RAMCapacityGB() + " GB, VRAM: " + hardwareMonitor.VRAMCapacityGB() + " GB" },
-                    { "configurationsLoaded", configurationsLoaded + " / " + totalConfigurations },
+                    { "endpointMemory", "RAM: " + Math.Round(ramCapacityGB, 2) + " GB, VRAM: " + Math.Round(vramCapacityGB, 2) + " GB" },
+                    { "configsLoaded", configurationsLoaded + " / " + totalConfigurations },
                     { "packetsLoaded", packetsLoaded + " / " + totalPackets },
                     { "eventsLoaded", eventsLoaded + " / " + totalEvents }
                 });

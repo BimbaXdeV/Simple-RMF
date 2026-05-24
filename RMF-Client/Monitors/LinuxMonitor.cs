@@ -20,12 +20,12 @@ namespace RMF_Client.Monitors
             throw new NotImplementedException();
         }
 
-        public override double RAMCapacityGB()
+        public override double RAMCapacity()
         {
             throw new NotImplementedException();
         }
 
-        public override double VRAMCapacityGB()
+        public override double VRAMCapacity()
         {
             throw new NotImplementedException();
         }

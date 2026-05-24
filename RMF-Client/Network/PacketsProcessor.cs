@@ -17,6 +17,7 @@ using RMF_Client.Capture;
 using RMF.Core.Events;
 using RMF.Core.Screen;
 using RMF.Core.Interfaces;
+using RMF_Client.Monitors;
 
 namespace RMF_Client.Network
 {
@@ -32,6 +33,10 @@ namespace RMF_Client.Network
 
                 case ClientPingRequest clientPingRequest:
                     ProcessClientPingRequest(clientPingRequest);
+                    break;
+
+                case ClientInfoRequest clientInfoRequest:
+                    ProcessClientInfoRequest(clientInfoRequest);
                     break;
 
                 case ScreenshotRequest screenshotRequest:
@@ -71,13 +76,33 @@ namespace RMF_Client.Network
 
         private static void ProcessClientPingRequest(ClientPingRequest packet)
         {
-            NetworkStream? stream = SessionManager.Connection?.Client.GetStream();
-            if (stream != null)
+            ConnectionClientSession session = SessionManager.Connection!;
+
+            HeartbeatPacket heartbeatPacket = new()
             {
-                SessionManager.Connection!.Events.StartEvent(SessionManager.Connection, "HeartbeatEvent", new Dictionary<string, object>
+                TurnedTimestamp = packet.SendingTimestamp
+            };
+            session.SendPacket(heartbeatPacket);
+        }
+
+        private static void ProcessClientInfoRequest(ClientInfoRequest packet)
+        {
+            ConnectionClientSession session = SessionManager.Connection!;
+            IHardwareMonitor? hardwareMonitor = MonitoringFactory.GetActualMonitor(updateIfNullable: true);
+            if (hardwareMonitor != null)
+            {
+                ClientInfoPacket clientInfoPacket = new()
                 {
-                    { "IntervalSecs", packet.IntervalSecs }
-                });
+                    MachineName = hardwareMonitor.MachineName(),
+                    Username = hardwareMonitor.Username(),
+                    OSName = hardwareMonitor.OSName(),
+                    CPUName = hardwareMonitor.CPUName(),
+                    CPUArchitecture = hardwareMonitor.CPUArchitecture(),
+                    GPUName = hardwareMonitor.GPUName(),
+                    RAMCapacity = (long)hardwareMonitor.RAMCapacity(),
+                    VRAMCapacity = (long)hardwareMonitor.VRAMCapacity()
+                };
+                session.SendPacket(clientInfoPacket);
             }
         }
 

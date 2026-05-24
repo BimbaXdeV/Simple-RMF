@@ -12,8 +12,8 @@ namespace RMF_Client.Monitors
     {
         public abstract string CPUName();
         public abstract string GPUName();
-        public abstract double RAMCapacityGB();
-        public abstract double VRAMCapacityGB();
+        public abstract double RAMCapacity();
+        public abstract double VRAMCapacity();
 
         public string MachineName()
         {

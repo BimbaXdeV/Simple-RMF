@@ -85,18 +85,23 @@ namespace RMF_Server.Logic
                             RemoteIP = ipEndPoint.Address.ToString(),
                             RemotePort = ipEndPoint.Port,
                             SendBufferSize = session.Client.Client.SendBufferSize,
-                            ReceiveBufferSize = session.Client.Client.ReceiveBufferSize
+                            ReceiveBufferSize = session.Client.Client.ReceiveBufferSize,
                         };
                         await StreamManager.SendPacketAsync(session.Client.GetStream(), handshakePacket, token);
+                    }
+
+                    if (ConfigurationManager.EnableCollectingClientInfo)
+                    {
+                        ClientInfoRequest clientInfoRequest = new();
+                        await StreamManager.SendPacketAsync(session.Client.GetStream(), clientInfoRequest, token);
                     }
                     
                     if (ConfigurationManager.EnableClientHeartbeat)
                     {
-                        ClientPingRequest pingRequest = new()
+                        session.Events.StartEvent(session, "HeartbeatEvent", new Dictionary<string, object>
                         {
-                            IntervalSecs = ConfigurationManager.ClientHeartbeatIntervalSecs
-                        };
-                        await StreamManager.SendPacketAsync(session.Client.GetStream(), pingRequest, token);
+                            { "IntervalSecs", ConfigurationManager.ClientHeartbeatIntervalSecs }
+                        });
                     }
 
                     _ = Task.Factory.StartNew(() => ClientHandler(session, token), TaskCreationOptions.LongRunning);

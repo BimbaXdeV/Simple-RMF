@@ -22,6 +22,7 @@
 	<!-- Controller Settings -->
 	<add key="EnableCollectingSessionStats" value="true"/>
 	<add key="EnableWelcomeHandshake" value="true"/>
+	<add key="EnableCollectingClientInfo" value="true"/>
 	<add key="EnableClientHeartbeat" value="true"/>
 	<add key="ClientHeartbeatIntervalSecs" value="10"/>
 	<add key="EnableRelativeParting" value="true"/>

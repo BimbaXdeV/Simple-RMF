@@ -10,8 +10,8 @@ namespace RMF.Core.Interfaces
     {
         string CPUName();
         string GPUName();
-        double RAMCapacityGB();
-        double VRAMCapacityGB();
+        double RAMCapacity();
+        double VRAMCapacity();
 
         string MachineName();
         string Username();

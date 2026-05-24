@@ -10,16 +10,16 @@ namespace RMF.Core.Packets.Client
     public class HeartbeatPacket : Packet
     {
         public override short ID => 100;
-        public long Timestamp { get; set; }
+        public long TurnedTimestamp { get; set; }
 
         public override void Deserialize(ref SpanReader reader)
         {
-            this.Timestamp = reader.ReadInt64();
+            this.TurnedTimestamp = reader.ReadInt64();
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(this.Timestamp);
+            writer.Write(this.TurnedTimestamp);
         }
     }
 }

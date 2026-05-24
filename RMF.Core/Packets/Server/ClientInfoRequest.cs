@@ -7,20 +7,16 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Packets.Server
 {
-    public class ClientPingRequest : Packet
+    public class ClientInfoRequest : Packet
     {
-        public override short ID => 301;
-
-        public long SendingTimestamp { get; set; }
+        public override short ID => 302;
 
         public override void Deserialize(ref SpanReader reader)
         {
-            this.SendingTimestamp = reader.ReadInt64();
         }
 
         protected override void WriteBody(BinaryWriter writer)
         {
-            writer.Write(this.SendingTimestamp);
         }
     }
 }

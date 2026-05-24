@@ -9,7 +9,7 @@ namespace RMF.Core.Packets.Server
 {
     public class EndOfEventsRequest : Packet
     {
-        public override short ID => 304;
+        public override short ID => 305;
 
         public override void Deserialize(ref SpanReader reader)
         {
