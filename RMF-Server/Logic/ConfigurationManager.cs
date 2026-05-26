@@ -29,6 +29,7 @@ namespace RMF_Server.Logic
         public static int MaxPacketLengthKB;
         public static int MaxPacketRate;
         public static int ReceiveTimeoutSecs;
+        public static bool EnableForceShutdown;
 
         public static bool EnableCollectingSessionStats;
         public static bool EnableWelcomeHandshake;

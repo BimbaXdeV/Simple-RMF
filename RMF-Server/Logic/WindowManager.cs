@@ -128,15 +128,9 @@ namespace RMF_Server.Logic
 
         public static void UpdateBitmap(ScreenPatch[] patches, int patchCount, bool isFullFrame)
         {
-            if (Interlocked.CompareExchange(ref isFrameProcessing, 1, 0) == 1 || patches.Length <= 0)
+            if (patches == null || patches.Length == 0 || patchCount == 0)
             {
-                for (int i = 0; i < patchCount; i++)
-                {
-                    ArrayPool<byte>.Shared.Return(patches[i].Data);
-                }
-                ArrayPool<ScreenPatch>.Shared.Return(patches);
-
-                return;  // Skip this frame if another one is still being processed
+                return;
             }
 
             Dispatcher.UIThread.Post(() =>
@@ -152,14 +146,20 @@ namespace RMF_Server.Logic
                         ViewModel.UpdatePatches(patches, patchCount, updateOverlay: ConfigurationManager.EnableStreamingStatsOverlay);
                     }
                 }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"Failed to update frame bitmap: {ex}");
+                }
                 finally
                 {
                     for (int i = 0; i < patchCount; i++)
                     {
-                        ArrayPool<byte>.Shared.Return(patches[i].Data);
+                        if (patches[i].Data != null)
+                        {
+                            ArrayPool<byte>.Shared.Return(patches[i].Data);
+                        }
                     }
                     ArrayPool<ScreenPatch>.Shared.Return(patches);
-                    Interlocked.Exchange(ref isFrameProcessing, 0);
                 }
             });
         }

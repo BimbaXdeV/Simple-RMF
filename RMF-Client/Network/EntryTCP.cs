@@ -86,7 +86,7 @@ namespace RMF_Client.Network
 
             try
             {
-                await SessionManager.Connection!.Client.ConnectAsync(ip, port, token);
+                await SessionManager.Connection!.Client.ConnectAsync(ip, port);
                 SessionManager.Connection.RunProcessing(token);
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
@@ -99,13 +99,26 @@ namespace RMF_Client.Network
 
             catch (OperationCanceledException)
             {
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointTime", "Cancellation requested, cleaning up the process..." }
+                });
             }
 
-            catch (Exception)
+            catch (SocketException)
             {
-                // Just a crutch :D
-                //Console.WriteLine(ex);
-                //await Task.Delay(5000, token);
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointTime", "Failed to connect to " + ip.ToString() + ":" + port.ToString() }
+                });
+            }
+
+            catch (Exception ex)
+            {
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointTime", "A client error occured: " + ex.Message }
+                });
             }
             finally
             {

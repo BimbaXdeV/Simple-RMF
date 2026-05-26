@@ -99,6 +99,13 @@ namespace RMF_Server
             Logging.Output("Cleaning up resources...");
             LifecycleController.DisposeAll();
             Logging.Output("The work process is completed. Goodbye!");
+
+            // If you really want to read what is written during a cascade shutdown :)
+            if (!ConfigurationManager.EnableForceShutdown)
+            {
+                Logging.Output("To finish this process, press any key...");
+                Console.ReadKey();
+            }
         }
     }
 }

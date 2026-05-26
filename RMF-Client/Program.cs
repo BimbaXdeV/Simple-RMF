@@ -57,6 +57,16 @@ namespace RMF_Client
 
             EntryTCP tcp = new();
             await tcp.Connect(cts.Token);
+
+            if (!ConfigurationManager.EnableForceShutdown)
+            {
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointID", "Type any word for close this program" }
+                });
+                Console.ReadKey();
+            }
+
             await AppearanceManager.Curtain(0.08f);
             await Task.Delay(500);
         }

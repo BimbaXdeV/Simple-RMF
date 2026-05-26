@@ -11,6 +11,7 @@
 	<add key="ConnectionRequestTimeoutSecs" value="10"/>
 	<add key="MinPacketBufferKB" value="12"/>
 	<add key="MaxPacketLengthKB" value="128"/>
+	<add key="EnableForceShutdown" value="false"/>
 	
 	<!-- Controller Settings -->
 	<add key="EnableCollectingSessionStats" value="true"/>

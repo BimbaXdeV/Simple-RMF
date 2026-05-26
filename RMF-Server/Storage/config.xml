@@ -18,6 +18,7 @@
 	<add key="MaxPacketLengthKB" value="768"/>
 	<add key="MaxPacketRate" value="50"/>
 	<add key="ReceiveTimeoutSecs" value="240"/>
+	<add key="EnableForceShutdown" value="false"/>
 	
 	<!-- Controller Settings -->
 	<add key="EnableCollectingSessionStats" value="true"/>

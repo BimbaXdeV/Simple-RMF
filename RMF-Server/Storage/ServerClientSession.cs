@@ -12,7 +12,7 @@ namespace RMF_Server.Storage
 {
     internal class ServerClientSession : ClientSession
     {
-        public int _rateLimitCounter;
+        private int _rateLimitCounter;
         private long _lastResetTicks;
 
         public ServerClientSession(
