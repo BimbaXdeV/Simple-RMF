@@ -12,6 +12,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -209,6 +210,18 @@ namespace RMF_Server.Commands
         {
             Logging.Output($"The \"{input}\" command received. Initiating shutdown process...");
             cts.Cancel();
+        }
+
+        private static void Certdata()
+        {
+            X509Certificate2 certificate = TLSManager.GetOrCreateCertificate();
+            Logging.Message(
+                "* Server TLS Certificate:\n" +
+                "- Subject    : " + certificate.Subject + "\n" +
+                "- Issuer     : " + certificate.Issuer + "\n" +
+                "- Expiration : " + certificate.NotAfter + "\n" +
+                "- Fingerprint: " + certificate.Thumbprint
+            );
         }
 
         private static void Screen(string input)

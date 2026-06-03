@@ -27,7 +27,7 @@ namespace RMF.Core.Events.Client
         private void SendActualFrame(ClientSession session)
         {
             CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent, this.FrameUpdateRate);
-            if (frame != null && frame.Value is CapturedFrame f)
+            if (frame.HasValue && frame.Value is CapturedFrame f)
             {
                 StreamFramePacket streamFramePacket = new()
                 {

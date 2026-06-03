@@ -31,6 +31,11 @@ namespace RMF_Server.Logic
         public static int ReceiveTimeoutSecs;
         public static bool EnableForceShutdown;
 
+        public static string? CertificateName;
+        public static string? CertificateFileName;
+        public static string? CertificatePassword;
+        public static int CertificateDurationDays;
+        
         public static bool EnableCollectingSessionStats;
         public static bool EnableWelcomeHandshake;
         public static bool EnableCollectingClientInfo;

@@ -9,7 +9,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,7 +24,7 @@ namespace RMF_Client.Network
             AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Connected");
 
             ConnectionClientSession? session = SessionManager.Connection;
-            NetworkStream? stream = session?.Client.GetStream();
+            Stream? stream = session?.NetworkStream;
             if (session == null || stream == null)
             {
                 return;
@@ -75,7 +77,7 @@ namespace RMF_Client.Network
 
         public async Task Connect(CancellationToken token)
         {
-            if (SessionManager.Connection?.Client == null)
+            if (SessionManager.Connection == null || SessionManager.Connection?.Client == null)
             {
                 SessionManager.StartSession(new TcpClient(), token);
             }
@@ -87,6 +89,35 @@ namespace RMF_Client.Network
             try
             {
                 await SessionManager.Connection!.Client.ConnectAsync(ip, port);
+
+                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Securing connection...");
+
+                SslStream sslStream = new(
+                    SessionManager.Connection.Client.GetStream(),
+                    false,
+                    new RemoteCertificateValidationCallback((sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        if (certificate == null)
+                        {
+                            return false;
+                        }
+
+                        // To synchronize the client and server TLS, pull fingerprint from the server using the "/certdata" command,
+                        // and then place it in the client configuration (~/Storage/config.xml)
+                        string actualFingerprint = certificate.GetCertHashString();
+                        string expectedFingerprint = ConfigurationManager.CertificateFingerprint?.Replace(" ", "").ToUpper() ?? string.Empty;
+                        if (actualFingerprint != expectedFingerprint)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    })
+                );
+
+                await sslStream.AuthenticateAsClientAsync(string.Empty);
+                SessionManager.Connection.SetNetworkStream(sslStream);
+
                 SessionManager.Connection.RunProcessing(token);
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
@@ -95,6 +126,14 @@ namespace RMF_Client.Network
                 });
 
                 await PacketListener(token);
+            }
+
+            catch (EndOfStreamException)
+            {
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointTime", "Server has closed the connection" }
+                });
             }
 
             catch (OperationCanceledException)
@@ -113,11 +152,20 @@ namespace RMF_Client.Network
                 });
             }
 
+            catch (AuthenticationException)
+            {
+                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | TLS handshake failed");
+                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointTime", "Failed to accept server TLS handshake" }
+                });
+            }
+
             catch (Exception ex)
             {
                 AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
-                    { "endpointTime", "A client error occured: " + ex.Message }
+                    { "endpointTime", "A client error occured: " + ex }
                 });
             }
             finally

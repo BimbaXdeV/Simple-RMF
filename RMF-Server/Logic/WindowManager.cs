@@ -126,10 +126,35 @@ namespace RMF_Server.Logic
             }
         }
 
+        private static void ReturnScreenMemory(ScreenPatch[] patches, int patchCount)
+        {
+            try
+            {
+                for (int i = 0; i < patchCount; i++)
+                {
+                    if (patches[i].Data != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(patches[i].Data);
+                    }
+                }
+                ArrayPool<ScreenPatch>.Shared.Return(patches);
+            }
+            catch (Exception ex)
+            {
+                Logging.Warning($"Failed to return screen memory: {ex}");
+            }
+        }
+
         public static void UpdateBitmap(ScreenPatch[] patches, int patchCount, bool isFullFrame)
         {
             if (patches == null || patches.Length == 0 || patchCount == 0)
             {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref isFrameProcessing, 1, 0) == 1)
+            {
+                ReturnScreenMemory(patches, patchCount);
                 return;
             }
 
@@ -152,14 +177,8 @@ namespace RMF_Server.Logic
                 }
                 finally
                 {
-                    for (int i = 0; i < patchCount; i++)
-                    {
-                        if (patches[i].Data != null)
-                        {
-                            ArrayPool<byte>.Shared.Return(patches[i].Data);
-                        }
-                    }
-                    ArrayPool<ScreenPatch>.Shared.Return(patches);
+                    Interlocked.Exchange(ref isFrameProcessing, 0);
+                    ReturnScreenMemory(patches, patchCount);
                 }
             });
         }

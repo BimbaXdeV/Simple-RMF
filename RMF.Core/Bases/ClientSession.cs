@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Channels;
@@ -18,8 +19,9 @@ namespace RMF.Core.Bases
     public abstract class ClientSession
     {
         public TcpClient Client { get; private set; }
+        public Stream NetworkStream { get; private set; }
+
         public IPEndPoint? EndPoint => this.Client.Client?.RemoteEndPoint as IPEndPoint ?? null;
-        protected NetworkStream? Stream => this.Client.Connected ? this.Client.GetStream() : null;
 
         public EventController Events { get; private set; } = new();
         protected Channel<Packet> OutboundChannel { get; private set; }
@@ -38,12 +40,15 @@ namespace RMF.Core.Bases
 
         public ClientSession(
             TcpClient client,
+            Stream? networkStream = null,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
         )
         {
             this.Client = client;
+            this.NetworkStream = networkStream ?? Stream.Null;
+
             this.OutboundChannel = Channel.CreateBounded<Packet>(
                 new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1000)
                 {
@@ -71,7 +76,7 @@ namespace RMF.Core.Bases
                 {
                     try
                     {
-                        await StreamManager.SendPacketAsync(this.Client.GetStream(), packet, token);
+                        await StreamManager.SendPacketAsync(this.NetworkStream, packet, token);
 
                         if (this.CollectingStats)
                         {
@@ -137,12 +142,23 @@ namespace RMF.Core.Bases
             _ = Task.Run(() => OutboundChannelWorker(token));  // Each session has its own packet sender
         }
 
+        public void SetNetworkStream(Stream stream)
+        {
+            this.NetworkStream = stream;
+        }
+
         public void StopProcessing()
         {
             this.IsRunning = false;
+
             this.OutboundChannel.Writer.TryComplete();
             this.Events.StopAllRunning();
             this.Client.Close();
+
+            if (this.NetworkStream != null && this.NetworkStream is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
 
         public void IncrementSendPackets()

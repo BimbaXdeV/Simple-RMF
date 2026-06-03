@@ -112,10 +112,6 @@ namespace RMF_Client.Capture
                 if (isFullFrame)
                 {
                     ScreenPatch frame = AcquireFrame();
-                    if (frame.Data == null)
-                    {
-                        return null;
-                    }
 
                     unsafe
                     {

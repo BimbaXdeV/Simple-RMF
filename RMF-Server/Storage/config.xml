@@ -20,6 +20,12 @@
 	<add key="ReceiveTimeoutSecs" value="240"/>
 	<add key="EnableForceShutdown" value="false"/>
 	
+	<!-- Security Settings -->
+	<add key="CertificateName" value="Simple RMF (Server)"/>
+	<add key="CertificateFileName" value="server"/>
+	<add key="CertificatePassword" value="yourpass"/>
+	<add key="CertificateDurationDays" value="1825"/>
+	
 	<!-- Controller Settings -->
 	<add key="EnableCollectingSessionStats" value="true"/>
 	<add key="EnableWelcomeHandshake" value="true"/>

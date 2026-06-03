@@ -16,7 +16,7 @@ namespace RMF_Server.Logic
         private static readonly string DefaultStoragePath = "Undefined";
 
         private static string CachedDate = string.Empty;
-        private static DateTime LastDateUpdated = DateTime.MinValue;
+        private static DateTime LastDateUpdated = DateTime.Now;
         private static readonly Lock CachedDateLock = new();
 
         public static (int, int) Load()

@@ -46,7 +46,6 @@ namespace RMF_Client
             {
                 AppearanceManager.SetTitle(ConfigurationManager.AppTitle + "| Unsupported OS");
             }
-            AppearanceManager.DisplayToolbar();
 
             using CancellationTokenSource cts = new();
             Console.CancelKeyPress += (sender, e) =>

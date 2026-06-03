@@ -66,7 +66,7 @@ namespace RMF_Client.Network
 
             AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
             {
-                { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).UtcDateTime.ToString("HH:mm:ss") },
+                { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).LocalDateTime.ToString("HH:mm:ss") },
                 { "endpointID", packet.SessionID.ToString() },
                 { "endpointIP", packet.RemoteIP ?? "0.0.0.0" },
                 { "endpointPort", $"{localPort} ({packet.RemotePort})" },

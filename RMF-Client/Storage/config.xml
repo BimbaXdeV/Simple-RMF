@@ -8,6 +8,7 @@
 	<!-- Connection Settings -->
 	<add key="IPAddress" value="127.0.0.1"/>
 	<add key="Port" value="8000"/>
+	<add key="CertificateFingerprint" value="14EC9CD0CC46047D3B3DC61173C88D9FB5B9F1F5"/>
 	<add key="ConnectionRequestTimeoutSecs" value="10"/>
 	<add key="MinPacketBufferKB" value="12"/>
 	<add key="MaxPacketLengthKB" value="128"/>

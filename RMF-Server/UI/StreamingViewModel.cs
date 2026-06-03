@@ -95,7 +95,6 @@ namespace RMF_Server.UI
 
         public unsafe void UpdateFrame(ScreenPatch frame, bool updateOverlay = false)
         {
-
             ValidateSource(frame.Width, frame.Height);
             DateTime currentTime = UpdateStats(updateOverlay);
 

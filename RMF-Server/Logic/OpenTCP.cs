@@ -13,7 +13,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -30,6 +32,7 @@ namespace RMF_Server.Logic
             int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
 
             this.Server ??= new TcpListener(ip, port);
+            X509Certificate2 serverCertificate = TLSManager.GetOrCreateCertificate();
 
             try
             {
@@ -64,7 +67,20 @@ namespace RMF_Server.Logic
                         continue;
                     }
 
-                    ServerClientSession? session = SessionManager.NewConnection(client, endPoint, token);
+                    SslStream sslStream = new(client.GetStream(), false);
+                    try
+                    {
+                        await sslStream.AuthenticateAsServerAsync(serverCertificate).WaitAsync(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs), token);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logging.Error($"TLS handshake failed with client {endPoint}, disconnecting...\n{ex}");
+                        sslStream.Dispose();
+                        SessionManager.Disconnect(endPoint);
+                        continue;
+                    }
+
+                    ServerClientSession? session = SessionManager.NewConnection(client, endPoint, sslStream, token);
                     if (session == null)
                     {
                         Logging.Output($"A duplicate connection to the server was detected, the duplicated client {endPoint} was disconnected");
@@ -87,13 +103,13 @@ namespace RMF_Server.Logic
                             SendBufferSize = session.Client.Client.SendBufferSize,
                             ReceiveBufferSize = session.Client.Client.ReceiveBufferSize,
                         };
-                        await StreamManager.SendPacketAsync(session.Client.GetStream(), handshakePacket, token);
+                        await StreamManager.SendPacketAsync(session.NetworkStream, handshakePacket, token);
                     }
 
                     if (ConfigurationManager.EnableCollectingClientInfo)
                     {
                         ClientInfoRequest clientInfoRequest = new();
-                        await StreamManager.SendPacketAsync(session.Client.GetStream(), clientInfoRequest, token);
+                        await StreamManager.SendPacketAsync(session.NetworkStream, clientInfoRequest, token);
                     }
                     
                     if (ConfigurationManager.EnableClientHeartbeat)
@@ -126,7 +142,7 @@ namespace RMF_Server.Logic
 
             try
             {
-                NetworkStream stream = session.Client.GetStream();
+                Stream stream = session.NetworkStream;
 
                 byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
 
@@ -143,7 +159,7 @@ namespace RMF_Server.Logic
                         break;
                     }
 
-                    short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
+                    short id = BitConverter.ToInt16(headerBuffer, 0);  // Bytes 0, 1
                     if (!ChannelDispatcher.IsChannelExists(id / 100))  // It is needed to save memory and reject a packet directly based on its ID
                     {
                         Logging.Warning($"Received a packet with unknown id \"{id}\" from the client {session.EndPoint}");

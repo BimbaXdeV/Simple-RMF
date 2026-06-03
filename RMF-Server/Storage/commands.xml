@@ -7,6 +7,7 @@
 	<add name="clear" description="Clear the console from written logs"/>
 	<add name="shutdown" description="Stop the server"/>
 	<add name="status" description="Check actual server status"/>
+	<add name="certdata" description="View actual server TLS certificate"/>
 
 	<!-- Client Management Commands -->
 	<add name="screen" description="Get actual screenshot from client desktop" paramname1="ip:port" paramtype1="string"/>

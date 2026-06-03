@@ -7,6 +7,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,10 +35,11 @@ namespace RMF_Server.Logic
             }
         }
 
-        public static ServerClientSession? NewConnection(TcpClient client, string endPoint, CancellationToken token)
+        public static ServerClientSession? NewConnection(TcpClient client, string endPoint, Stream stream, CancellationToken token)
         {
             ServerClientSession session = new(
                 client,
+                networkStream: stream,
                 channelCapacity: ConfigurationManager.ChannelPacketsCapacity,
                 collectingStats: ConfigurationManager.EnableCollectingSessionStats,
                 token: token

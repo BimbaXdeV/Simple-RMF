@@ -18,10 +18,11 @@ namespace RMF_Client.Storage
 
         public ConnectionClientSession(
             TcpClient client,
+            Stream? networkStream = null,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
-        ) : base(client, channelCapacity, collectingStats, token)
+        ) : base(client, networkStream, channelCapacity, collectingStats, token)
         {
             this.ConnectedTime = DateTime.UtcNow;
         }
