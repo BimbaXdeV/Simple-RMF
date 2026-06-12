@@ -10,9 +10,6 @@ namespace RMF_Server.Commands
 {
     internal class InputListener
     {
-        private static readonly byte[] AdminInputRGB = { 255, 255, 255 };
-        private static readonly byte[] AdminSuggestionRGB = { 120, 120, 120 };
-
         private static readonly StringBuilder? InputBuffer = new();
         private static readonly StringBuilder? SuggestionBuffer = new();
         private static bool IsListening = false;
@@ -145,7 +142,7 @@ namespace RMF_Server.Commands
                                     if (!string.IsNullOrEmpty(suggestionPart))
                                     {
                                         SuggestionBuffer?.Append(suggestionPart);
-                                        Console.Write($"{Colorist.ColoredFilterRGB(AdminSuggestionRGB[0], AdminSuggestionRGB[1], AdminSuggestionRGB[2])}{suggestionPart}{Colorist.ResetColor()}");
+                                        Console.Write($"{Colorist.ColoredFilterRGB(ThemeManager.AdminSuggestion[0], ThemeManager.AdminSuggestion[1], ThemeManager.AdminSuggestion[2])}{suggestionPart}{Colorist.ResetColor()}");
                                         Console.SetCursorPosition(Console.CursorLeft - suggestionPart.Length, Console.CursorTop);
 
                                     }

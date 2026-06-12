@@ -11,14 +11,20 @@ namespace RMF_Server.Debugger
         private static readonly string ColorPref = "\u001b[38;2;{0};{1};{2}m";
         private static readonly string ResetSuf = "\u001b[0m";
 
-        public static string ColoredFilterRGB(byte R, byte G, byte B)
+        public static string ColoredFilterRGB(byte r, byte g, byte b)
         {
-            return String.Format(ColorPref, R, G, B);
+            if (r == byte.MaxValue && g == byte.MaxValue && b == byte.MaxValue)
+            {
+                // Due to the large number of standard color pins, there is no need to overload the console with color formats
+                return string.Empty;
+            }
+
+            return string.Format(ColorPref, r, g, b);
         }
 
         public static string ColoredFilterGrayScale(byte W)
         {
-            return String.Format(ColorPref, W, W, W);
+            return string.Format(ColorPref, W, W, W);
 
         }
 

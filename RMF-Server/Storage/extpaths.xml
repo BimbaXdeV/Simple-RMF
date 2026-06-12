@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Paths>
 	<add key="Certificate" path="Storage/"/>
-	<add key="Errors" path="Debugger/Logs/%date%/"/>
+	<add key="ActualLog" path="Debugger/"/>
 	<add key="DesktopScreenshots" path="Screenshots/%endPoint%/"/>
 </Paths>

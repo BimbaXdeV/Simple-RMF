@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ColorTheme>
+	<!-- Initial Colors -->
+	<add key="SuccessfullyLoadedCounter" R="255" G="255" B="255"/>
+	<add key="PartiallyLoadedCounter" R="255" G="187" B="51"/>
+	<add key="FailedToLoadCounter" R="255" G="94" B="94"/>
+
+	<!-- Input Colors -->
+	<add key="AdminInput" R="255" G="255" B="255"/>
+	<add key="AdminSuggestion" R="120" G="120" B="120"/>
+	
+	<!-- Commands Colors -->
+	<add key="CommandName" R="180" G="255" B="229"/>
+	<add key="ParameterName" R="123" G="209" B="179"/>
+
+	<!-- Logging Colors -->
+	<add key="OutputDatetime" R="193" G="255" B="128"/>
+	<add key="WarningLog" R="255" G="187" B="51"/>
+	<add key="ErrorLog" R="255" G="94" B="94"/>
+	<add key="Separator" R="175" G="175" B="175"/>
+</ColorTheme>

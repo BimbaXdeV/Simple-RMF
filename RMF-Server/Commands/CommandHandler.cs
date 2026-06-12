@@ -20,9 +20,6 @@ namespace RMF_Server.Commands
 {
     internal class CommandHandler
     {
-        private static readonly byte[] CommandNameRGB = { 180, 255, 229 };
-        private static readonly byte[] ParameterNameRGB = { 123, 209, 179 };
-
         private static bool Validator(string[] commandStructure, CommandParameter[]? parameters)
         {
             if (commandStructure.Length - 1 != parameters!.Length)
@@ -139,9 +136,12 @@ namespace RMF_Server.Commands
 
             foreach (Command cm in CommandManager.GetAllCommands())
             {
-                string parametersNamesPerformance = cm.Parameters != null ? Colorist.ColoredFilterRGB(ParameterNameRGB[0], ParameterNameRGB[1], ParameterNameRGB[2]) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor() : "";
+                byte[] paramColor = ThemeManager.ParameterName;
+                string parametersNamesPerformance = cm.Parameters != null ? Colorist.ColoredFilterRGB(paramColor[0], paramColor[1], paramColor[2]) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor() : "";
                 string descriptionPerformance = cm.Description ?? "Description is empty...";
-                Logging.Message($"{Colorist.ColoredFilterRGB(CommandNameRGB[0], CommandNameRGB[1], CommandNameRGB[2])}- {cm.Name}{Colorist.ResetColor()} {parametersNamesPerformance} - {descriptionPerformance}");
+                
+                byte[] commandColor = ThemeManager.CommandName;
+                Logging.Message($"{Colorist.ColoredFilterRGB(commandColor[0], commandColor[1], commandColor[2])}- {cm.Name}{Colorist.ResetColor()} {parametersNamesPerformance} - {descriptionPerformance}");
             }
         }
 
@@ -150,7 +150,7 @@ namespace RMF_Server.Commands
             ServerClientSession[] connections = SessionManager.Connections.Values.ToArray();
             if (connections.Length == 0)
             {
-                Logging.Message("No active connections...");
+                Logging.Message("No active connections...", toHistory: false);
                 return;
             }
 
@@ -187,7 +187,7 @@ namespace RMF_Server.Commands
             string[] bannedIPs = Firewall.GetBannedIPs();
             if (bannedIPs.Length == 0)
             {
-                Logging.Message("No banned IPs...");
+                Logging.Message("No banned IPs...", toHistory: false);
                 return;
             }
 
@@ -239,7 +239,7 @@ namespace RMF_Server.Commands
             }
             else
             {
-                Logging.Message($"No connection found named \"{targetEndPoint}\"");
+                Logging.Message($"No connection found named \"{targetEndPoint}\"", toHistory: false);
             }
         }
 
@@ -264,7 +264,7 @@ namespace RMF_Server.Commands
             }
             else
             {
-                Logging.Message($"No connection found named \"{targetEndPoint}\"");
+                Logging.Message($"No connection found named \"{targetEndPoint}\"", toHistory: false);
             }
         }
 
@@ -275,7 +275,7 @@ namespace RMF_Server.Commands
                 IPEndPoint? ipEndPoint = WindowManager.StreamingClientEndPoint;
                 if (ipEndPoint == null)
                 {
-                    Logging.Message("No active stream to stop...");
+                    Logging.Message("No active stream to stop...", toHistory: false);
                     return;
                 }
                 
@@ -291,7 +291,7 @@ namespace RMF_Server.Commands
                 }
                 else
                 {
-                    Logging.Message($"No connection found named \"{endPoint}\"");
+                    Logging.Message($"No connection found named \"{endPoint}\"", toHistory: false);
                 }
             }
             finally

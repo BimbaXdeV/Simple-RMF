@@ -58,6 +58,9 @@ namespace RMF_Server.Logic
         public static bool InlineSuggestionsEnabled;
         public static int InlineSuggestionsMinChars;
 
+        public static bool EnableLogSaving;
+        public static bool EnableMultipleBackup;
+        public static int MaxLogFileCapacityMB;
         public static int LoggingHistoryLength;
         public static int LoggingHandlerDelayMsecs;
         public static int InputListenerDelayMsecs;
@@ -90,7 +93,7 @@ namespace RMF_Server.Logic
             FieldInfo[] staticFields = type.GetFields(BindingFlags.Static | BindingFlags.Public);
 
             int initializedFieldsCounter = 0;
-            foreach (var field in staticFields)
+            foreach (FieldInfo field in staticFields)
             {
                 if (configDict.TryGetValue(field.Name, out string? rawValue))
                 {

@@ -21,6 +21,7 @@ namespace RMF_Server
         static async Task Main(string[] args)
         {
             AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
+            (int colorsLoaded, int totalColors) = ThemeManager.Load();
             Logging.Message(Logging.ServerLogo, toHistory: false);
             Logging.Separator();
 
@@ -44,6 +45,9 @@ namespace RMF_Server
 
             (int eventsLoaded, int totalEvents) = EventAssembler.RegisterFound("Server");
             Logging.Message($"Server events:        {eventsLoaded} / {totalEvents}", leftOffset: Logging.LogHeaderLength);
+
+            // Already loaded colors
+            Logging.Message($"Theme colors:         {colorsLoaded} / {totalColors}", leftOffset: Logging.LogHeaderLength);
 
 
             // Transferring fields data from server configurations to core packet configurations
@@ -99,6 +103,15 @@ namespace RMF_Server
             Logging.Output("Cleaning up resources...");
             LifecycleController.DisposeAll();
             Logging.Output("The work process is completed. Goodbye!");
+
+            // Saving logs to file if enabled, with an option to append to existing backup or create a new one
+            if (ConfigurationManager.EnableLogSaving)
+            {
+                Logging.SaveBackup(
+                    PathManager.GetResolvedPath("ActualLog", fileName: "rmf-server", fileFormat: "log"),
+                    appendBelow: ConfigurationManager.EnableMultipleBackup
+                );
+            }
 
             // If you really want to read what is written during a cascade shutdown :)
             if (!ConfigurationManager.EnableForceShutdown)

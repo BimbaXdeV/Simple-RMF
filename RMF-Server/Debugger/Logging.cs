@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace RMF_Server.Debugger
@@ -25,9 +26,6 @@ namespace RMF_Server.Debugger
 ";
 
         // Output colors and settings
-        public static byte[] DatetimeColorRGB = { 193, 255, 128 };
-        public static byte[] WarningColorRGB = { 255, 187, 51 };
-        public static byte[] ErrorColorRGB = { 255, 94, 94 };
         public static string? DefaultLogEnding = "";
         public static char ConsoleSeparator = '-';
         public static int ConsoleSeparatorLength = 50;
@@ -40,6 +38,9 @@ namespace RMF_Server.Debugger
         private static readonly ConcurrentQueue<string> LogQueue = [];
         private static bool IsExecutorRunning = false;
         public static bool IsAdminTyping = false;
+
+        // Backup utils
+        private static readonly Regex AnsiRegex = new(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
         private static int GetMaxMethodNameLength()
         {
@@ -130,17 +131,17 @@ namespace RMF_Server.Debugger
         // All types of logs
         public static void Output(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(DatetimeColorRGB[0], DatetimeColorRGB[1], DatetimeColorRGB[2])}[ {DateTime.Now} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}", toHistory);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ThemeManager.OutputDatetime[0], ThemeManager.OutputDatetime[1], ThemeManager.OutputDatetime[2])}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}", toHistory);
         }
 
         public static void Warning(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(WarningColorRGB[0], WarningColorRGB[1], WarningColorRGB[2])}[ {DateTime.Now} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ThemeManager.WarningLog[0], ThemeManager.WarningLog[1], ThemeManager.WarningLog[2])}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
         public static void Error(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ErrorColorRGB[0], ErrorColorRGB[1], ErrorColorRGB[2])}[ {DateTime.Now} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ThemeManager.ErrorLog[0], ThemeManager.ErrorLog[1], ThemeManager.ErrorLog[2])}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{MaxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
         public static void Message(string message, int leftOffset = 0, bool toHistory = true)
@@ -155,12 +156,74 @@ namespace RMF_Server.Debugger
 
         public static void Separator()
         {
-            TryLogEnqueue(string.Join("", Enumerable.Repeat(ConsoleSeparator.ToString(), ConsoleSeparatorLength)), false);
+            string colorPref = Colorist.ColoredFilterRGB(ThemeManager.Separator[0], ThemeManager.Separator[1], ThemeManager.Separator[2]);
+            TryLogEnqueue(colorPref + string.Join("", Enumerable.Repeat(ConsoleSeparator.ToString(), ConsoleSeparatorLength)) + Colorist.ResetColor(), false);
         }
 
         public static void ClearConsole()
         {
             TryLogEnqueue("\u001b[2J\u001b[H", false);
+        }
+
+        // Other utils
+        public static void SaveBackup(string path, bool appendBelow = false)
+        {
+            if (History == null || History.Length == 0)
+            {
+                Output("The log history is empty, nothing to do");
+                return;
+            }
+
+            try
+            {
+                string[] validLines = History.Where(l => l != null)
+                                             .Select(l => AnsiRegex.Replace(l, string.Empty))
+                                             .ToArray();
+
+                if (validLines.Length == 0)
+                {
+                    Output("The log history contains only nulls, nothing to do");
+                    return;
+                }
+
+                string? directoryPath = Path.GetDirectoryName(path);
+                if (!string.IsNullOrWhiteSpace(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
+
+                string backupTitle = $"* Backup from {DateTime.Now:yyyy-MM-dd HH:mm:ss} [{validLines.Length} / {History.Length} lines]:";
+                string contentToWrite = backupTitle + Environment.NewLine + string.Join(Environment.NewLine, validLines);
+                bool isNewFile = !File.Exists(path);
+
+                if (!isNewFile && appendBelow)
+                {
+                    File.AppendAllText(path, Environment.NewLine + Environment.NewLine + contentToWrite);
+                } 
+                else
+                {
+                    File.WriteAllText(path, contentToWrite);
+                }
+
+                // Log rotation if the file exceeds the maximum allowed size after writing the backup
+                long currentFileSize = new FileInfo(path).Length;
+                long maxAllowedSize = ConfigurationManager.MaxLogFileCapacityMB * 1024 * 1024;
+
+                if (currentFileSize >= maxAllowedSize)
+                {
+                    string baseFileName = Path.GetFileNameWithoutExtension(path);
+                    string archievedFileName = $"{baseFileName}_{DateTime.Now:yyyyMMddHHmmss}.bak";
+                    string archievedPath = Path.Combine(directoryPath ?? string.Empty, archievedFileName);
+
+                    File.Move(path, archievedPath, overwrite: true);
+
+                    Output($"The log file has reached maximum capacity and has been archived as: {archievedFileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Warning($"Failed to write log history to file: {ex}");
+            }
         }
     }
 }

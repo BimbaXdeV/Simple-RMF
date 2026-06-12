@@ -53,7 +53,10 @@
 	<add key="InlineSuggestionsMinChars" value="2"/>
 
 	<!-- Logging Settings -->
-	<add key="LoggingHistoryLength" value="100"/>
+	<add key="EnableLogSaving" value="true"/>
+	<add key="EnableMultipleBackup" value="true"/>
+	<add key="MaxLogFileCapacityMB" value="1"/>
+	<add key="LoggingHistoryLength" value="500"/>
 	<add key="LoggingHandlerDelayMsecs" value="100"/>
 	<add key="InputListenerDelayMsecs" value="10"/>
 </Settings>
