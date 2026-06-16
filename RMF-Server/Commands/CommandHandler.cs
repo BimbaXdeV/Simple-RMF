@@ -224,6 +224,21 @@ namespace RMF_Server.Commands
             );
         }
 
+        private static void Ver()
+        {
+            string? serverVersion = RMFVersion.App?.ToString(3);
+            string? coreVersion = RMFVersion.Core?.ToString(3);
+
+            if (serverVersion != null && coreVersion != null)
+            {
+                Logging.Message($"* Assembly versions\n{ConfigurationManager.AppTitle}: {serverVersion}\nCore: {coreVersion}");
+            }
+            else
+            {
+                Logging.Message("Version information is not available now");
+            }
+        }
+
         private static void Screen(string input)
         {
             string targetEndPoint = input.Split(' ')[1];

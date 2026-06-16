@@ -9,7 +9,7 @@ namespace RMF.Core.Packets.Client
 {
     public class PartingPacket : Packet
     {
-        public override short ID => 102;
+        public override short ID => 103;
 
         public byte StatusCode { get; set; }  // All possible IDs check in RMF.Core.Packets.PartingStatusCodes
         public long UptimeSecs { get; set; }  // How many seconds the client was connected before sending this packet

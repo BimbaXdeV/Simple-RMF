@@ -8,8 +8,11 @@
 	<add name="shutdown" description="Stop the server"/>
 	<add name="status" description="Check actual server status"/>
 	<add name="certdata" description="View actual server TLS certificate"/>
+	<add name="ver" description="Check current server version"/>
 
 	<!-- Client Management Commands -->
+	<add name="kick" description="Kick a client from the server" paramname1="ip:port" paramtype1="string"/>
+	<add name="ban" description="Block an IP from connecting to the server" paramname1="ip:port" paramtype1="string"/>
 	<add name="screen" description="Get actual screenshot from client desktop" paramname1="ip:port" paramtype1="string"/>
 	<add name="stream" description="Remotely connect to client desktop" paramname1="ip:port" paramtype1="string"/>
 	<add name="dstream" description="Stop the client streaming event"/>

@@ -31,12 +31,16 @@ namespace RMF_Client.Network
                     ProcessHandshakePacket(handshakePacket);
                     break;
 
-                case ClientPingRequest clientPingRequest:
-                    ProcessClientPingRequest(clientPingRequest);
+                case ClientVersionRequest clientVersionRequest:
+                    ProcessClientVersionRequest(clientVersionRequest);
                     break;
 
                 case ClientInfoRequest clientInfoRequest:
                     ProcessClientInfoRequest(clientInfoRequest);
+                    break;
+
+                case ClientPingRequest clientPingRequest:
+                    ProcessClientPingRequest(clientPingRequest);
                     break;
 
                 case ScreenshotRequest screenshotRequest:
@@ -74,15 +78,22 @@ namespace RMF_Client.Network
             });
         }
 
-        private static void ProcessClientPingRequest(ClientPingRequest packet)
+        private static void ProcessClientVersionRequest(ClientVersionRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
+            Version? appVersion = Assembly.GetEntryAssembly()?.GetName().Version;
+            Version? coreVersion = typeof(Packet).Assembly.GetName().Version;
 
-            HeartbeatPacket heartbeatPacket = new()
+            ClientVersionPacket versionPacket = new()
             {
-                TurnedTimestamp = packet.SendingTimestamp
+                AppMajorVersion = (short)(appVersion?.Major ?? 0),
+                AppMinorVersion = (short)(appVersion?.Minor ?? 0),
+                AppBuildVersion = (short)(appVersion?.Build ?? 0),
+                CoreMajorVersion = (short)(coreVersion?.Major ?? 0),
+                CoreMinorVersion = (short)(coreVersion?.Minor ?? 0),
+                CoreBuildVersion = (short)(coreVersion?.Build ?? 0)
             };
-            session.SendPacket(heartbeatPacket);
+            session.SendPacket(versionPacket);
         }
 
         private static void ProcessClientInfoRequest(ClientInfoRequest packet)
@@ -104,6 +115,17 @@ namespace RMF_Client.Network
                 };
                 session.SendPacket(clientInfoPacket);
             }
+        }
+
+        private static void ProcessClientPingRequest(ClientPingRequest packet)
+        {
+            ConnectionClientSession session = SessionManager.Connection!;
+
+            HeartbeatPacket heartbeatPacket = new()
+            {
+                TurnedTimestamp = packet.SendingTimestamp
+            };
+            session.SendPacket(heartbeatPacket);
         }
 
         private static void ProcessScreenshotRequest(ScreenshotRequest packet)

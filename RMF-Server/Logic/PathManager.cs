@@ -74,10 +74,17 @@ namespace RMF_Server.Logic
                 UpdateDate();  // You don`t need to constantly convert the same long-lived object
             }
 
-            string resolvedFileName = string.IsNullOrEmpty(fileName) ? "Undefined" : fileName;
-            string resolvedFileFormat = string.IsNullOrEmpty(fileFormat) ? "txt" : fileFormat;
+            string? fullFilePath;
+            if (!string.IsNullOrWhiteSpace(fileName))
+            {
+                string format = string.IsNullOrWhiteSpace(fileFormat) ? "txt" : fileFormat.TrimStart('.');
+                fullFilePath = Path.Combine(rawPath, $"{fileName}.{format}");
+            }
+            else
+            {
+                fullFilePath = rawPath;
+            }
 
-            string fullFilePath = Path.Combine(rawPath, $"{resolvedFileName}.{resolvedFileFormat}");
             StringBuilder resolvedPath = new(fullFilePath);
             resolvedPath.Replace("%date%", CachedDate)
                         .Replace("%time%", DateTime.Now.ToString("HH_mm_ss"))

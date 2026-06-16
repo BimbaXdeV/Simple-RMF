@@ -34,6 +34,9 @@ namespace RMF_Server.Logic
             this.Server ??= new TcpListener(ip, port);
             X509Certificate2 serverCertificate = TLSManager.GetOrCreateCertificate();
 
+            string bannedIPsPath = PathManager.GetResolvedPath("BannedIPs", "blacklist", "txt");
+            Firewall.TryLoadFrom(bannedIPsPath);
+
             try
             {
                 this.Server.Start();
@@ -106,12 +109,18 @@ namespace RMF_Server.Logic
                         await StreamManager.SendPacketAsync(session.NetworkStream, handshakePacket, token);
                     }
 
+                    if (ConfigurationManager.EnableBuildComparison)
+                    {
+                        ClientVersionRequest versionRequest = new();
+                        await StreamManager.SendPacketAsync(session.NetworkStream, versionRequest, token);
+                    }
+
                     if (ConfigurationManager.EnableCollectingClientInfo)
                     {
                         ClientInfoRequest clientInfoRequest = new();
                         await StreamManager.SendPacketAsync(session.NetworkStream, clientInfoRequest, token);
                     }
-                    
+
                     if (ConfigurationManager.EnableClientHeartbeat)
                     {
                         session.Events.StartEvent(session, "HeartbeatEvent", new Dictionary<string, object>

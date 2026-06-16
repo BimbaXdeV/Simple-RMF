@@ -26,6 +26,10 @@ namespace RMF_Server.Packets
                     ProcessHeartbeatPacket(heartbeatPacket, endPoint);
                     break;
 
+                case ClientVersionPacket clientVersionPacket:
+                    ProcessClientVersionPacket(clientVersionPacket, endPoint);
+                    break;
+
                 case ClientInfoPacket clientInfoPacket:
                     ProcessClientInfoPacket(clientInfoPacket, endPoint);
                     break;
@@ -59,6 +63,39 @@ namespace RMF_Server.Packets
         {
             double delay = (DateTime.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(packet.TurnedTimestamp)).TotalMilliseconds;
             Logging.Message($"Received heartbeat from {endPoint} : {delay}ms delay");
+        }
+
+        private static void ProcessClientVersionPacket(ClientVersionPacket packet, IPEndPoint endPoint)
+        {
+            if (SessionManager.Connections.TryGetValue(endPoint.ToString(), out ServerClientSession? session))
+            {
+                if (RMFVersion.Core?.Major != packet.CoreMajorVersion ||
+                    RMFVersion.Core?.Minor != packet.CoreMinorVersion ||
+                    RMFVersion.Core?.Build != packet.CoreBuildVersion)
+                {
+                    string clientCoreVersion = $"{packet.CoreMajorVersion}.{packet.CoreMinorVersion}.{packet.CoreBuildVersion}";
+
+                    Logging.Warning($"Client {endPoint} is running a different version of RMF.Core ({clientCoreVersion}), disconnecting...");
+                    SessionManager.Disconnect(endPoint.ToString());
+                    return;
+                }
+
+                if (RMFVersion.App?.Major != packet.AppMajorVersion ||
+                    RMFVersion.App.Minor != packet.AppMinorVersion)
+                {
+                    string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
+
+                    Logging.Warning($"Client {endPoint} is running a different version of RMF.App ({clientAppVersion}), disconnecting...");
+                    SessionManager.Disconnect(endPoint.ToString());
+                    return;
+                }
+
+                if (RMFVersion.App?.Build != packet.AppBuildVersion)
+                {
+                    string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
+                    Logging.Warning($"The connected client has a different build version ({clientAppVersion}), be careful");
+                }
+            }
         }
 
         private static void ProcessClientInfoPacket(ClientInfoPacket packet, IPEndPoint endPoint)

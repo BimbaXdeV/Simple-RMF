@@ -38,6 +38,7 @@ namespace RMF_Server.Logic
         
         public static bool EnableCollectingSessionStats;
         public static bool EnableWelcomeHandshake;
+        public static bool EnableBuildComparison;
         public static bool EnableCollectingClientInfo;
         public static bool EnableClientHeartbeat;
         public static int ClientHeartbeatIntervalSecs;

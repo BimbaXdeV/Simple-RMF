@@ -6,6 +6,7 @@
 		
 		<RootNamespace>RMF_Server</RootNamespace>
 		<LangVersion>latest</LangVersion>
+		<Version>1.0.0</Version>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>

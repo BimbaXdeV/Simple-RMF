@@ -2,5 +2,6 @@
 <Paths>
 	<add key="Certificate" path="Storage/"/>
 	<add key="ActualLog" path="Debugger/"/>
+	<add key="BannedIPs" path="Storage/"/>
 	<add key="DesktopScreenshots" path="Screenshots/%endPoint%/"/>
 </Paths>
