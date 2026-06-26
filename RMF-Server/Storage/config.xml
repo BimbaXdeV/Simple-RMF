@@ -13,14 +13,17 @@
 	<!-- Connection Settings -->
 	<add key="IPAddress" value="127.0.0.1"/>
 	<add key="Port" value="8000"/>
-	<add key="MaxConnections" value="20"/>
-	<add key="MinPacketBufferKB" value="12"/>
-	<add key="MaxPacketLengthKB" value="768"/>
-	<add key="MaxPacketRate" value="50"/>
 	<add key="ReceiveTimeoutSecs" value="240"/>
 	<add key="EnableForceShutdown" value="false"/>
 	
-	<!-- Security Settings -->
+	<!-- Firewall Settings -->
+	<add key="MaxConnections" value="400"/>
+	<add key="MaxConnectionsPerIP" value="400"/>
+	<add key="MinPacketLengthKB" value="6"/>
+	<add key="MaxPacketLengthKB" value="768"/>
+	<add key="MaxPacketRate" value="100"/>
+	
+	<!-- TLS Settings -->
 	<add key="CertificateName" value="Simple RMF (Server)"/>
 	<add key="CertificateFileName" value="server"/>
 	<add key="CertificatePassword" value="yourpass"/>

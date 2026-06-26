@@ -229,7 +229,7 @@ namespace RMF_Client.Capture
             }
         }
 
-        protected override unsafe RectsMetadata? AcquireUpdates(byte[] destinationFrameBuffer, int frameSize)
+        protected override unsafe RectsMetadata? AcquireUpdates()
         {
             if (!TryAcquireNextFrame(out OutduplFrameInfo frameInfo))
             {
@@ -238,8 +238,6 @@ namespace RMF_Client.Capture
 
             try
             {
-                Marshal.Copy(this.RawPixels, destinationFrameBuffer, 0, frameSize);
-
                 uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
                 if (metadataBufferSize <= 0)
                 {
@@ -282,76 +280,5 @@ namespace RMF_Client.Capture
                 this.Duplication.ReleaseFrame();
             }
         }
-
-        //protected override unsafe ScreenPatch GetActualFrame()
-        //{
-        //    UpdateBitmapFrame();
-
-        //    int size = this.ScreenWidth * this.ScreenHeight * 4;
-        //    byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
-        //    fixed (byte* destPtr = buffer)
-        //    {
-        //        Unsafe.CopyBlock(destPtr, (void*)this.RawPixels, (uint)size);
-        //    }
-        //    return new ScreenPatch(
-        //        buffer,
-        //        size,
-        //        0,
-        //        0,
-        //        this.ScreenWidth,
-        //        this.ScreenHeight
-        //    );
-        //}
-
-        //protected override unsafe RectsMetadata? GetFrameUpdates()
-        //{
-        //    OutduplFrameInfo frameInfo = default;
-        //    ComPtr<IDXGIResource> resource = default;
-
-        //    int hResult = this.Duplication.AcquireNextFrame(10, &frameInfo, resource.GetAddressOf());
-        //    if (hResult != 0)
-        //    {
-        //        if (hResult == this.AcquireTimeoutCode)
-        //        {
-        //            Initialize();
-        //        }
-        //        return null;
-        //    }
-
-        //    uint metadataBufferSize = frameInfo.TotalMetadataBufferSize;
-        //    if (metadataBufferSize == 0)
-        //    {
-        //        return null;
-        //    }
-
-        //    byte[] metadatabuffer = ArrayPool<byte>.Shared.Rent((int)metadataBufferSize);
-        //    uint requiredBufferSize = 0;
-        //    bool isMetadataTransfered = false;
-        //    try
-        //    {
-        //        fixed (byte* destPtr = metadatabuffer)
-        //        {
-        //            hResult = this.Duplication.GetFrameDirtyRects(metadataBufferSize, (Box2D<int>*)destPtr, &requiredBufferSize);
-        //            if (hResult != 0)
-        //            {
-        //                return null;
-        //            }
-
-        //            isMetadataTransfered = true;  // There`s nothing left to break here (it seems)
-        //            int rectCount = (int)(requiredBufferSize / sizeof(Box2D<int>));
-        //            return new RectsMetadata(metadatabuffer, rectCount);
-        //        }
-        //    }
-        //    finally
-        //    {
-        //        resource.Dispose();
-        //        this.Duplication.ReleaseFrame();
-
-        //        if (!isMetadataTransfered)
-        //        {
-        //            ArrayPool<byte>.Shared.Return(metadatabuffer);
-        //        }
-        //    }
-        //}
     }
 }

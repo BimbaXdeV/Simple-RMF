@@ -43,14 +43,14 @@ namespace RMF_Server.Logic
         {
             Logging.Output("The server is parting...");
             DateTime deadline = DateTime.Now + TimeSpan.FromSeconds(timeoutSecs);
-            while (SessionManager.Connections.IsEmpty == false && DateTime.Now < deadline)
+            while (SessionManager.ConnectionsExist && DateTime.Now < deadline)
             {
                 await Task.Delay(100);
             }
 
-            if (SessionManager.Connections.IsEmpty == false)
+            if (SessionManager.ConnectionsExist)
             {
-                Logging.Warning($"The server parting timeout has expired, {SessionManager.Connections.Count} clients are still connected");
+                Logging.Warning($"The server parting timeout has expired, {SessionManager.TotalConnections} clients are still connected");
             }
             Logging.Output("The server successfully parted");
         }

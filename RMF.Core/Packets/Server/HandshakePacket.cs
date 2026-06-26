@@ -12,8 +12,8 @@ namespace RMF.Core.Packets.Server
         public override short ID => 300;
 
         public long ConnectionTimestamp;
-        public int SessionID;
-        public string? RemoteIP;
+        public Guid SessionID = Guid.Empty;
+        public string RemoteIP = string.Empty;
         public int RemotePort;
         public int SendBufferSize;
         public int ReceiveBufferSize;
@@ -21,7 +21,7 @@ namespace RMF.Core.Packets.Server
         public override void Deserialize(ref SpanReader reader)
         {
             this.ConnectionTimestamp = reader.ReadInt64();
-            this.SessionID = reader.ReadInt32();
+            this.SessionID = new Guid(reader.ReadBytes(16));
             this.RemoteIP = reader.ReadString();
             this.RemotePort = reader.ReadInt32();
             this.SendBufferSize = reader.ReadInt32();
@@ -31,7 +31,7 @@ namespace RMF.Core.Packets.Server
         protected override void WriteBody(BinaryWriter writer)
         {
             writer.Write(this.ConnectionTimestamp); 
-            writer.Write(this.SessionID);
+            writer.Write(this.SessionID.ToByteArray());
             writer.Write(this.RemoteIP ?? "0.0.0.0");
             writer.Write(this.RemotePort);
             writer.Write(this.SendBufferSize);

@@ -16,7 +16,7 @@ namespace RMF.Core.Network
 
         public static MemoryStream GetCachedStream()
         {
-            CachedMemoryStream ??= new MemoryStream(PacketConfigurations.MinPacketBufferKB * 1000);
+            CachedMemoryStream ??= new MemoryStream(PacketConfigurations.MinPacketLengthKB * 1000);
             CachedMemoryStream.Position = 0;
             CachedMemoryStream.SetLength(0);
             return CachedMemoryStream;

@@ -67,7 +67,7 @@ namespace RMF_Server.Packets
 
         private static void ProcessClientVersionPacket(ClientVersionPacket packet, IPEndPoint endPoint)
         {
-            if (SessionManager.Connections.TryGetValue(endPoint.ToString(), out ServerClientSession? session))
+            if (SessionManager.GetClientSession(endPoint.ToString(), out _))
             {
                 if (RMFVersion.Core?.Major != packet.CoreMajorVersion ||
                     RMFVersion.Core?.Minor != packet.CoreMinorVersion ||
@@ -146,7 +146,7 @@ namespace RMF_Server.Packets
 
         private static void ProcessStreamFramePacket(StreamFramePacket packet, IPEndPoint endPoint)
         {
-            if (SessionManager.Connections.TryGetValue(endPoint.ToString(), out ServerClientSession? session))
+            if (SessionManager.GetClientSession(endPoint.ToString(), out ServerClientSession? session))
             {
                 IPEndPoint? actualStreamer = WindowManager.StreamingClientEndPoint;
                 if (actualStreamer == null)
@@ -154,7 +154,7 @@ namespace RMF_Server.Packets
                     WindowManager.StreamingClientEndPoint = endPoint;
                     Logging.Output($"Streaming session started with {endPoint}");
                 }
-                else if (session.EndPoint != WindowManager.StreamingClientEndPoint)
+                else if (session!.EndPoint != WindowManager.StreamingClientEndPoint)
                 {
                     Logging.Warning($"Received a streaming frame from \"{endPoint}\" while the streaming session is active with {WindowManager.StreamingClientEndPoint}, disconnecting...");
                     SessionManager.Disconnect(endPoint.ToString());

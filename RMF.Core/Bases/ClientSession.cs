@@ -38,6 +38,8 @@ namespace RMF.Core.Bases
         public long LastTransferTimeTicks => Interlocked.Read(ref this._lastTransferTimeTicks);
         public DateTime LastTransferTime => new(Interlocked.Read(ref this._lastTransferTimeTicks), DateTimeKind.Utc);
 
+        private readonly SemaphoreSlim _streamLocker = new(1, 1);
+
         public ClientSession(
             TcpClient client,
             Stream? networkStream = null,
@@ -74,6 +76,7 @@ namespace RMF.Core.Bases
             {
                 await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
                 {
+                    await _streamLocker.WaitAsync(token);
                     try
                     {
                         await StreamManager.SendPacketAsync(this.NetworkStream, packet, token);
@@ -89,6 +92,7 @@ namespace RMF.Core.Bases
                         {
                             releasable.Release();
                         }
+                        _streamLocker.Release();
                     }
                 }
             }

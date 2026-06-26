@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -10,7 +11,8 @@ namespace RMF_Server.Logic
 {
     internal static class SettingsSynchronizer
     {
-        public static void Upload(Type source, Type target)
+        public static void Upload([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type source,
+                                  [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type target)
         {
             FieldInfo[] sourceFields = source.GetFields(BindingFlags.Static | BindingFlags.Public);
             if (sourceFields.Length == 0)

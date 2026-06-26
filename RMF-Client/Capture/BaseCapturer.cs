@@ -72,7 +72,7 @@ namespace RMF_Client.Capture
         // -------------------------------------------------------------------------------------
         // WARNING: Use the above array leases to store areas to avoid GC (Garbage Collector) load issues.
         // NOTICE: There is no need to return the array back, the engine already knows how to do this.
-        protected abstract RectsMetadata? AcquireUpdates(byte[] destinationFrameBuffer, int frameSize);
+        protected abstract RectsMetadata? AcquireUpdates();
 
         private void PrepareParallelOptions()
         {
@@ -160,107 +160,99 @@ namespace RMF_Client.Capture
                 // Partial frame with updates only
                 else
                 {
-                    int frameSize = this.ScreenWidth * this.ScreenHeight * 4;
-                    byte[] frameBuffer = ArrayPool<byte>.Shared.Rent(frameSize);
+                    RectsMetadata? updatedPatches = AcquireUpdates();
                     try
                     {
-                        RectsMetadata? updatedPatches = AcquireUpdates(frameBuffer, frameSize);
+                        if (!updatedPatches.HasValue || updatedPatches.Value.Count == 0)
+                        {
+                            return null;
+                        }
+
+                        ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(updatedPatches.Value.Count);
+                        short writtenCount = 0;
                         try
                         {
-                            if (!updatedPatches.HasValue || updatedPatches.Value.Count == 0)
-                            {
-                                return null;
-                            }
+                            int screenSize = this.ScreenWidth * this.ScreenHeight * 4;
 
-                            ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(updatedPatches.Value.Count);
-                            int writtenCount = 0;
-                            try
+                            Array.Clear(patches, 0, updatedPatches.Value.Count);
+                            Parallel.For(0, updatedPatches.Value.Count, this.Options!, (int i) =>
                             {
-                                int screenSize = this.ScreenWidth * this.ScreenHeight * 4;
+                                Box2D<int> patch = updatedPatches.Value[i];
 
-                                unsafe
+                                if (patch.Max.X > this.ScreenWidth || patch.Max.Y > this.ScreenHeight)
                                 {
-                                    fixed (byte* fixedSrcPtr = frameBuffer)
-                                    {
-                                        IntPtr srcPtr = (IntPtr)fixedSrcPtr;
+                                    return;
+                                }
 
-                                        Parallel.For(0, updatedPatches.Value.Count, this.Options!, (int i) =>
-                                        {
-                                            Box2D<int> patch = updatedPatches.Value[i];
+                                int patchWidth = patch.Max.X - patch.Min.X;
+                                int patchHeight = patch.Max.Y - patch.Min.Y;
+                                            
+                                if (patchWidth <= 0 || patchHeight <= 0)
+                                {
+                                    return;
+                                }
 
-                                            if (patch.Max.X > this.ScreenWidth || patch.Max.Y > this.ScreenHeight)
-                                            {
-                                                return;
-                                            }
+                                int rowLength = this.ScreenWidth * 4;
+                                int patchOffset = (patch.Min.Y * rowLength) + (patch.Min.X * 4);
+                                IntPtr patchPtr = this.RawPixels + patchOffset;
 
-                                            int patchWidth = patch.Max.X - patch.Min.X;
-                                            int patchHeight = patch.Max.Y - patch.Min.Y;
-                                            if (patchWidth <= 0 || patchHeight <= 0)
-                                            {
-                                                return;
-                                            }
+                                using SKImage image = SKImage.FromPixels(
+                                    new SKImageInfo(patchWidth, patchHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
+                                    patchPtr,
+                                    rowLength
+                                );
+                                using SKData? compressedData = ScreenEncoder.CompressImage(image, format, quality);
+                                if (compressedData == null)
+                                {
+                                    return;
+                                }
 
-                                            int rowLength = this.ScreenWidth * 4;
-                                            int patchOffset = (patch.Min.Y * rowLength) + (patch.Min.X * 4);
-                                            IntPtr patchPtr = srcPtr + patchOffset;
+                                byte[] patchBuffer = ArrayPool<byte>.Shared.Rent((int)compressedData!.Size);
+                                compressedData.AsSpan().CopyTo(patchBuffer);
 
-                                            using SKImage image = SKImage.FromPixels(
-                                                new SKImageInfo(patchWidth, patchHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
-                                                patchPtr,
-                                                rowLength
-                                            );
-                                            using SKData? compressedData = ScreenEncoder.CompressImage(image, format, quality);
-                                            if (compressedData == null)
-                                            {
-                                                return;
-                                            }
+                                patches[i] = new ScreenPatch(
+                                    patchBuffer,
+                                    (int)compressedData.Size,
+                                    (short)patch.Min.X,
+                                    (short)patch.Min.Y,
+                                    (short)patchWidth,
+                                    (short)patchHeight
+                                );
+                            });
 
-                                            byte[] patchBuffer = ArrayPool<byte>.Shared.Rent((int)compressedData!.Size);
-                                            compressedData.AsSpan().CopyTo(patchBuffer);
-
-                                            writtenCount = Interlocked.Increment(ref writtenCount) - 1;
-                                            patches[i] = new ScreenPatch(
-                                                patchBuffer,
-                                                (int)compressedData.Size,
-                                                (short)patch.Min.X,
-                                                (short)patch.Min.Y,
-                                                (short)patchWidth,
-                                                (short)patchHeight
-                                            );
-                                        });
-                                    }
+                            for (int i = 0; i < updatedPatches.Value.Count; i++)
+                            {
+                                if (patches[i].Data != null)
+                                {
+                                    patches[writtenCount++] = patches[i];
                                 }
                             }
-                            catch (Exception)
-                            {
-                                for (int i = 0; i < writtenCount; i++)
-                                {
-                                    if (patches[i] is IReleasable releasable)
-                                    {
-                                        releasable.Release();
-                                    }
-                                }
-                                writtenCount = 0;
-                            }
-
-                            return new CapturedFrame(
-                                patches,
-                                (short)writtenCount,
-                                format,
-                                false
-                            );
                         }
-                        finally
+                        catch (Exception)
                         {
-                            if (updatedPatches is IReleasable releasable)
+                            writtenCount = 0;
+                            for (int i = 0; i < updatedPatches.Value.Count; i++)
                             {
-                                releasable.Release();
+                                if (patches[i] is IReleasable releasable)
+                                {
+                                    releasable.Release();
+                                }
                             }
                         }
+
+                        return new CapturedFrame(
+                            patches,
+                            writtenCount,
+                            format,
+                            false
+                        );
                     }
                     finally
                     {
-                        ArrayPool<byte>.Shared.Return(frameBuffer);
+                        if (updatedPatches is IReleasable releasable)
+                        {
+                            releasable.Release();
+                        }
                     }
                 }
             }

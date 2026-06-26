@@ -40,7 +40,7 @@ namespace RMF_Server.Logic
             try
             {
                 this.Server.Start();
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
+                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.TotalConnections}");
                 Logging.Output($"Server successfully started listening at {ip}:{port}");
 
                 while (!token.IsCancellationRequested)
@@ -49,7 +49,7 @@ namespace RMF_Server.Logic
                     IPEndPoint? ipEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
                     string? endPoint = ipEndPoint?.ToString();
 
-                    if (SessionManager.Connections.Count >= ConfigurationManager.MaxConnections)
+                    if (SessionManager.TotalConnections >= ConfigurationManager.MaxConnections)
                     {
                         Logging.Warning($"A client {endPoint} attempted to connect to server with maximum capacity ({ConfigurationManager.MaxConnections}), access denied");
                         client.Close();
@@ -66,6 +66,13 @@ namespace RMF_Server.Logic
                     if (Firewall.IsBanned(ipEndPoint.Address.ToString()))
                     {
                         Logging.Warning($"A banned client {endPoint} attempted to connect, access denied");
+                        client.Close();
+                        continue;
+                    }
+
+                    if (SessionManager.GetConnectionsFromIP(ipEndPoint.Address) >= ConfigurationManager.MaxConnectionsPerIP)
+                    {
+                        Logging.Warning($"A client {endPoint} attempted to exceed the connection limit ({ConfigurationManager.MaxConnectionsPerIP}) from a single IP address, access denied");
                         client.Close();
                         continue;
                     }
@@ -91,7 +98,7 @@ namespace RMF_Server.Logic
                         continue;
                     }
 
-                    AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.Connections.Count}");
+                    AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {SessionManager.TotalConnections}");
                     Logging.Output($"Registered new connection from {endPoint}");
 
                     if (ConfigurationManager.EnableWelcomeHandshake)
@@ -100,7 +107,7 @@ namespace RMF_Server.Logic
                         HandshakePacket handshakePacket = new()
                         {
                             ConnectionTimestamp = new DateTimeOffset(connectionTime).ToUnixTimeMilliseconds(),
-                            SessionID = SessionManager.GetSessionID(endPoint),
+                            SessionID = SessionManager.GetSessionID(endPoint) ?? Guid.Empty,
                             RemoteIP = ipEndPoint.Address.ToString(),
                             RemotePort = ipEndPoint.Port,
                             SendBufferSize = session.Client.Client.SendBufferSize,

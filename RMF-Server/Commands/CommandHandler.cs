@@ -147,8 +147,8 @@ namespace RMF_Server.Commands
 
         private static void Conlst()
         {
-            ServerClientSession[] connections = SessionManager.Connections.Values.ToArray();
-            if (connections.Length == 0)
+            ServerClientSession[] connections = SessionManager.GetActiveConnections();
+            if (!SessionManager.ConnectionsExist)
             {
                 Logging.Message("No active connections...", toHistory: false);
                 return;
@@ -196,7 +196,7 @@ namespace RMF_Server.Commands
             int counter = 1;
             foreach (string ip in bannedIPs)
             {
-                Logging.Message($"{String.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {ip}");
+                Logging.Message($"{string.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {ip}");
                 counter++;
             }
         }
@@ -242,7 +242,7 @@ namespace RMF_Server.Commands
         private static void Screen(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
-            if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
+            if (SessionManager.GetClientSession(targetEndPoint, out ServerClientSession? session) && session != null)
             {
                 ScreenshotRequest screenshotRequest = new()
                 {
@@ -261,7 +261,7 @@ namespace RMF_Server.Commands
         private static async Task Stream(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
-            if (SessionManager.Connections.TryGetValue(targetEndPoint, out ServerClientSession? session) && session != null)
+            if (SessionManager.GetClientSession(targetEndPoint, out ServerClientSession? session) && session != null)
             {
                 StreamingRequest streamingRequest = new()
                 {
@@ -295,7 +295,7 @@ namespace RMF_Server.Commands
                 }
                 
                 string endPoint = ipEndPoint.ToString();
-                if (SessionManager.Connections.TryGetValue(endPoint, out ServerClientSession? session) && session != null)
+                if (SessionManager.GetClientSession(endPoint, out ServerClientSession? session) && session != null)
                 {
                     StreamingRequest streamingRequest = new()
                     {

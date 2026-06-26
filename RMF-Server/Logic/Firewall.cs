@@ -114,8 +114,14 @@ namespace RMF_Server.Logic
         {
             if (!string.IsNullOrEmpty(ipAddress) && IpExtractor.IsMatch(ipAddress))
             {
-                bannedIPs.TryAdd(ipAddress, 0);
-                Logging.Output($"The suspicious IP \"{ipAddress}\" has been banned");
+                if (bannedIPs.TryAdd(ipAddress, 0))
+                {
+                    Logging.Output($"The suspicious IP \"{ipAddress}\" has been banned");
+                }
+                else
+                {
+                    Logging.Warning($"The suspicious IP is already on the blacklist");
+                }
             }
             else
             {
