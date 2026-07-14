@@ -163,6 +163,9 @@ namespace RMF_Client.Network
             if (!packet.IsActive && isEventActive)
             {
                 session.Events.StopEvent("StreamingEvent");
+
+                EndOfStreamingPacket endOfStreamingPacket = new();
+                session.SendPacket(endOfStreamingPacket);
                 return;
             }
 

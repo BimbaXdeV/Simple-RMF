@@ -32,6 +32,7 @@ namespace RMF_Server.Logic
         public static int MinPacketLengthKB;
         public static int MaxPacketLengthKB;
         public static int MaxPacketRate;
+        public static bool EnableBlacklistSaving;
 
         public static string? CertificateName;
         public static string? CertificateFileName;

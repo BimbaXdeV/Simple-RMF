@@ -126,7 +126,7 @@ namespace RMF_Server.Logic
             }
         }
 
-        private static void ReturnScreenMemory(ScreenPatch[] patches, int patchCount)
+        private static void ReturnRectsMemory(ScreenPatch[] patches, int patchCount)
         {
             try
             {
@@ -141,7 +141,7 @@ namespace RMF_Server.Logic
             }
             catch (Exception ex)
             {
-                Logging.Warning($"Failed to return screen memory: {ex}");
+                Logging.Warning($"Failed to return patch memory: {ex}");
             }
         }
 
@@ -154,7 +154,7 @@ namespace RMF_Server.Logic
 
             if (Interlocked.CompareExchange(ref isFrameProcessing, 1, 0) == 1)
             {
-                ReturnScreenMemory(patches, patchCount);
+                ReturnRectsMemory(patches, patchCount);
                 return;
             }
 
@@ -178,9 +178,9 @@ namespace RMF_Server.Logic
                 finally
                 {
                     Interlocked.Exchange(ref isFrameProcessing, 0);
-                    ReturnScreenMemory(patches, patchCount);
+                    ReturnRectsMemory(patches, patchCount);
                 }
-            });
+            }, priority: DispatcherPriority.Render);
         }
     }
 }

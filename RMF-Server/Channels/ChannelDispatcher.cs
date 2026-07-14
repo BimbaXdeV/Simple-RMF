@@ -46,7 +46,7 @@ namespace RMF_Server.Channels
                     }
                     catch (Exception ex)
                     {
-                        Logging.Warning($"Failed to process packet with ID {context.ID} from {context.EndPoint}\n{ex}");
+                        Logging.Warning($"Failed to process packet with ID {context.ID} from {context.EndPoint}{Environment.NewLine}{ex}");
                     }
                     finally
                     {

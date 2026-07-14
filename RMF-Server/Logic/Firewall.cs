@@ -15,6 +15,7 @@ namespace RMF_Server.Logic
     {
         private static readonly Regex IpExtractor = new(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", RegexOptions.Compiled);
         private static ConcurrentDictionary<string, byte> bannedIPs = new();
+        private static bool IsChanged = false;
 
         public static bool TryLoadFrom(string path)
         {
@@ -58,6 +59,7 @@ namespace RMF_Server.Logic
                         }
                     }
                 }
+                IsChanged = false;
                 return true;
             }
             catch (Exception ex)
@@ -69,6 +71,12 @@ namespace RMF_Server.Logic
 
         public static bool TrySaveTo(string path)
         {
+            if (!IsChanged)
+            {
+                Logging.Output("No changes detected in the banned IPs, skipping file update");
+                return true;
+            }
+
             try
             {
                 string? directory = Path.GetDirectoryName(path);
@@ -90,6 +98,7 @@ namespace RMF_Server.Logic
                 {
                     Logging.Output("No changes detected in the banned IPs, skipping file update");
                 }
+                IsChanged = false;
                 return true;
             }
             catch (Exception ex)
@@ -116,6 +125,7 @@ namespace RMF_Server.Logic
             {
                 if (bannedIPs.TryAdd(ipAddress, 0))
                 {
+                    IsChanged = true;
                     Logging.Output($"The suspicious IP \"{ipAddress}\" has been banned");
                 }
                 else

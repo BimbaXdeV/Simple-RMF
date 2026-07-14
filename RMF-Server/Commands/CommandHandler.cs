@@ -216,10 +216,10 @@ namespace RMF_Server.Commands
         {
             X509Certificate2 certificate = TLSManager.GetOrCreateCertificate();
             Logging.Message(
-                "* Server TLS Certificate:\n" +
-                "- Subject    : " + certificate.Subject + "\n" +
-                "- Issuer     : " + certificate.Issuer + "\n" +
-                "- Expiration : " + certificate.NotAfter + "\n" +
+                "* Server TLS Certificate:" + Environment.NewLine +
+                "- Subject    : " + certificate.Subject + Environment.NewLine +
+                "- Issuer     : " + certificate.Issuer + Environment.NewLine +
+                "- Expiration : " + certificate.NotAfter + Environment.NewLine +
                 "- Fingerprint: " + certificate.Thumbprint
             );
         }
@@ -231,7 +231,7 @@ namespace RMF_Server.Commands
 
             if (serverVersion != null && coreVersion != null)
             {
-                Logging.Message($"* Assembly versions\n{ConfigurationManager.AppTitle}: {serverVersion}\nCore: {coreVersion}");
+                Logging.Message($"* Assembly versions{Environment.NewLine}{ConfigurationManager.AppTitle}: {serverVersion}{Environment.NewLine}Core: {coreVersion}");
             }
             else
             {
@@ -272,10 +272,11 @@ namespace RMF_Server.Commands
                     TargetFPS = (short)ConfigurationManager.StreamingTargetFPS
                 };
                 session.SendPacket(streamingRequest);
-                Logging.Message($"* Successfully sent to {targetEndPoint}, waiting for starting stream...");
-                
+
+                WindowManager.StreamingClientEndPoint = session.EndPoint;
                 await WindowManager.ShowWindow();
                 WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle + " | " + targetEndPoint);
+                Logging.Output($"Streaming session started with {session.EndPoint}");
             }
             else
             {
@@ -311,7 +312,7 @@ namespace RMF_Server.Commands
             }
             finally
             {
-                WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle ?? "");
+                WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle ?? "Disabled");
                 await WindowManager.HideWindow();
             }
         }

@@ -84,7 +84,7 @@ namespace RMF_Server.Logic
                     }
                     catch (Exception ex)
                     {
-                        Logging.Error($"TLS handshake failed with client {endPoint}, disconnecting...\n{ex}");
+                        Logging.Error($"TLS handshake failed with client {endPoint}, disconnecting...{Environment.NewLine}{ex}");
                         sslStream.Dispose();
                         SessionManager.Disconnect(endPoint);
                         continue;
@@ -196,7 +196,7 @@ namespace RMF_Server.Logic
                     }
                     catch (Exception ex)
                     {
-                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {session.EndPoint}, disconnecting...\n{ex}");
+                        Logging.Error($"Fatal connection error when trying to handle incoming packet from {session.EndPoint}, disconnecting...{Environment.NewLine}{ex}");
                         ArrayPool<byte>.Shared.Return(payload);
                         break;
                     }

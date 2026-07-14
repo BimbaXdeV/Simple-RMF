@@ -1,4 +1,5 @@
-﻿using RMF.Core.Packets;
+﻿using RMF.Core.Interfaces;
+using RMF.Core.Packets;
 using RMF.Core.Packets.Client;
 using RMF.Core.Screen;
 using RMF_Server.Debugger;
@@ -32,6 +33,10 @@ namespace RMF_Server.Packets
 
                 case ClientInfoPacket clientInfoPacket:
                     ProcessClientInfoPacket(clientInfoPacket, endPoint);
+                    break;
+
+                case EndOfStreamingPacket endOfStreamingPacket:
+                    await ProcessEndOfStreamingPacket(endOfStreamingPacket, endPoint);
                     break;
 
                 case DesktopFramePacket desktopFramePacket:
@@ -104,13 +109,39 @@ namespace RMF_Server.Packets
             double vramCaparityGB = packet.VRAMCapacity / 1024.0 / 1024.0 / 1024.0;
 
             Logging.Message(
-                "Info about " + endPoint + "\n" +
-                "- Machine name: " + packet.MachineName + "\n" +
-                "- Username:     " + packet.OSName + "\n" +
-                "- CPU:          (" + packet.CPUArchitecture + ") " + packet.CPUName + "\n" +
-                "- GPU:          " + packet.GPUName + "\n" +
+                "Info about " + endPoint + Environment.NewLine +
+                "- Machine name: " + packet.MachineName + Environment.NewLine +
+                "- Username:     " + packet.OSName + Environment.NewLine +
+                "- CPU:          (" + packet.CPUArchitecture + ") " + packet.CPUName + Environment.NewLine +
+                "- GPU:          " + packet.GPUName + Environment.NewLine +
                 "- Memory:       RAM: " + Math.Round(ramCaparityGB, 2) + " GB, VRAM: " + Math.Round(vramCaparityGB, 2) + " GB"
             );
+        }
+
+        private static async Task ProcessEndOfStreamingPacket(EndOfStreamingPacket packet, IPEndPoint endPoint)
+        {
+            if (SessionManager.GetClientSession(endPoint.ToString(), out ServerClientSession? session))
+            {
+                if (session!.EndPoint == WindowManager.StreamingClientEndPoint)
+                {
+                    try
+                    {
+                        WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle ?? "");
+                        await WindowManager.HideWindow();
+                    }
+                    finally
+                    {
+                        WindowManager.StreamingClientEndPoint = null;
+                        string breakReason = !string.IsNullOrEmpty(packet.Reason) ? "Reason: " + packet.Reason : string.Empty;
+                        Logging.Output($"Streaming session ended with {endPoint}{breakReason}");
+                    }
+                }
+                else
+                {
+                    Logging.Warning($"Received an end of streaming packet from \"{endPoint}\" while the streaming session is active with {WindowManager.StreamingClientEndPoint}, disconnecting...");
+                    SessionManager.Disconnect(endPoint.ToString());
+                }
+            }
         }
 
         private static async Task ProcessDesktopFramePacket(DesktopFramePacket packet, IPEndPoint endPoint)
@@ -151,10 +182,11 @@ namespace RMF_Server.Packets
                 IPEndPoint? actualStreamer = WindowManager.StreamingClientEndPoint;
                 if (actualStreamer == null)
                 {
-                    WindowManager.StreamingClientEndPoint = endPoint;
-                    Logging.Output($"Streaming session started with {endPoint}");
+                    Logging.Warning($"Received a streaming frame from \"{endPoint}\" while no streaming session is active, nothing to do");
+                    return;
                 }
-                else if (session!.EndPoint != WindowManager.StreamingClientEndPoint)
+
+                if (session!.EndPoint != actualStreamer)
                 {
                     Logging.Warning($"Received a streaming frame from \"{endPoint}\" while the streaming session is active with {WindowManager.StreamingClientEndPoint}, disconnecting...");
                     SessionManager.Disconnect(endPoint.ToString());
@@ -167,7 +199,6 @@ namespace RMF_Server.Packets
                     SessionManager.Disconnect(endPoint.ToString());
                     return;
                 }
-
                 WindowManager.UpdateBitmap(packet.Patches, packet.PatchesCount, packet.IsFullFrame);
             }
         }

@@ -172,6 +172,12 @@ namespace RMF_Server.UI
                 for (int i = 0; i < patchCount; i++)
                 {
                     ScreenPatch patch = patches[i];
+                    if (patch.Length <= 0 || patch.Data == null)
+                    {
+                        Logging.Warning("Received an empty patch, nothing to do");
+                        continue;
+                    }
+
                     using MemoryStream ms = new(patch.Data, 0, patch.Length);
                     using SKCodec codec = SKCodec.Create(ms);
                     if (codec == null)
@@ -189,10 +195,10 @@ namespace RMF_Server.UI
                         {
                             codec.GetPixels(info, (IntPtr)decodedPtr);
 
-                            int patchRowLength = patch.Width * 4;
-                            byte* destPtr = displayPtr + (patch.Y * patch.Width * 4) + (patch.X * 4);
+                            byte* destPtr = displayPtr + (patch.Y * screenRowLength) + (patch.X * 4);
                             byte* srcPtr = decodedPtr;
 
+                            int patchRowLength = patch.Width * 4;
                             for (int y = 0; y < patch.Height; y++)
                             {
                                 Unsafe.CopyBlock(destPtr, srcPtr, (uint)patchRowLength);

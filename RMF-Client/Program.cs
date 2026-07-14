@@ -54,8 +54,10 @@ namespace RMF_Client
                 cts.Cancel();
             };
 
-            EntryTCP tcp = new();
-            await tcp.Connect(cts.Token);
+            await EntryTCP.Connect(
+                reconnectingIntervalSecs: ConfigurationManager.ConnectionRequestIntervalSecs,
+                token: cts.Token
+            );
 
             if (!ConfigurationManager.EnableForceShutdown)
             {

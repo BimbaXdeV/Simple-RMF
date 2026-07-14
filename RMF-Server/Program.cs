@@ -113,6 +113,11 @@ namespace RMF_Server
                 );
             }
 
+            if (ConfigurationManager.EnableBlacklistSaving)
+            {
+                Firewall.TrySaveTo(PathManager.GetResolvedPath("BannedIPs", fileName: "blacklist", fileFormat: "txt"));
+            }
+
             // If you really want to read what is written during a cascade shutdown :)
             if (!ConfigurationManager.EnableForceShutdown)
             {

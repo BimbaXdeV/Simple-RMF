@@ -22,6 +22,7 @@
 	<add key="MinPacketLengthKB" value="6"/>
 	<add key="MaxPacketLengthKB" value="768"/>
 	<add key="MaxPacketRate" value="100"/>
+	<add key="EnableBlacklistSaving" value="true"/>
 	
 	<!-- TLS Settings -->
 	<add key="CertificateName" value="Simple RMF (Server)"/>

@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Client.Network
 {
-    internal class EntryTCP
+    internal static class EntryTCP
     {
         private static async Task PacketListener(CancellationToken token)
         {
@@ -75,103 +75,127 @@ namespace RMF_Client.Network
             }
         }
 
-        public async Task Connect(CancellationToken token)
+        public static async Task Connect(int reconnectingIntervalSecs = 0, CancellationToken token = default)
         {
-            if (SessionManager.Connection == null || SessionManager.Connection?.Client == null)
+            int connectionAttempt = 1;
+            while (!token.IsCancellationRequested)
             {
                 SessionManager.StartSession(new TcpClient(), token);
-            }
 
-            AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Waiting...");
-            string ip = (ConfigurationManager.IPAddress == "Any" || string.IsNullOrEmpty(ConfigurationManager.IPAddress)) ? "127.0.0.1" : ConfigurationManager.IPAddress;
-            int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
+                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Waiting for server...");
+                string ip = (ConfigurationManager.IPAddress == "Any" || string.IsNullOrEmpty(ConfigurationManager.IPAddress)) ? "127.0.0.1" : ConfigurationManager.IPAddress;
+                int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
 
-            try
-            {
-                await SessionManager.Connection!.Client.ConnectAsync(ip, port);
+                try
+                {
+                    await SessionManager.Connection!.Client.ConnectAsync(ip, port, token);
 
-                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Securing connection...");
+                    AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Securing connection...");
 
-                SslStream sslStream = new(
-                    SessionManager.Connection.Client.GetStream(),
-                    false,
-                    new RemoteCertificateValidationCallback((sender, certificate, chain, sslPolicyErrors) =>
-                    {
-                        if (certificate == null)
+                    SslStream sslStream = new(
+                        SessionManager.Connection.Client.GetStream(),
+                        false,
+                        new RemoteCertificateValidationCallback((sender, certificate, chain, sslPolicyErrors) =>
                         {
-                            return false;
-                        }
+                            if (certificate == null)
+                            {
+                                return false;
+                            }
 
-                        // To synchronize the client and server TLS, pull fingerprint from the server using the "/certdata" command,
-                        // and then place it in the client configuration (~/Storage/config.xml)
-                        string actualFingerprint = certificate.GetCertHashString();
-                        string expectedFingerprint = ConfigurationManager.CertificateFingerprint?.Replace(" ", "").ToUpper() ?? string.Empty;
-                        if (actualFingerprint != expectedFingerprint)
-                        {
-                            return false;
-                        }
+                            // To synchronize the client and server TLS, pull fingerprint from the server using the "/certdata" command,
+                            // and then place it in the client configuration (~/Storage/config.xml)
+                            string actualFingerprint = certificate.GetCertHashString();
+                            string expectedFingerprint = ConfigurationManager.CertificateFingerprint?.Replace(" ", "").ToUpper() ?? string.Empty;
+                            if (actualFingerprint != expectedFingerprint)
+                            {
+                                return false;
+                            }
 
-                        return true;
-                    })
-                );
+                            return true;
+                        })
+                    );
 
-                await sslStream.AuthenticateAsClientAsync(string.Empty);
-                SessionManager.Connection.SetNetworkStream(sslStream);
+                    await sslStream.AuthenticateAsClientAsync(string.Empty);
+                    SessionManager.Connection.SetNetworkStream(sslStream);
 
-                SessionManager.Connection.RunProcessing(token);
-                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    SessionManager.Connection.RunProcessing(token);
+                    AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointIP", ip.ToString() },
                     { "endpointPort", port.ToString() }
                 });
 
-                await PacketListener(token);
-            }
+                    await PacketListener(token);
+                }
 
-            catch (EndOfStreamException)
-            {
-                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                catch (EndOfStreamException)
                 {
-                    { "endpointTime", "Server has closed the connection" }
-                });
-            }
+                    AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    {
+                        { "endpointTime", "Server has closed the connection" }
+                    });
+                }
 
-            catch (OperationCanceledException)
-            {
-                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                catch (OperationCanceledException)
                 {
-                    { "endpointTime", "Cancellation requested, cleaning up the process..." }
-                });
-            }
+                    AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Cancellation...");
+                    AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    {
+                        { "endpointTime", "Cancellation requested, cleaning up the process..." }
+                    });
+                }
 
-            catch (SocketException)
-            {
-                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                catch (SocketException)
                 {
-                    { "endpointTime", "Failed to connect to " + ip.ToString() + ":" + port.ToString() }
-                });
-            }
+                    AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    {
+                        { "endpointTime", "Failed to connect to " + ip.ToString() + ":" + port.ToString() }
+                    });
+                }
 
-            catch (AuthenticationException)
-            {
-                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | TLS handshake failed");
-                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                catch (AuthenticationException)
                 {
-                    { "endpointTime", "Failed to accept server TLS handshake" }
-                });
-            }
+                    AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | TLS handshake failed");
+                    AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    {
+                        { "endpointTime", "Failed to accept server TLS handshake" }
+                    });
+                }
 
-            catch (Exception ex)
-            {
-                AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                catch (Exception ex)
                 {
-                    { "endpointTime", "A client error occured: " + ex }
-                });
-            }
-            finally
-            {
-                SessionManager.ClearSession();
-                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Offline");
+                    AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    {
+                        { "endpointTime", "A client error occured: " + ex }
+                    });
+                }
+                finally
+                {
+                    SessionManager.ClearSession();
+                    AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Finished");
+                }
+
+                if (reconnectingIntervalSecs <= 0)
+                {
+                    break;
+                }
+
+                connectionAttempt++;
+                AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Attempting to reconnect... (" + connectionAttempt + ")");
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(reconnectingIntervalSecs), token);
+                }
+                catch (OperationCanceledException)
+                {
+                    AppearanceManager.SetTitle(ConfigurationManager.AppTitle + " | Cancellation...");
+                    AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    {
+                        { "endpointTime", "Cancellation requested, cleaning up the process..." }
+                    });
+                    break;
+                }
             }
         }
     }
