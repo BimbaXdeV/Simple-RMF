@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Events;
 using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using System;
@@ -16,16 +17,18 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Bases
 {
-    public abstract class ClientSession
+    public abstract class ClientSession : ISession
     {
-        public TcpClient Client { get; private set; }
-        public Stream NetworkStream { get; private set; }
+        protected readonly INetworkConnection Connection;
+        protected readonly IPacketSender PacketSender;
 
-        public IPEndPoint? EndPoint => this.Client.Client?.RemoteEndPoint as IPEndPoint ?? null;
-
-        public EventController Events { get; private set; } = new();
+        private readonly EventController _events;
         protected Channel<Packet> OutboundChannel { get; private set; }
         public bool IsRunning { get; private set; }
+
+        public IPEndPoint RemoteEndPoint => this.Connection.RemoteEndPoint;
+        public int SendBufferSize => this.Connection.SendBufferSize;
+        public int ReceiveBufferSize => this.Connection.ReceiveBufferSize;
 
         public bool CollectingStats { get; private set; }
         private long _totalPacketsSent;
@@ -41,16 +44,17 @@ namespace RMF.Core.Bases
         private readonly SemaphoreSlim _streamLocker = new(1, 1);
 
         public ClientSession(
-            TcpClient client,
-            Stream? networkStream = null,
+            INetworkConnection connection,
+            IPacketSender packetSender,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
         )
         {
-            this.Client = client;
-            this.NetworkStream = networkStream ?? Stream.Null;
+            this.Connection = connection;
+            this.PacketSender = packetSender;
 
+            this._events = new EventController();
             this.OutboundChannel = Channel.CreateBounded<Packet>(
                 new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1000)
                 {
@@ -58,11 +62,17 @@ namespace RMF.Core.Bases
                 }
             );
             this.CollectingStats = collectingStats;
+            RunProcessing(token);
+        }
 
-            if (client.Connected)
+        public void RunProcessing(CancellationToken token)
+        {
+            if (this.IsRunning)
             {
-                RunProcessing(token);
+                return;
             }
+            this.IsRunning = true;
+            _ = Task.Run(() => OutboundChannelWorker(token));  // Each session has its own packet sender
         }
 
         private async Task OutboundChannelWorker(CancellationToken token)
@@ -79,7 +89,7 @@ namespace RMF.Core.Bases
                     await _streamLocker.WaitAsync(token);
                     try
                     {
-                        await StreamManager.SendPacketAsync(this.NetworkStream, packet, token);
+                        await this.PacketSender.SendPacketAsync(this.Connection.GetNetworkStream(), packet, token);
 
                         if (this.CollectingStats)
                         {
@@ -136,33 +146,9 @@ namespace RMF.Core.Bases
             }
         }
 
-        public void RunProcessing(CancellationToken token)
+        public void StartEvent(string eventName, Dictionary<string, object> eventSettings)
         {
-            if (this.IsRunning)
-            {
-                return;
-            }
-            this.IsRunning = true;
-            _ = Task.Run(() => OutboundChannelWorker(token));  // Each session has its own packet sender
-        }
-
-        public void SetNetworkStream(Stream stream)
-        {
-            this.NetworkStream = stream;
-        }
-
-        public void StopProcessing()
-        {
-            this.IsRunning = false;
-
-            this.OutboundChannel.Writer.TryComplete();
-            this.Events.StopAllRunning();
-            this.Client.Close();
-
-            if (this.NetworkStream != null && this.NetworkStream is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
+            this._events.StartEvent(this, eventName, eventSettings);
         }
 
         public void IncrementSendPackets()
@@ -175,6 +161,14 @@ namespace RMF.Core.Bases
         {
             Interlocked.Increment(ref this._totalPacketsReceived);
             Interlocked.Exchange(ref this._lastTransferTimeTicks, DateTime.UtcNow.Ticks);
+        }
+
+        public void StopProcessing()
+        {
+            this.IsRunning = false;
+            this.OutboundChannel.Writer.TryComplete();
+            this._events.StopAllRunning();
+            this.Connection.Close();
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using RMF_Server.Debugger;
+﻿using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Network;
+using RMF_Server.Debugger;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,13 +13,24 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal static class Firewall
+    internal class Firewall : IFirewall
     {
-        private static readonly Regex IpExtractor = new(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", RegexOptions.Compiled);
-        private static ConcurrentDictionary<string, byte> bannedIPs = new();
-        private static bool IsChanged = false;
+        private readonly ILoggingEngine? _logger;
 
-        public static bool TryLoadFrom(string path)
+        private readonly Regex IpExtractor;
+        private ConcurrentDictionary<string, byte> bannedIPs;
+        private bool IsChanged;
+
+        public Firewall(ILoggingEngine? logger = null)
+        {
+            this._logger = logger;
+
+            this.IpExtractor = new Regex(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", RegexOptions.Compiled);
+            this.bannedIPs = new ConcurrentDictionary<string, byte>();
+            this.IsChanged = false;
+        }
+
+        public bool TryLoadFrom(string path)
         {
             string? directory = Path.GetDirectoryName(path);
             if (string.IsNullOrWhiteSpace(directory))
@@ -28,7 +41,7 @@ namespace RMF_Server.Logic
             if (!File.Exists(path))
             {
                 File.Create(path).Dispose();
-                Logging.Output($"An empty file has been created to store blocked IP addresses on path: {path}");
+                this._logger?.Output($"An empty file has been created to store blocked IP addresses on path: {path}");
                 return true;
             }
 
@@ -55,7 +68,7 @@ namespace RMF_Server.Logic
                         }
                         else
                         {
-                            Logging.Warning($"Invalid IP address format found in the banned IPs file on line {i + 1}: \"{line}\"");
+                            this._logger?.Warning($"Invalid IP address format found in the banned IPs file on line {i + 1}: \"{line}\"");
                         }
                     }
                 }
@@ -64,16 +77,16 @@ namespace RMF_Server.Logic
             }
             catch (Exception ex)
             {
-                Logging.Error($"Failed to load banned IPs: {ex}");
+                this._logger?.Error($"Failed to load banned IPs: {ex}");
                 return false;
             }
         }
 
-        public static bool TrySaveTo(string path)
+        public bool TrySaveTo(string path)
         {
             if (!IsChanged)
             {
-                Logging.Output("No changes detected in the banned IPs, skipping file update");
+                this._logger?.Output("No changes detected in the banned IPs, skipping file update");
                 return true;
             }
 
@@ -92,50 +105,50 @@ namespace RMF_Server.Logic
                 if (!isEqual)
                 {
                     File.WriteAllLines(path, actualIPs);
-                    Logging.Output($"Updated banned IPs have been saved to \"{path}\"");
+                    this._logger?.Output($"Updated banned IPs have been saved to \"{path}\"");
                 }
                 else
                 {
-                    Logging.Output("No changes detected in the banned IPs, skipping file update");
+                    this._logger?.Output("No changes detected in the banned IPs, skipping file update");
                 }
                 IsChanged = false;
                 return true;
             }
             catch (Exception ex)
             {
-                Logging.Error($"An error occurred while saving banned IPs: {ex}");
+                this._logger?.Error($"An error occurred while saving banned IPs: {ex}");
                 return false;
             }
         }
 
-        public static bool IsBanned(string ipAddress)
+        public bool IsBanned(string ipAddress)
         {
             return bannedIPs.ContainsKey(ipAddress);
         }
 
-        public static string[] GetBannedIPs(int? limit = null)
+        public string[] GetBannedIPs(int? limit = null)
         {
             ICollection<string> keys = bannedIPs.Keys;
             return limit == null ? keys.ToArray() : keys.Take(limit.Value).ToArray();
         }
 
-        public static void Ban(string? ipAddress)
+        public void Ban(string? ipAddress)
         {
             if (!string.IsNullOrEmpty(ipAddress) && IpExtractor.IsMatch(ipAddress))
             {
                 if (bannedIPs.TryAdd(ipAddress, 0))
                 {
                     IsChanged = true;
-                    Logging.Output($"The suspicious IP \"{ipAddress}\" has been banned");
+                    this._logger?.Output($"The suspicious IP \"{ipAddress}\" has been banned");
                 }
                 else
                 {
-                    Logging.Warning($"The suspicious IP is already on the blacklist");
+                    this._logger?.Warning($"The suspicious IP is already on the blacklist");
                 }
             }
             else
             {
-                Logging.Warning("Failed to ban the IP, received an invalid structure");
+                this._logger?.Warning("Failed to ban the IP, received an invalid structure");
             }
         }
     }

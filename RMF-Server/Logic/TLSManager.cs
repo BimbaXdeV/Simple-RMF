@@ -1,4 +1,6 @@
-﻿using RMF_Server.Debugger;
+﻿using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Network;
+using RMF_Server.Debugger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,15 +12,22 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal static class TLSManager
+    internal class TLSManager : ITlsManager
     {
-        private static X509Certificate2? ServerCertificate;
+        private readonly ILoggingEngine? _logger;
 
-        public static bool TryLoadCertificate(string path)
+        private X509Certificate2? ServerCertificate;
+
+        public TLSManager(ILoggingEngine? logger = null)
+        {
+            this._logger = logger;
+        }
+
+        public bool TryLoadCertificate(string path)
         {
             if (ConfigurationManager.CertificateFileName == null || ConfigurationManager.CertificatePassword == null)
             {
-                Logging.Error("Certificate file name or password is not set in the configuration. Unable to load TLS certificate");
+                this._logger?.Error("Certificate file name or password is not set in the configuration. Unable to load TLS certificate");
                 return false;
             }
 
@@ -34,12 +43,12 @@ namespace RMF_Server.Logic
             }
             catch (Exception ex)
             {
-                Logging.Error($"Failed to load TLS certificate from path: \"{path}\": {ex}");
+                this._logger?.Error($"Failed to load TLS certificate from path: \"{path}\": {ex}");
                 return false;
             }
         }
 
-        public static X509Certificate2 GetOrCreateCertificate()
+        public X509Certificate2 GetOrCreateCertificate()
         {
             if (ServerCertificate != null)
             {
@@ -54,11 +63,11 @@ namespace RMF_Server.Logic
 
             if (TryLoadCertificate(certPath))
             {
-                Logging.Output($"TLS certificate successfully loaded from path: \"{certPath}\"");
+                this._logger?.Output($"TLS certificate successfully loaded from path: \"{certPath}\"");
                 return ServerCertificate!;
             }
 
-            Logging.Output($"No TLS certificate found, creating a self-signed one, trying to create...");
+            this._logger?.Output($"No TLS certificate found, creating a self-signed one, trying to create...");
 
             using RSA rsa = RSA.Create(2048);
             CertificateRequest request = new(
@@ -73,7 +82,7 @@ namespace RMF_Server.Logic
                 DateTime.Now.AddDays(ConfigurationManager.CertificateDurationDays)
             );
             ServerCertificate = cert;
-            Logging.Output($"TLS certificate \"{ConfigurationManager.CertificateName}\" was successfully created");
+            this._logger?.Output($"TLS certificate \"{ConfigurationManager.CertificateName}\" was successfully created");
 
             byte[] certBytes = cert.Export(X509ContentType.Pfx, ConfigurationManager.CertificatePassword);
             string? directory = Path.GetDirectoryName(certPath);
@@ -82,7 +91,7 @@ namespace RMF_Server.Logic
                 Directory.CreateDirectory(directory);
             }
             File.WriteAllBytes(certPath, certBytes);
-            Logging.Output($"The new TLS certificate is saved to {certPath}");
+            this._logger?.Output($"The new TLS certificate is saved to {certPath}");
             return cert;
 
         }

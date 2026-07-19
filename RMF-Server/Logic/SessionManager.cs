@@ -1,4 +1,6 @@
 ﻿using RMF.Core.Bases;
+using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Server.Debugger;
@@ -15,19 +17,28 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal static class SessionManager
+    internal class SessionManager : IServerSessionManager
     {
-        private static readonly ConcurrentDictionary<Guid, ServerClientSession> Connections = [];
-        private static readonly ConcurrentDictionary<string, Guid> EndPointIndex = [];
-        private static readonly ConcurrentDictionary<IPAddress, int> IPConnectionsCount = [];
+        private readonly IPacketSender _packetSender;
+        private readonly ILoggingEngine? _logger;
 
-        public static bool ConnectionsExist => !Connections.IsEmpty;
-        public static int TotalConnections => Connections.Count;
+        private readonly ConcurrentDictionary<Guid, IServerClientSession> _connections = [];
+        private readonly ConcurrentDictionary<string, Guid> _endPointIndex = [];
+        private readonly ConcurrentDictionary<IPAddress, int> _ipConnectionsCount = [];
 
-        public static void BroadcastPacket(Packet packet, CancellationToken token)
+        public bool ConnectionsExist => !this._connections.IsEmpty;
+        public int TotalConnections => this._connections.Count;
+
+        public SessionManager(IPacketSender packetSender, ILoggingEngine? logger = null)
+        {
+            this._packetSender = packetSender;
+            this._logger = logger;
+        }
+
+        public void BroadcastPacket(Packet packet, CancellationToken token)
         {
             int totalTransferedPackets = 0;
-            foreach (ClientSession session in Connections.Values)
+            foreach (IServerClientSession session in this._connections.Values)
             {
                 try
                 {
@@ -36,103 +47,99 @@ namespace RMF_Server.Logic
                 }
                 catch (Exception ex)
                 {
-                    Logging.Warning($"Failed to transfer {session.GetType().Name} to \"{session.EndPoint?.ToString()}\" : {ex.Message}");
+                    this._logger?.Warning($"Failed to transfer {session.GetType().Name} to \"{session.RemoteEndPoint}\" : {ex.Message}");
                 }
             }
         }
 
-        public static ServerClientSession? NewConnection(TcpClient client, string endPoint, Stream stream, CancellationToken token)
+        public IServerClientSession? NewConnection(INetworkConnection connection, CancellationToken token)
         {
             Guid sessionId = Guid.NewGuid();
             ServerClientSession session = new(
-                client,
-                networkStream: stream,
+                connection,
+                this._packetSender,
                 channelCapacity: ConfigurationManager.ChannelPacketsCapacity,
                 collectingStats: ConfigurationManager.EnableCollectingSessionStats,
                 token: token
             );
-            if (Connections.TryAdd(sessionId, session))
+            if (this._connections.TryAdd(sessionId, session))
             {
-                EndPointIndex.AddOrUpdate(endPoint, sessionId, (_, _) => sessionId);
+                this._endPointIndex.AddOrUpdate(connection.RemoteEndPoint.ToString(), sessionId, (_, _) => sessionId);
 
-                IPAddress sessionIP = ((IPEndPoint)client.Client.RemoteEndPoint!).Address;
-                IPConnectionsCount.AddOrUpdate(sessionIP, 1, (_, actualCount) => actualCount + 1);
+                IPAddress sessionIP = connection.RemoteEndPoint.Address;
+                this._ipConnectionsCount.AddOrUpdate(sessionIP, 1, (_, actualCount) => actualCount + 1);
 
                 return session;
             }
             return null;
         }
 
-        public static bool GetClientSession(string endPoint, out ServerClientSession? session)
+        public bool GetClientSession(string endPoint, out IServerClientSession? session)
         {
             session = null;
-            if (EndPointIndex.TryGetValue(endPoint, out Guid sessionId) && sessionId != Guid.Empty &&
-                Connections.TryGetValue(sessionId, out session) && session != null)
+            if (this._endPointIndex.TryGetValue(endPoint, out Guid sessionId) && sessionId != Guid.Empty &&
+                this._connections.TryGetValue(sessionId, out session) && session != null)
             {
                 return true;
             }
             return false;
         }
 
-        public static Guid? GetSessionID(string endPoint)
+        public Guid? GetSessionID(string endPoint)
         {
-            if (EndPointIndex.TryGetValue(endPoint, out Guid sessionId) && sessionId != Guid.Empty)
+            if (this._endPointIndex.TryGetValue(endPoint, out Guid sessionId) && sessionId != Guid.Empty)
             {
                 return sessionId;
             }
             return null;
         }
 
-        public static ServerClientSession[] GetActiveConnections()
+        public IServerClientSession[] GetActiveConnections()
         {
-            return Connections.Values.ToArray();
+            return this._connections.Values.ToArray();
         }
 
-        public static int GetConnectionsFromIP(IPAddress ip)
+        public int GetConnectionsFromIP(IPAddress ip)
         {
-            return IPConnectionsCount.TryGetValue(ip, out int count) ? count : 0;
+            return this._ipConnectionsCount.TryGetValue(ip, out int count) ? count : 0;
         }
 
-        public static void Disconnect(string endPoint)
+        public void Disconnect(string endPoint)
         {
             if (!string.IsNullOrEmpty(endPoint) &&
-                EndPointIndex.TryGetValue(endPoint, out Guid sessionId) && sessionId != Guid.Empty &&
-                Connections.TryGetValue(sessionId, out ServerClientSession? session) && session != null)
+                this._endPointIndex.TryGetValue(endPoint, out Guid sessionId) && sessionId != Guid.Empty &&
+                this._connections.TryGetValue(sessionId, out IServerClientSession? session) && session != null)
             {
-                if (session.Client.Client.RemoteEndPoint is IPEndPoint sessionEndPoint)
-                {
-                    IPAddress sessionIP = sessionEndPoint.Address;
-                    int newCount = IPConnectionsCount.AddOrUpdate(sessionIP, 0, (_, actualCount) => actualCount - 1);
+                IPAddress sessionIP = session.RemoteEndPoint.Address;
+                int newCount = this._ipConnectionsCount.AddOrUpdate(sessionIP, 0, (_, actualCount) => actualCount - 1);
 
-                    if (newCount <= 0)
-                    {
-                        IPConnectionsCount.TryRemove(sessionIP, out _);
-                    }
+                if (newCount <= 0)
+                {
+                    this._ipConnectionsCount.TryRemove(sessionIP, out _);
                 }
 
                 session.StopProcessing();
-                Connections.TryRemove(sessionId, out _);
-                EndPointIndex.TryRemove(endPoint, out _);
+                this._connections.TryRemove(sessionId, out _);
+                this._endPointIndex.TryRemove(endPoint, out _);
 
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count}");
-                Logging.Output($"Client {endPoint} was disconnected");
+                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this._connections.Count}");
+                this._logger?.Output($"Client {endPoint} was disconnected");
             }
         }
 
-        public static void ClearConnections()
+        public void ClearConnections()
         {
             int disconnectedClientsCount = 0;
-            int totalConnectedClients = Connections.Count;
+            int totalConnectedClients = this._connections.Count;
 
-            foreach (var entry in Connections)
+            foreach (KeyValuePair<Guid, IServerClientSession> entry in this._connections)
             {
-                entry.Value.Client.Close();
-                Logging.Output($"Client {entry.Key} was forced disconnected");
+                Disconnect(entry.Value.RemoteEndPoint.ToString());
                 disconnectedClientsCount++;
             }
-            Connections.Clear();
-            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {Connections.Count}");
-            Logging.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
+            this._connections.Clear();
+            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this._connections.Count}");
+            this._logger?.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using RMF.Core.Bases;
+using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,18 +12,18 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Storage
 {
-    internal class ServerClientSession : ClientSession
+    internal class ServerClientSession : ClientSession, IServerClientSession
     {
         private int _rateLimitCounter;
         private long _lastResetTicks;
 
         public ServerClientSession(
-            TcpClient client,
-            Stream? networkStream = null,
+            INetworkConnection connection,
+            IPacketSender packetSender,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
-        ) : base(client, networkStream, channelCapacity, collectingStats, token)
+        ) : base(connection, packetSender, channelCapacity, collectingStats, token)
         {
             this._lastResetTicks = DateTime.UtcNow.Ticks;
         }
