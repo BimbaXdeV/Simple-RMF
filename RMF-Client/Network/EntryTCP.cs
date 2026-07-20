@@ -39,7 +39,7 @@ namespace RMF_Client.Network
                 short id = BitConverter.ToInt16(headerBuffer, 0);          // Bytes 0, 1
                 int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
 
-                byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
+                byte[] payload = await ProtocolReader.ReadAsync(stream, packetLength, token);
                 Packet? packet = PacketsAssembler.GetPacket(id);
 
                 if (packet == null)
@@ -49,10 +49,7 @@ namespace RMF_Client.Network
 
                 try
                 {
-                    if (session.CollectingStats)
-                    {
-                        session.IncrementReceivedPackets();
-                    }
+                    session.IncrementReceivedPackets();
 
                     ReadOnlySpan<byte> payloadSpan = payload.AsSpan(0, packetLength);
                     SpanReader payloadReader = new(payloadSpan);

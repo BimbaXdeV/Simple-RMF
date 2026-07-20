@@ -19,6 +19,7 @@ namespace RMF_Server.Logic
 {
     internal class SessionManager : IServerSessionManager
     {
+        private readonly IProtocolReader _protocolReader;
         private readonly IPacketSender _packetSender;
         private readonly ILoggingEngine? _logger;
 
@@ -29,8 +30,9 @@ namespace RMF_Server.Logic
         public bool ConnectionsExist => !this._connections.IsEmpty;
         public int TotalConnections => this._connections.Count;
 
-        public SessionManager(IPacketSender packetSender, ILoggingEngine? logger = null)
+        public SessionManager(IProtocolReader protocolReader, IPacketSender packetSender, ILoggingEngine? logger = null)
         {
+            this._protocolReader = protocolReader;
             this._packetSender = packetSender;
             this._logger = logger;
         }
@@ -57,6 +59,7 @@ namespace RMF_Server.Logic
             Guid sessionId = Guid.NewGuid();
             ServerClientSession session = new(
                 connection,
+                this._protocolReader,
                 this._packetSender,
                 channelCapacity: ConfigurationManager.ChannelPacketsCapacity,
                 collectingStats: ConfigurationManager.EnableCollectingSessionStats,

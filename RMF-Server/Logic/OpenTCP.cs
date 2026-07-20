@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Bases;
 using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Logic;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
@@ -27,23 +28,24 @@ namespace RMF_Server.Logic
     {
         private readonly IConnectionListener _listener;
         private readonly IServerSessionManager _sessionManager;
+        private readonly IChannelDispatcher _channelDispatcher;
         private readonly ITlsManager _tlsManager;
-
         private readonly IFirewall? _firewall;
         private readonly ILoggingEngine? _logger;
 
         public OpenTCP(
             IConnectionListener listener,
             IServerSessionManager sessionManager,
+            IChannelDispatcher channelDispatcher,
             ITlsManager tlsManager,
             IFirewall? firewall = null,
             ILoggingEngine? logger = null
         )
         {
             this._listener = listener;
-            this._tlsManager = tlsManager;
             this._sessionManager = sessionManager;
-
+            this._channelDispatcher = channelDispatcher;
+            this._tlsManager = tlsManager;
             this._firewall = firewall;
             this._logger = logger;
         }
@@ -180,45 +182,39 @@ namespace RMF_Server.Logic
 
             try
             {
-                Stream stream = session.GetStream();
-
-                byte[] headerBuffer = new byte[6];  // ID (2) + Length (4)
-
-                cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));
                 while (session.IsRunning)
                 {
-                    await stream.ReadExactlyAsync(headerBuffer.AsMemory(0, headerBuffer.Length), cts.Token);
-
                     cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));  // Time bomb :D
-                    if (session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
+
+                    PacketHeader header = await session.ReadHeaderAsync(cts.Token);
+                    if (this._firewall != null && session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
                     {
                         this._logger?.Warning($"The client {session.RemoteEndPoint} has exceeded the allowed packet rate limit");
-                        this._firewall?.Ban(session.RemoteEndPoint.Address.ToString());
+                        this._firewall.Ban(session.RemoteEndPoint.Address.ToString());
                         break;
                     }
 
-                    short id = BitConverter.ToInt16(headerBuffer, 0);  // Bytes 0, 1
-                    if (!ChannelDispatcher.IsChannelExists(id / 100))  // It is needed to save memory and reject a packet directly based on its ID
+                    // It is needed to save memory and reject a packet directly based on its ID.
+                    // The channel ID to which the packet is routed is determined by the third digit of its ID.
+                    // For example: 202 => (2)02 => 2
+                    if (!this._channelDispatcher.IsChannelExists(header.Id / 100))
                     {
-                        this._logger?.Warning($"Received a packet with unknown id \"{id}\" from the client {session.Remo}");
+                        this._logger?.Warning($"Received a packet with unknown id \"{header.Id}\" from the client {session.RemoteEndPoint}");
                         break;
                     }
-                    int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
-                    byte[] payload = await PayloadReader.ReadAsync(stream, packetLength, token);
+                    byte[] payload = await session.ReadPayloadAsync(header.Length, token);
 
                     try
                     {
-                        PacketContext context = new(session.RemoteEndPoint, id, packetLength, payload);
-                        await ChannelDispatcher.SendPacket(context);  // The packet will be processed in the channel, so we can immediately start waiting for the next packet without worrying about the processing time of the current
-
-                        if (session.CollectingStats)
-                        {
-                            session.IncrementReceivedPackets();
-                        }
+                        // The packet will be processed in the channel, so we can immediately start waiting for the next packet
+                        // without worrying about the processing time of the current
+                        PacketContext context = new(session.RemoteEndPoint, header.Id, header.Length, payload);
+                        await this._channelDispatcher.EnqueuePacketAsync(context);
+                        session.IncrementReceivedPackets();
                     }
                     catch (Exception ex)
                     {
-                        this._logger?.Error($"Fatal connection error when trying to handle incoming packet from {session.EndPoint}, disconnecting...{Environment.NewLine}{ex}");
+                        this._logger?.Error($"Fatal connection error when trying to handle incoming packet from {session.RemoteEndPoint}, disconnecting...{Environment.NewLine}{ex}");
                         ArrayPool<byte>.Shared.Return(payload);
                         break;
                     }

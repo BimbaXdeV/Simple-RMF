@@ -18,6 +18,9 @@ namespace RMF.Core.Interfaces.Network
         long TotalPacketsReceived { get; }
         DateTime LastTransferTime { get; }
 
+        Task<PacketHeader> ReadHeaderAsync(CancellationToken token);
+        Task<byte[]> ReadPayloadAsync(int length, CancellationToken token);
+
         void SendPacket(Packet packet);
         void StartEvent(string eventName, Dictionary<string, object> eventSettings);
         void IncrementSendPackets();

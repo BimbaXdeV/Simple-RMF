@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Bases;
 using RMF.Core.Events;
+using RMF.Core.Interfaces.Network;
 using RMF.Core.Packets;
 using System;
 using System.Collections.Generic;
@@ -17,12 +18,13 @@ namespace RMF_Client.Storage
         public DateTime ConnectedTime { get; private set; }
 
         public ConnectionClientSession(
-            TcpClient client,
-            Stream? networkStream = null,
+            INetworkConnection connection,
+            IProtocolReader reader,
+            IPacketSender packetSender,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
-        ) : base(client, networkStream, channelCapacity, collectingStats, token)
+        ) : base(connection, reader, packetSender, channelCapacity, collectingStats, token)
         {
             this.ConnectedTime = DateTime.UtcNow;
         }

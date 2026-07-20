@@ -20,6 +20,7 @@ namespace RMF.Core.Bases
     public abstract class ClientSession : ISession
     {
         protected readonly INetworkConnection Connection;
+        protected readonly IProtocolReader Reader;
         protected readonly IPacketSender PacketSender;
 
         private readonly EventController _events;
@@ -45,6 +46,7 @@ namespace RMF.Core.Bases
 
         public ClientSession(
             INetworkConnection connection,
+            IProtocolReader reader,
             IPacketSender packetSender,
             int channelCapacity = 0,
             bool collectingStats = false,
@@ -52,6 +54,7 @@ namespace RMF.Core.Bases
         )
         {
             this.Connection = connection;
+            this.Reader = reader;
             this.PacketSender = packetSender;
 
             this._events = new EventController();
@@ -90,11 +93,7 @@ namespace RMF.Core.Bases
                     try
                     {
                         await this.PacketSender.SendPacketAsync(this.Connection.GetNetworkStream(), packet, token);
-
-                        if (this.CollectingStats)
-                        {
-                            IncrementSendPackets();
-                        }
+                        IncrementSendPackets();
                     }
                     finally
                     {
@@ -116,6 +115,16 @@ namespace RMF.Core.Bases
                     }
                 }
             }
+        }
+
+        public Task<PacketHeader> ReadHeaderAsync(CancellationToken token)
+        {
+            return this.Reader.ReadHeaderAsync(this.Connection.GetNetworkStream(), token);
+        }
+
+        public Task<byte[]> ReadPayloadAsync(int length, CancellationToken token)
+        {
+            return this.Reader.ReadPayloadAsync(this.Connection.GetNetworkStream(), length, token);
         }
 
         public void SendPacket(Packet packet)
@@ -153,14 +162,20 @@ namespace RMF.Core.Bases
 
         public void IncrementSendPackets()
         {
-            Interlocked.Increment(ref this._totalPacketsSent);
-            Interlocked.Exchange(ref this._lastTransferTimeTicks, DateTime.UtcNow.Ticks);
+            if (this.CollectingStats)
+            {
+                Interlocked.Increment(ref this._totalPacketsSent);
+                Interlocked.Exchange(ref this._lastTransferTimeTicks, DateTime.UtcNow.Ticks);
+            }
         }
 
         public void IncrementReceivedPackets()
         {
-            Interlocked.Increment(ref this._totalPacketsReceived);
-            Interlocked.Exchange(ref this._lastTransferTimeTicks, DateTime.UtcNow.Ticks);
+            if (this.CollectingStats)
+            {
+                Interlocked.Increment(ref this._totalPacketsReceived);
+                Interlocked.Exchange(ref this._lastTransferTimeTicks, DateTime.UtcNow.Ticks);
+            }
         }
 
         public void StopProcessing()

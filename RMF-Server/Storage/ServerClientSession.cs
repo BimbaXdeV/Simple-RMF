@@ -19,11 +19,12 @@ namespace RMF_Server.Storage
 
         public ServerClientSession(
             INetworkConnection connection,
+            IProtocolReader reader,
             IPacketSender packetSender,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
-        ) : base(connection, packetSender, channelCapacity, collectingStats, token)
+        ) : base(connection, reader, packetSender, channelCapacity, collectingStats, token)
         {
             this._lastResetTicks = DateTime.UtcNow.Ticks;
         }
