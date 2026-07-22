@@ -1,29 +1,40 @@
-﻿using Avalonia.Threading;
+﻿using Avalonia.Platform;
+using Avalonia.Threading;
+using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Logic;
 using RMF_Server.Debugger;
 using RMF_Server.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal static class AppearanceManager
+    internal class AppearanceManager : IWindowManager
     {
-        public static readonly int MaxTitleLength = 48;
+        private readonly ILoggingEngine? _logger;
 
-        public static void SetTitle(string newTitle)
+        private const byte MaxTitleLength = 48;
+
+        public AppearanceManager(ILoggingEngine? logger = null)
+        {
+            this._logger = logger;
+        }
+
+        public void SetTitle(string newTitle)
         {
             if (string.IsNullOrEmpty(newTitle))
             {
-                Logging.Warning("Failed to update application title, received an empty string");
+                this._logger?.Warning("Failed to update application title, received an empty string");
                 return;
             }
 
             if (newTitle.Length > MaxTitleLength)
             {
-                Logging.Warning($"Failed to update application title, received too long string (max length: {MaxTitleLength})");
+                this._logger?.Warning($"Failed to update application title, received too long string (max length: {MaxTitleLength})");
                 return;
             }
 

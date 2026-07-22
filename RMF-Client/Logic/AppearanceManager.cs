@@ -1,4 +1,5 @@
-﻿using RMF_Client.Storage;
+﻿using RMF.Core.Interfaces.Logic;
+using RMF_Client.Storage;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,30 +11,30 @@ using System.Xml.Linq;
 
 namespace RMF_Client.Logic
 {
-    internal static class AppearanceManager
+    internal class AppearanceManager : IWindowManager, IToolbarManager, IWindowEffects
     {
         // Inilialization things
-        private static readonly int MaxTitleLength = 48;
-        private static readonly string ClientLogo = @"
+        private const byte MaxTitleLength = 48;
+        private const string ClientLogo = @"
 '||''|.   '||    ||' '||''''|      ..|'''.| '||   ||                     .   
  ||   ||   |||  |||   ||  .      .|'     '   ||  ...    ....  .. ...   .||.  
  ||''|'    |'|..'||   ||''|      ||          ||   ||  .|...||  ||  ||   ||   
  ||   |.   | '|' ||   ||         '|.      .  ||   ||  ||       ||  ||   ||   
 .||.  '|' .|. | .||. .||.         ''|....'  .||. .||.  '|...' .||. ||.  '|.' 
 ";
-        private static readonly int ClientLogoHeight = ClientLogo.Count(c => c == '\n') + 1;
+        private readonly int ClientLogoHeight = ClientLogo.Count(c => c == '\n') + 1;
 
         // Toolbar items will be loaded from "~\RMF-Client\toolbar.xml" file
         // <add key="" link="" name=""/>
-        private static readonly string ToolbarPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "toolbar.xml");
-        private static string ToolbarTemplate = "Nothing to do...";
-        private static readonly Dictionary<string, string> ToolbarContent = [];
+        private readonly string ToolbarPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "toolbar.xml");
+        private string ToolbarTemplate = "Nothing to do...";
+        private readonly Dictionary<string, string> ToolbarContent = [];
 
-        private static void InitializeToolbarTemplate(ToolbarItem[] items)
+        private void InitializeToolbarTemplate(ToolbarItem[] items)
         {
             if (items.Length == 0)
             {
-                Console.WriteLine($"Failed to load toolbar, file {ToolbarPath} has been corrupted");
+                Console.WriteLine($"Failed to load toolbar, file {this.ToolbarPath} has been corrupted");
                 return;
             }
 
@@ -41,7 +42,7 @@ namespace RMF_Client.Logic
             ToolbarTemplate = string.Join(Environment.NewLine, items.Select(x => $"[{x.Key ?? " "}] {string.Format($"{{0,-{maxNameLength}}}", x.Name)} : {{{x.Link}}}"));
         }
 
-        private static void InitializeToolbarContent(ToolbarItem[] items)
+        private void InitializeToolbarContent(ToolbarItem[] items)
         {
             if (ToolbarContent.Count > 0)
             {
@@ -54,7 +55,7 @@ namespace RMF_Client.Logic
             }
         }
 
-        public static ToolbarItem[] GetToolbarItems()
+        public ToolbarItem[] GetToolbarItems()
         {
             if (!File.Exists(ToolbarPath))
             {
@@ -70,7 +71,7 @@ namespace RMF_Client.Logic
             return toolbarItems;
         }
 
-        private static string FillToolbarBody()
+        private string FillToolbarBody()
         {
             StringBuilder toolbarBody = new(ToolbarTemplate);
             foreach (var (key, value) in ToolbarContent)
@@ -80,14 +81,14 @@ namespace RMF_Client.Logic
             return toolbarBody.ToString();
         }
 
-        public static void LoadToolbar()
+        public void LoadToolbar()
         {
             ToolbarItem[] toolbarItems = GetToolbarItems();
             InitializeToolbarTemplate(toolbarItems);
             InitializeToolbarContent(toolbarItems);
         }
 
-        public static void ReplaceToolbarContent(Dictionary<string, string> content, bool autoUpdate = true)
+        public void ReplaceToolbarContent(Dictionary<string, string> content, bool autoUpdate = true)
         {
             bool isReplaced = false;
             foreach (var (key, value) in content)
@@ -104,12 +105,12 @@ namespace RMF_Client.Logic
             }
         }
 
-        public static void DisplayLogo()
+        public void DisplayLogo()
         {
             Console.WriteLine(ClientLogo);
         }
 
-        public static void DisplayToolbar()
+        public void DisplayToolbar()
         {
             string toolbarBody = FillToolbarBody();
             string[] toolbarLines = toolbarBody.Split(Environment.NewLine);
@@ -121,7 +122,7 @@ namespace RMF_Client.Logic
             }
         }
 
-        public static void SetTitle(string newTitle)
+        public void SetTitle(string newTitle)
         {
             if (string.IsNullOrEmpty(newTitle))
             {
@@ -136,7 +137,7 @@ namespace RMF_Client.Logic
             Console.Title = newTitle;
         }
 
-        public static async Task Curtain(float delaySecs)
+        public async Task Curtain(float delaySecs)
         {
             for (int i = Console.GetCursorPosition().Top; i >= 0; i--)
             {

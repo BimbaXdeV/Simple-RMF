@@ -6,6 +6,7 @@ using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF.Core.Packets.Server;
 using RMF_Server.Channels;
+using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.Packets;
 using RMF_Server.Storage;
@@ -24,22 +25,32 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal class OpenTCP
+    internal class NetworkEngine
     {
         private readonly IConnectionListener _listener;
         private readonly IServerSessionManager _sessionManager;
         private readonly IChannelDispatcher _channelDispatcher;
         private readonly ITlsManager _tlsManager;
         private readonly IFirewall? _firewall;
+        private readonly IWindowManager? _windowManager;
         private readonly ILoggingEngine? _logger;
+        private readonly AppearanceConfig? _appearanceConfig;
+        private readonly ConnectionConfig? _connectionConfig;
+        private readonly FirewallConfig? _firewallConfig;
+        private readonly ControllerConfig? _controllerConfig;
 
-        public OpenTCP(
+        public NetworkEngine(
             IConnectionListener listener,
             IServerSessionManager sessionManager,
             IChannelDispatcher channelDispatcher,
             ITlsManager tlsManager,
             IFirewall? firewall = null,
-            ILoggingEngine? logger = null
+            IWindowManager? windowManager = null,
+            ILoggingEngine? logger = null,
+            AppearanceConfig? appearanceConfig = null,
+            ConnectionConfig? connectionConfig = null,
+            FirewallConfig? firewallConfig = null,
+            ControllerConfig? controllerConfig = null
         )
         {
             this._listener = listener;
@@ -47,14 +58,25 @@ namespace RMF_Server.Logic
             this._channelDispatcher = channelDispatcher;
             this._tlsManager = tlsManager;
             this._firewall = firewall;
+            this._windowManager = windowManager;
             this._logger = logger;
+            this._appearanceConfig = appearanceConfig;
+            this._connectionConfig = connectionConfig;
+            this._firewallConfig = firewallConfig;
+            this._controllerConfig = controllerConfig;
         }
 
         public async Task RunServer(CancellationToken token)
         {
             this._logger?.Output("Starting TCP server...");
-            IPAddress ip = ConfigurationManager.IPAddress == "Any" ? IPAddress.Any : IPAddress.Parse(ConfigurationManager.IPAddress ?? "127.0.0.1");
-            int port = (ConfigurationManager.Port >= 1000 && ConfigurationManager.Port <= 9999) ? ConfigurationManager.Port : 8000;
+            
+            IPAddress ip = this._connectionConfig?.IPAddress == "Any"
+                ? IPAddress.Any
+                : IPAddress.Parse(this._connectionConfig?.IPAddress ?? "127.0.0.1");
+            int port = (this._connectionConfig?.Port >= 1000 && this._connectionConfig?.Port <= 9999)
+                ? this._connectionConfig.Port
+                : 8000;
+            
             X509Certificate2 serverCertificate = this._tlsManager.GetOrCreateCertificate();
 
             string bannedIPsPath = PathManager.GetResolvedPath("BannedIPs", "blacklist", "txt");
@@ -62,19 +84,21 @@ namespace RMF_Server.Logic
 
             try
             {
-                _listener.Start();
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this._sessionManager.TotalConnections}");
+                this._listener.Start();
+                this._windowManager?.SetTitle(this._appearanceConfig != null
+                    ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._sessionManager.TotalConnections}"
+                    : $"Online: {this._sessionManager.TotalConnections}");
                 this._logger?.Output($"Server successfully started listening at {ip}:{port}");
 
                 while (!token.IsCancellationRequested)
                 {
-                    INetworkConnection connection = await _listener.AcceptConnectionAsync(token);
-                    IPEndPoint? ipEndPoint = connection.RemoteEndPoint as IPEndPoint;
-                    string? endPoint = ipEndPoint?.ToString();
+                    INetworkConnection connection = await this._listener.AcceptConnectionAsync(token);
+                    IPEndPoint ipEndPoint = connection.RemoteEndPoint;
+                    string? endPoint = ipEndPoint.ToString();
 
-                    if (this._sessionManager.TotalConnections >= ConfigurationManager.MaxConnections)
+                    if (this._sessionManager.TotalConnections >= this._firewallConfig?.MaxConnections)
                     {
-                        this._logger?.Warning($"A client {endPoint} attempted to connect to server with maximum capacity ({ConfigurationManager.MaxConnections}), access denied");
+                        this._logger?.Warning($"A client {endPoint} attempted to connect to server with maximum capacity ({this._firewallConfig?.MaxConnections}), access denied");
                         connection.Close();
                         continue;
                     }
@@ -93,9 +117,9 @@ namespace RMF_Server.Logic
                         continue;
                     }
 
-                    if (this._sessionManager.GetConnectionsFromIP(ipEndPoint.Address) >= ConfigurationManager.MaxConnectionsPerIP)
+                    if (this._sessionManager.GetConnectionsFromIP(ipEndPoint.Address) >= this._firewallConfig?.MaxConnectionsPerIP)
                     {
-                        this._logger?.Warning($"A client {endPoint} attempted to exceed the connection limit ({ConfigurationManager.MaxConnectionsPerIP}) from a single IP address, access denied");
+                        this._logger?.Warning($"A client {endPoint} attempted to exceed the connection limit ({this._firewallConfig?.MaxConnectionsPerIP}) from a single IP address, access denied");
                         connection.Close();
                         continue;
                     }
@@ -103,7 +127,7 @@ namespace RMF_Server.Logic
                     SslStream sslStream = new(connection.GetNetworkStream(), false);
                     try
                     {
-                        await sslStream.AuthenticateAsServerAsync(serverCertificate).WaitAsync(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs), token);
+                        await sslStream.AuthenticateAsServerAsync(serverCertificate).WaitAsync(TimeSpan.FromSeconds(this._connectionConfig?.ReceiveTimeoutSecs ?? 5), token);
                     }
                     catch (Exception ex)
                     {
@@ -122,10 +146,12 @@ namespace RMF_Server.Logic
                         continue;
                     }
 
-                    AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this._sessionManager.TotalConnections}");
+                    this._windowManager?.SetTitle(this._appearanceConfig != null
+                        ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._sessionManager.TotalConnections}"
+                        : $"Online: {this._sessionManager.TotalConnections}");
                     this._logger?.Output($"Registered new connection from {endPoint}");
 
-                    if (ConfigurationManager.EnableWelcomeHandshake)
+                    if (this._controllerConfig?.EnableWelcomeHandshake == true)
                     {
                         DateTime connectionTime = DateTime.UtcNow;
                         HandshakePacket handshakePacket = new()
@@ -140,23 +166,23 @@ namespace RMF_Server.Logic
                         session.SendPacket(handshakePacket);
                     }
 
-                    if (ConfigurationManager.EnableBuildComparison)
+                    if (this._controllerConfig?.EnableBuildComparison == true)
                     {
                         ClientVersionRequest versionRequest = new();
                         session.SendPacket(versionRequest);
                     }
 
-                    if (ConfigurationManager.EnableCollectingClientInfo)
+                    if (this._controllerConfig?.EnableCollectingClientInfo == true)
                     {
                         ClientInfoRequest clientInfoRequest = new();
                         session.SendPacket(clientInfoRequest);
                     }
 
-                    if (ConfigurationManager.EnableClientHeartbeat)
+                    if (this._controllerConfig?.EnableClientHeartbeat == true)
                     {
                         session.StartEvent("HeartbeatEvent", new Dictionary<string, object>
                         {
-                            { "IntervalSecs", ConfigurationManager.ClientHeartbeatIntervalSecs }
+                            { "IntervalSecs", this._controllerConfig?.ClientHeartbeatIntervalSecs ?? 0 }
                         });
                     }
 
@@ -184,10 +210,10 @@ namespace RMF_Server.Logic
             {
                 while (session.IsRunning)
                 {
-                    cts.CancelAfter(TimeSpan.FromSeconds(ConfigurationManager.ReceiveTimeoutSecs));  // Time bomb :D
+                    cts.CancelAfter(TimeSpan.FromSeconds(this._connectionConfig?.ReceiveTimeoutSecs ?? 0));  // Time bomb :D
 
                     PacketHeader header = await session.ReadHeaderAsync(cts.Token);
-                    if (this._firewall != null && session.IsRateLimitExceed(ConfigurationManager.MaxPacketRate))
+                    if (this._firewall != null && session.IsRateLimitExceed(this._firewallConfig?.MaxPacketRate ?? int.MaxValue))
                     {
                         this._logger?.Warning($"The client {session.RemoteEndPoint} has exceeded the allowed packet rate limit");
                         this._firewall.Ban(session.RemoteEndPoint.Address.ToString());

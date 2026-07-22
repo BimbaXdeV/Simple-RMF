@@ -11,67 +11,67 @@ using System.Xml.Linq;
 
 namespace RMF_Server.Logic
 {
-    internal static class ConfigurationManager
+    internal class ConfigurationManager
     {
         private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "config.xml");
 
-        public static string? AppTitle;
-        public static string? WindowTitle;
-        public static string? WindowTheme;
-        public static int WindowPriority;
-        public static int WindowWidth;
+        public string? AppTitle;
+        public string? WindowTitle;
+        public string? WindowTheme;
+        public int WindowPriority;
+        public int WindowWidth;
         public static int WindowHeight;
 
-        public static string? IPAddress;
-        public static int Port;
-        public static int ReceiveTimeoutSecs;
-        public static bool EnableForceShutdown;
+        public string? IPAddress;
+        public int Port;
+        public int ReceiveTimeoutSecs;
+        public bool EnableForceShutdown;
 
-        public static int MaxConnections;
-        public static int MaxConnectionsPerIP;
-        public static int MinPacketLengthKB;
-        public static int MaxPacketLengthKB;
-        public static int MaxPacketRate;
-        public static bool EnableBlacklistSaving;
+        public int MaxConnections;
+        public int MaxConnectionsPerIP;
+        public int MinPacketLengthKB;
+        public int MaxPacketLengthKB;
+        public int MaxPacketRate;
+        public bool EnableBlacklistSaving;
 
-        public static string? CertificateName;
-        public static string? CertificateFileName;
-        public static string? CertificatePassword;
-        public static int CertificateDurationDays;
+        public string? CertificateName;
+        public string? CertificateFileName;
+        public string? CertificatePassword;
+        public int CertificateDurationDays;
         
-        public static bool EnableCollectingSessionStats;
-        public static bool EnableWelcomeHandshake;
-        public static bool EnableBuildComparison;
-        public static bool EnableCollectingClientInfo;
-        public static bool EnableClientHeartbeat;
-        public static int ClientHeartbeatIntervalSecs;
-        public static bool EnableRelativeParting;
-        public static int PartingTimeoutSecs;
+        public bool EnableCollectingSessionStats;
+        public bool EnableWelcomeHandshake;
+        public bool EnableBuildComparison;
+        public bool EnableCollectingClientInfo;
+        public bool EnableClientHeartbeat;
+        public int ClientHeartbeatIntervalSecs;
+        public bool EnableRelativeParting;
+        public int PartingTimeoutSecs;
 
-        public static int ChannelPacketsCapacity;
+        public int ChannelPacketsCapacity;
 
-        public static int ScreenshotFrameFormat;
-        public static int ScreenshotQualityPercentage;
-        public static int StreamingFrameFormat;
-        public static int StreamingQualityPercentage;
-        public static int StreamingFrameUpdateRate;
-        public static int StreamingTargetFPS;
-        public static bool EnableStreamingStatsOverlay;
+        public int ScreenshotFrameFormat;
+        public int ScreenshotQualityPercentage;
+        public int StreamingFrameFormat;
+        public int StreamingQualityPercentage;
+        public int StreamingFrameUpdateRate;
+        public int StreamingTargetFPS;
+        public bool EnableStreamingStatsOverlay;
 
-        public static string? InlineCommandDefautSign;
-        public static bool InlineSuggestionsEnabled;
-        public static int InlineSuggestionsMinChars;
+        public string? InlineCommandDefautSign;
+        public bool InlineSuggestionsEnabled;
+        public int InlineSuggestionsMinChars;
 
-        public static bool EnableLogSaving;
-        public static bool EnableMultipleBackup;
-        public static int MaxLogFileCapacityMB;
-        public static int LoggingHistoryLength;
-        public static int LoggingHandlerDelayMsecs;
-        public static int InputListenerDelayMsecs;
+        public bool EnableLogSaving;
+        public bool EnableMultipleBackup;
+        public int MaxLogFileCapacityMB;
+        public int LoggingHistoryLength;
+        public int LoggingHandlerDelayMsecs;
+        public int InputListenerDelayMsecs;
 
         // You don't need to parse all the configs from "~\RMF-Server\Storage\config.xml" manually, this method will do it for you;
         // To scale, simply add empty fields with "public" and "static" flags  ;)
-        public static (int, int) Load()
+        public (int, int) Load()
         {
             if (!File.Exists(ConfigPath))
             {

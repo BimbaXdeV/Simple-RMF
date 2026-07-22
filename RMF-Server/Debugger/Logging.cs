@@ -16,7 +16,7 @@ namespace RMF_Server.Debugger
     {
         // Inilialization things
         private readonly ushort MaxMethodNameLength;
-        public ushort LogHeaderLength;
+        public ushort LogHeaderLength { get; private set; }
         public readonly string ServerLogo = @"
  .|'''.|   ||                      '||             '||''|.   '||    ||' '||''''| 
  ||..  '  ...  .. .. ..   ... ...   ||    ....      ||   ||   |||  |||   ||  .   
