@@ -11,6 +11,8 @@ namespace RMF.Core.Interfaces
         ushort LogHeaderLength { get; }
 
         void CreateHistory(int bufferLength);
+        bool GetAdminTyping();
+        void SetAdminTyping(bool status);
         Task RunExecutor(CancellationToken token);
         
         void Output(string message, bool toHistory = true);
@@ -18,6 +20,7 @@ namespace RMF.Core.Interfaces
         void Error(string message, bool toHistory = true);
         void Message(string message, int leftOffset = 0, bool toHistory = true);
         void Separator();
+        void ClearConsole();
         
         void SaveBackup(string path, bool appendBelow = false);
     }

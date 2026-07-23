@@ -87,7 +87,8 @@ namespace RMF_Server.Logic
                 this._listener.Start();
                 this._windowManager?.SetTitle(this._appearanceConfig != null
                     ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._sessionManager.TotalConnections}"
-                    : $"Online: {this._sessionManager.TotalConnections}");
+                    : $"Online: {this._sessionManager.TotalConnections}"
+                );
                 this._logger?.Output($"Server successfully started listening at {ip}:{port}");
 
                 while (!token.IsCancellationRequested)

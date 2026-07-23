@@ -18,12 +18,12 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Packets
 {
-    internal class PacketsProcessor : IServerPacketProcessor
+    internal class PacketProcessor : IServerPacketProcessor
     {
         private readonly IServerSessionManager _sessionManager;
         private readonly ILoggingEngine? _logger;
 
-        public PacketsProcessor(IServerSessionManager sessionManager, ILoggingEngine? logger = null)
+        public PacketProcessor(IServerSessionManager sessionManager, ILoggingEngine? logger = null)
         {
             this._sessionManager = sessionManager;
             this._logger = logger;
@@ -67,7 +67,7 @@ namespace RMF_Server.Packets
         // This handle method is too slow for streaming production, but it's here if you need it for scaling purposes
         public void SearchHandle(Packet packet, string endPoint)
         {
-            MethodInfo? method = typeof(PacketsProcessor).GetMethod("Process" + packet.GetType().Name, BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo? method = typeof(PacketProcessor).GetMethod("Process" + packet.GetType().Name, BindingFlags.NonPublic | BindingFlags.Instance);
             method?.Invoke(null, [packet, endPoint]);
         }
 

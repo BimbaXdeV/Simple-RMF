@@ -1,7 +1,9 @@
 ﻿using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Logic;
+using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
+using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
 using RMF_Server.Packets;
@@ -18,13 +20,22 @@ namespace RMF_Server.Channels
 {
     internal class ChannelDispatcher : IChannelDispatcher
     {
+        private readonly IServerPacketProcessor _packetProcessor;
         private readonly ILoggingEngine? _logger;
+        private readonly ChannelConfig? _channelConfig;
 
         private readonly Dictionary<int, ChannelContext> _channels;
 
-        public ChannelDispatcher(ILoggingEngine? logger = null)
+        public ChannelDispatcher(
+            IServerPacketProcessor packetProcessor,
+            ILoggingEngine? logger = null,
+            ChannelConfig? channelConfig = null
+        )
         {
+            this._packetProcessor = packetProcessor;
             this._logger = logger;
+            this._channelConfig = channelConfig;
+
             this._channels = [];
         }
 
@@ -50,7 +61,7 @@ namespace RMF_Server.Channels
                         SpanReader payloadReader = new(payloadSpan);
 
                         packet.Deserialize(ref payloadReader);
-                        await PacketsProcessor.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
+                        await this._packetProcessor.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
                     }
                     catch (Exception ex)
                     {
@@ -95,11 +106,14 @@ namespace RMF_Server.Channels
                     continue;
                 }
 
-                Channel<PacketContext> rawChannel = Channel.CreateBounded<PacketContext>(new BoundedChannelOptions(ConfigurationManager.ChannelPacketsCapacity)
-                {
-                    FullMode = BoundedChannelFullMode.DropOldest,
-                    SingleReader = true
-                });
+                Channel<PacketContext> rawChannel = this._channelConfig != null
+                    ? Channel.CreateBounded<PacketContext>(new BoundedChannelOptions(this._channelConfig?.ChannelPacketsCapacity ?? 1)
+                    {
+                        FullMode = BoundedChannelFullMode.DropOldest,
+                        SingleReader = true
+                    })
+                    : Channel.CreateUnbounded<PacketContext>();
+
                 CancellationTokenSource cts = new();
                 Task workerTask = InboundChannelWorker(rawChannel, id: k, token: cts.Token);
 

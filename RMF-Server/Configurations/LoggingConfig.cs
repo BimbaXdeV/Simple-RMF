@@ -8,11 +8,10 @@ namespace RMF_Server.Configurations
 {
     internal class LoggingConfig
     {
-        public static bool EnableLogSaving;
-        public static bool EnableMultipleBackup;
-        public static int MaxLogFileCapacityMB;
-        public static int LoggingHistoryLength;
-        public static int LoggingHandlerDelayMsecs;
-        public static int InputListenerDelayMsecs;
+        public bool EnableLogSaving;
+        public bool EnableMultipleBackup;
+        public int MaxLogFileCapacityMB;
+        public int LoggingHistoryLength;
+        public int LoggingHandlerDelayMsecs;
     }
 }
