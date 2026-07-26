@@ -1,12 +1,8 @@
 ﻿using RMF.Core.Interfaces;
-using RMF.Core.Interfaces.Logic;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Server.Configurations;
-using RMF_Server.Debugger;
-using RMF_Server.Logic;
-using RMF_Server.Packets;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -47,7 +43,7 @@ namespace RMF_Server.Channels
             {
                 await foreach (PacketContext context in reader.ReadAllAsync(token ?? CancellationToken.None))
                 {
-                    Packet? packet = PacketsAssembler.GetPacket(context.Id);
+                    Packet? packet = PacketFactory.GetPacket(context.Id);
                     if (packet == null)
                     {
                         this._logger?.Warning($"Received an unknown packet \"{context.Id}\" from the client {context.EndPoint}");
@@ -90,7 +86,7 @@ namespace RMF_Server.Channels
 
         public (int, int) StartFound()
         {
-            HashSet<int> channelKeys = PacketsAssembler.GetClientPacketsIDs().Select(x => x / 100).ToHashSet();
+            HashSet<int> channelKeys = PacketFactory.GetClientPacketsIDs().Select(x => x / 100).ToHashSet();
             if (channelKeys.Count == 0)
             {
                 this._logger?.Warning("Failed to get IDs of existing packages. Make sure you have already loaded all packages into RMF.Core.Packets.PacketAssembler before calling");

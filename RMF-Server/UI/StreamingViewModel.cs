@@ -2,6 +2,7 @@
 using Avalonia.Platform;
 using Avalonia.Threading;
 using ReactiveUI;
+using RMF.Core.Interfaces;
 using RMF.Core.Screen;
 using RMF_Server.Debugger;
 using SkiaSharp;
@@ -19,6 +20,13 @@ namespace RMF_Server.UI
 {
     public class StreamingViewModel : ReactiveObject
     {
+        private readonly ILoggingEngine? _logger;
+
+        public StreamingViewModel(ILoggingEngine? logger) : base()
+        {
+            this._logger = logger;
+        }
+
         private WriteableBitmap? _displaySource;
         public WriteableBitmap? DisplaySource
         {
@@ -104,7 +112,7 @@ namespace RMF_Server.UI
                 using SKCodec codec = SKCodec.Create(ms);
                 if (codec == null)
                 {
-                    Logging.Warning($"Failed to decode screen frame");
+                    this._logger?.Warning($"Failed to decode screen frame");
                     return;
                 }
 
@@ -145,7 +153,7 @@ namespace RMF_Server.UI
                     }
                     catch (Exception ex)
                     {
-                        Logging.Error($"Failed to write a new frame into bitmap: {ex}");
+                        this._logger?.Error($"Failed to write a new frame into bitmap: {ex}");
                     }
                     finally
                     {
@@ -174,7 +182,7 @@ namespace RMF_Server.UI
                     ScreenPatch patch = patches[i];
                     if (patch.Length <= 0 || patch.Data == null)
                     {
-                        Logging.Warning("Received an empty patch, nothing to do");
+                        this._logger?.Warning("Received an empty patch, nothing to do");
                         continue;
                     }
 
@@ -182,7 +190,7 @@ namespace RMF_Server.UI
                     using SKCodec codec = SKCodec.Create(ms);
                     if (codec == null)
                     {
-                        Logging.Warning($"Failed to decode screen patch");
+                        this._logger?.Warning($"Failed to decode screen patch");
                         continue;
                     }
 
@@ -209,7 +217,7 @@ namespace RMF_Server.UI
                     }
                     catch (Exception ex)
                     {
-                        Logging.Error($"Failed to write a dirty rectangle into bitmap: {ex}");
+                        this._logger?.Error($"Failed to write a dirty rectangle into bitmap: {ex}");
                     }
                     finally
                     {

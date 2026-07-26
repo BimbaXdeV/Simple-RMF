@@ -8,9 +8,9 @@ namespace RMF_Server.Configurations
 {
     internal class AppearanceConfig
     {
-        public string? AppTitle;
-        public string? WindowTitle;
-        public string? WindowTheme;
+        public string AppTitle = "Server";
+        public string WindowTitle = "Streamer";
+        public string WindowTheme = "Default";
         public int WindowPriority;
         public int WindowWidth;
         public int WindowHeight;

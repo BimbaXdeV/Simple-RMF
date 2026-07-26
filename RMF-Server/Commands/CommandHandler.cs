@@ -6,7 +6,6 @@ using RMF.Core.Packets.Server;
 using RMF.Core.Screen;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
-using RMF_Server.Interfaces;
 using RMF_Server.Logic;
 using RMF_Server.Storage;
 using System;
@@ -310,9 +309,9 @@ namespace RMF_Server.Commands
                 };
                 session.SendPacket(streamingRequest);
 
-                WindowManager.StreamingClientEndPoint = session.RemoteEndPoint;
-                await WindowManager.ShowWindow();
-                WindowManager.SetWindowTitle(this._appearanceConfig != null
+                AvaloniaManager.StreamingClientEndPoint = session.RemoteEndPoint;
+                await AvaloniaManager.ShowWindow();
+                AvaloniaManager.SetWindowTitle(this._appearanceConfig != null
                     ? this._appearanceConfig?.WindowTitle + " | " + targetEndPoint
                     : targetEndPoint
                 );
@@ -328,7 +327,7 @@ namespace RMF_Server.Commands
         {
             try
             {   
-                IPEndPoint? ipEndPoint = WindowManager.StreamingClientEndPoint;
+                IPEndPoint? ipEndPoint = AvaloniaManager.StreamingClientEndPoint;
                 if (ipEndPoint == null)
                 {
                     this._logger?.Message("No active stream to stop...", toHistory: false);
@@ -352,8 +351,8 @@ namespace RMF_Server.Commands
             }
             finally
             {
-                WindowManager.SetWindowTitle(this._appearanceConfig?.WindowTitle ?? "Disabled");
-                await WindowManager.HideWindow();
+                AvaloniaManager.SetWindowTitle(this._appearanceConfig?.WindowTitle ?? "Disabled");
+                await AvaloniaManager.HideWindow();
             }
         }
     }

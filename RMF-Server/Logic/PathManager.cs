@@ -1,4 +1,5 @@
-﻿using RMF_Server.Debugger;
+﻿using RMF.Core.Interfaces;
+using RMF_Server.Debugger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,67 +10,47 @@ using System.Xml.Linq;
 
 namespace RMF_Server.Logic
 {
-    internal static class PathManager
+    internal class PathManager : IPathManager
     {
-        private static readonly string FilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "extpaths.xml");
-        private static readonly Dictionary<string, string> ExternalPaths = [];
-        private static readonly string DefaultStoragePath = "Undefined";
+        private readonly Dictionary<string, string> _externalPaths = [];
+        private readonly string _defaultStoragePath = "Undefined";
 
-        private static string CachedDate = string.Empty;
-        private static DateTime LastDateUpdated = DateTime.Now;
-        private static readonly Lock CachedDateLock = new();
+        private string _cachedDate = string.Empty;
+        private DateTime _lastDateUpdated = DateTime.Now;
+        private readonly Lock _cachedDateLock = new();
 
-        public static (int, int) Load()
+        public PathManager(Dictionary<string, string> externalPaths)
         {
-            if (!File.Exists(FilePath))
-            {
-                Logging.Error($"Unable to load external paths on path: {FilePath}");
-                return (0, 0);
-            }
-
-            XDocument pathsDoc = XDocument.Load(FilePath);
-            var pathsDict = pathsDoc.Element("Paths")?.Elements("add");
-
-            if (pathsDict == null)
-            {
-                Logging.Error($"The external paths file has been corrupted. Please check its integrity");
-                return (0, 0);
-            }
-
-            int initializedPathsCounter = 0;
-            foreach (var el in pathsDict)
-            {
-                string? pathKey = el.Attribute("key")?.Value;
-                if (pathKey != null)
-                {
-                    ExternalPaths[pathKey] = el.Attribute("path")?.Value ?? "Undefined";
-                    initializedPathsCounter++;
-                }
-            }
-            return (initializedPathsCounter, pathsDict.Count());
+            this._externalPaths = externalPaths;
         }
 
-        private static void UpdateDate()
+        private void UpdateDate()
         {
-            lock (CachedDateLock)
+            lock (this._cachedDateLock)
             {
                 DateTime actualDateTime = DateTime.Now;
-                if (actualDateTime.Date != LastDateUpdated)
+                if (actualDateTime.Date != this._lastDateUpdated)
                 {
-                    CachedDate = actualDateTime.ToString("yyyy_MM_dd");
-                    LastDateUpdated = actualDateTime.Date;
+                    this._cachedDate = actualDateTime.ToString("yyyy_MM_dd");
+                    this._lastDateUpdated = actualDateTime.Date;
                 }
             }
         }
 
-        public static string GetResolvedPath(string key, string? fileName = null, string? fileFormat = null, string? endPoint = null, bool UpdateCachedDate = false)
+        public string GetResolvedPath(
+            string key,
+            string? fileName = null,
+            string? fileFormat = null,
+            string? endPoint = null,
+            bool UpdateCachedDate = false
+        )
         {
-            if (!ExternalPaths.TryGetValue(key, out string? rawPath) || string.IsNullOrEmpty(rawPath))
+            if (!this._externalPaths.TryGetValue(key, out string? rawPath) || string.IsNullOrEmpty(rawPath))
             {
-                return DefaultStoragePath;
+                return this._defaultStoragePath;
             }
 
-            if (UpdateCachedDate && DateTime.Now.Date != LastDateUpdated)
+            if (UpdateCachedDate && DateTime.Now.Date != this._lastDateUpdated)
             {
                 UpdateDate();  // You don`t need to constantly convert the same long-lived object
             }
@@ -86,7 +67,7 @@ namespace RMF_Server.Logic
             }
 
             StringBuilder resolvedPath = new(fullFilePath);
-            resolvedPath.Replace("%date%", CachedDate)
+            resolvedPath.Replace("%date%", this._cachedDate)
                         .Replace("%time%", DateTime.Now.ToString("HH_mm_ss"))
                         .Replace("%datetime%", DateTime.Now.ToString("yyyyMMdd_HHmmss"))
                         .Replace("%endPoint%", string.IsNullOrEmpty(endPoint) ? "Unknown" : endPoint)

@@ -1,5 +1,8 @@
-﻿using RMF.Core.Packets.Server;
+﻿using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Network;
+using RMF.Core.Packets.Server;
 using RMF_Server.Channels;
+using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using System;
 using System.Collections.Generic;
@@ -10,18 +13,39 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal static class LifecycleController
+    internal class LifecycleController
     {
-        public static bool IsBaseInitialized = false;
-        public static CancellationTokenSource? Input { get; private set; }  // Master token source, it starts the whole chain of shutdown
-        public static CancellationTokenSource? Server { get; private set; }
+        private readonly IServerSessionManager? _sessionManager;
+        private readonly IChannelDispatcher? _channelDispatcher;
+        private readonly ILoggingEngine? _logger;
+        private readonly ControllerConfig? _controllerConfig;
 
-        public static bool IsFinalInitialized = false;
-        public static CancellationTokenSource? Output { get; private set; }
+        public bool IsBaseInitialized;
+        public CancellationTokenSource? Input { get; private set; }  // Master token source, it starts the whole chain of shutdown
+        public CancellationTokenSource? Server { get; private set; }
 
-        public static void Initialize()
+        public bool IsFinalInitialized;
+        public CancellationTokenSource? Output { get; private set; }
+
+        public LifecycleController(
+            IServerSessionManager? sessionManager = null,
+            IChannelDispatcher? channelDispatcher = null,
+            ILoggingEngine? logger = null,
+            ControllerConfig? controllerConfig = null
+        )
         {
-            if (IsBaseInitialized && IsFinalInitialized)
+            this._sessionManager = sessionManager;
+            this._channelDispatcher = channelDispatcher;
+            this._logger = logger;
+            this._controllerConfig = controllerConfig;
+
+            this.IsBaseInitialized = false;
+            this.IsFinalInitialized = false;
+        }
+
+        public void Initialize()
+        {
+            if (this.IsBaseInitialized && this.IsFinalInitialized)
             {
                 return;
             }
@@ -35,72 +59,78 @@ namespace RMF_Server.Logic
                 CancellationTokenSource cts = new();
                 property.SetValue(null, cts);
             }
-            IsBaseInitialized = true;
-            IsFinalInitialized = true;
+            this.IsBaseInitialized = true;
+            this.IsFinalInitialized = true;
         }
 
-        private static async Task WaitForParting(int timeoutSecs)
+        private async Task WaitForParting(int timeoutSecs)
         {
-            Logging.Output("The server is parting...");
+            this._logger?.Output("The server is parting...");
             DateTime deadline = DateTime.Now + TimeSpan.FromSeconds(timeoutSecs);
-            while (SessionManager.ConnectionsExist && DateTime.Now < deadline)
+            while (this._sessionManager != null &&
+                this._sessionManager.ConnectionsExist &&
+                DateTime.Now < deadline)
             {
                 await Task.Delay(100);
             }
 
-            if (SessionManager.ConnectionsExist)
+            if (this._sessionManager?.ConnectionsExist == true)
             {
-                Logging.Warning($"The server parting timeout has expired, {SessionManager.TotalConnections} clients are still connected");
+                this._logger?.Warning($"The server parting timeout has expired, {this._sessionManager.TotalConnections} clients are still connected");
             }
-            Logging.Output("The server successfully parted");
+            this._logger?.Output("The server successfully parted");
         }
 
-        public static async Task BaseShutdown()
+        public async Task BaseShutdown()
         {
-            if (!IsBaseInitialized)
+            if (!this.IsBaseInitialized)
             {
-                Logging.Warning("The server lifecycle is not initialized, shutdown is not required");
+                this._logger?.Warning("The server lifecycle is not initialized, shutdown is not required");
                 return;
             }
 
-            Logging.Separator();
-            Logging.Warning("Cancellation requested, stopping server...");
+            this._logger?.Separator();
+            this._logger?.Warning("Cancellation requested, stopping server...");
 
-            Input!.Cancel();
+            this.Input!.Cancel();
 
-            if (ConfigurationManager.EnableRelativeParting)
+            if (this._controllerConfig?.EnableRelativeParting == true && this._sessionManager != null)
             {
                 EndOfEventsRequest endOfEventsRequest = new();
-                SessionManager.BroadcastPacket(endOfEventsRequest, CancellationToken.None);
-                await WaitForParting(ConfigurationManager.PartingTimeoutSecs);
+                this._sessionManager.BroadcastPacket(endOfEventsRequest, CancellationToken.None);
+                await WaitForParting(this._controllerConfig?.PartingTimeoutSecs ?? 5);
             }
 
-            Server!.Cancel();
-            SessionManager.ClearConnections();
-            await ChannelDispatcher.CloseChannels();
+            this.Server!.Cancel();
+            this._sessionManager?.ClearConnections();
 
-            IsBaseInitialized = false;
+            if (this._channelDispatcher != null)
+            {
+                await this._channelDispatcher.CloseChannels();
+            }
+
+            this.IsBaseInitialized = false;
         }
 
-        public static void FinalShutdown(bool cleanupSources = false)
+        public void FinalShutdown(bool cleanupSources = false)
         {
-            if (!IsFinalInitialized)
+            if (!this.IsFinalInitialized)
             {
-                Logging.Warning("The final lifecycle is not initialized, shutdown is not required");
+                this._logger?.Warning("The final lifecycle is not initialized, shutdown is not required");
                 return;
             }
 
-            Output!.Cancel();
+            this.Output!.Cancel();
             if (cleanupSources)
             {
                 DisposeAll();
             }
-            IsFinalInitialized = false;
+            this.IsFinalInitialized = false;
         }
 
-        public static void DisposeAll()
+        public void DisposeAll()
         {
-            PropertyInfo[] tokenSources = typeof(LifecycleController).GetProperties(BindingFlags.Public | BindingFlags.Static)
+            PropertyInfo[] tokenSources = typeof(LifecycleController).GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => p.PropertyType == typeof(CancellationTokenSource))
                 .ToArray();
 
@@ -116,7 +146,7 @@ namespace RMF_Server.Logic
                 property.SetValue(null, null);
                 disposedSourcesCount++;
             }
-            Logging.Output($"During the token cleanup, {disposedSourcesCount} / {totalTokenSources} active sources were cleared successfully");
+            this._logger?.Output($"During the token cleanup, {disposedSourcesCount} / {totalTokenSources} active sources were cleared successfully");
         }
     }
 }

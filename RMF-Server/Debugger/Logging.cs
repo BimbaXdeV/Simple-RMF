@@ -1,6 +1,6 @@
 ﻿using RMF.Core.Interfaces;
 using RMF_Server.Configurations;
-using RMF_Server.Logic;
+using RMF_Server.Storage;
 using Splat;
 using System;
 using System.Collections.Concurrent;
@@ -15,6 +15,7 @@ namespace RMF_Server.Debugger
 {
     internal class Logging : ILoggingEngine
     {
+        private readonly IThemeManager? _themeManager;
         private readonly LoggingConfig? _loggingConfig;
 
         // Inilialization things
@@ -48,12 +49,14 @@ namespace RMF_Server.Debugger
         private readonly Regex _ansiRegex = new(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
         public Logging(
+            IThemeManager? themeManager = null,
             LoggingConfig? loggingConfig = null,
             string? defaultLogEnding = null,
             char consoleSeparator = char.MinValue,
             ushort consoleSeparatorLength = 0
         )
         {
+            this._themeManager = themeManager;
             this._loggingConfig = loggingConfig;
 
             this._maxMethodNameLength = GetMaxMethodNameLength();
@@ -167,17 +170,20 @@ namespace RMF_Server.Debugger
         // All types of logs
         public void Output(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ThemeManager.OutputDatetime[0], ThemeManager.OutputDatetime[1], ThemeManager.OutputDatetime[2])}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{_maxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}", toHistory);
+            ThemeColor color = this._themeManager?.GetColor("OutputDatetime") ?? new ThemeColor(255, 255, 255, 255);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(color.R, color.G, color.B)}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{_maxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {Colorist.ResetColor()}{message}{DefaultLogEnding}", toHistory);
         }
 
         public void Warning(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ThemeManager.WarningLog[0], ThemeManager.WarningLog[1], ThemeManager.WarningLog[2])}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{_maxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
+            ThemeColor color = this._themeManager?.GetColor("WarningLog") ?? new ThemeColor(255, 255, 255, 255);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(color.R, color.G, color.B)}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{_maxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
         public void Error(string message, bool toHistory = true)
         {
-            TryLogEnqueue($"{Colorist.ColoredFilterRGB(ThemeManager.ErrorLog[0], ThemeManager.ErrorLog[1], ThemeManager.ErrorLog[2])}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{_maxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
+            ThemeColor color = this._themeManager?.GetColor("ErrorLog") ?? new ThemeColor(255, 255, 255, 255);
+            TryLogEnqueue($"{Colorist.ColoredFilterRGB(color.R, color.G, color.B)}[ {DateTime.Now:yyyy-MM-dd HH:mm:ss} ] {string.Format($"{{0,-{_maxMethodNameLength}}}", MethodBase.GetCurrentMethod()?.Name.ToUpper() ?? "U")} : {message}{DefaultLogEnding}{Colorist.ResetColor()}", toHistory);
         }
 
         public void Message(string message, int leftOffset = 0, bool toHistory = true)
@@ -192,7 +198,8 @@ namespace RMF_Server.Debugger
 
         public void Separator()
         {
-            string colorPref = Colorist.ColoredFilterRGB(ThemeManager.Separator[0], ThemeManager.Separator[1], ThemeManager.Separator[2]);
+            ThemeColor color = this._themeManager?.GetColor("Separator") ?? new ThemeColor(255, 255, 255, 255);
+            string colorPref = Colorist.ColoredFilterRGB(color.R, color.G, color.B);
             TryLogEnqueue(colorPref + string.Join("", Enumerable.Repeat(ConsoleSeparator.ToString(), ConsoleSeparatorLength)) + Colorist.ResetColor(), false);
         }
 

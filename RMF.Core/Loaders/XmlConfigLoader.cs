@@ -6,16 +6,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace RMF.Core.Configuration
+namespace RMF.Core.Loaders
 {
-    internal class XmlConfigProvider
+    internal class XmlConfigLoader
     {
         private readonly Dictionary<string, string> _cachedConfig;
 
-        public XmlConfigProvider(string configPath)
+        public XmlConfigLoader(string configPath)
         {
             XDocument configDoc = XDocument.Load(configPath);
-            this._cachedConfig = configDoc.Element("Settings")?
+            _cachedConfig = configDoc.Element("Settings")?
                 .Elements("add")
                 .ToDictionary(
                     x => x.Attribute("key")?.Value ?? "",
@@ -31,7 +31,7 @@ namespace RMF.Core.Configuration
             FieldInfo[] instanceFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
             foreach (FieldInfo field in instanceFields)
             {
-                if (this._cachedConfig.TryGetValue(field.Name, out string? rawValue))
+                if (_cachedConfig.TryGetValue(field.Name, out string? rawValue))
                 {
                     object processedValue = Convert.ChangeType(rawValue, field.FieldType);
                     field.SetValue(instance, processedValue);

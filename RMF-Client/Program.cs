@@ -16,7 +16,7 @@ namespace RMF_Client
             AppearanceManager.DisplayLogo();
 
             (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
-            (int packetsLoaded, int totalPackets) = PacketsAssembler.RegisterFound();
+            (int packetsLoaded, int totalPackets) = PacketFactory.RegisterFound();
             (int eventsLoaded, int totalEvents) = EventAssembler.RegisterFound("Client");
 
             // Transferring fields data from server configurations to core packet configurations

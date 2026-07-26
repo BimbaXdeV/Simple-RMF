@@ -40,7 +40,7 @@ namespace RMF_Client.Network
                 int packetLength = BitConverter.ToInt32(headerBuffer, 2);  // Bytes 2, 3, 4, 5
 
                 byte[] payload = await ProtocolReader.ReadAsync(stream, packetLength, token);
-                Packet? packet = PacketsAssembler.GetPacket(id);
+                Packet? packet = PacketFactory.GetPacket(id);
 
                 if (packet == null)
                 {

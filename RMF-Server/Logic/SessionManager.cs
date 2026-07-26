@@ -1,8 +1,10 @@
 ﻿using RMF.Core.Bases;
 using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Logic;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
+using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.Storage;
 using System;
@@ -21,7 +23,11 @@ namespace RMF_Server.Logic
     {
         private readonly IProtocolReader _protocolReader;
         private readonly IPacketSender _packetSender;
+        private readonly IWindowManager? _windowManager;
         private readonly ILoggingEngine? _logger;
+        private readonly AppearanceConfig? _appearanceConfig;
+        private readonly ControllerConfig? _controllerConfig;
+        private readonly ChannelConfig? _channelConfig;
 
         private readonly ConcurrentDictionary<Guid, IServerClientSession> _connections = [];
         private readonly ConcurrentDictionary<string, Guid> _endPointIndex = [];
@@ -30,11 +36,23 @@ namespace RMF_Server.Logic
         public bool ConnectionsExist => !this._connections.IsEmpty;
         public int TotalConnections => this._connections.Count;
 
-        public SessionManager(IProtocolReader protocolReader, IPacketSender packetSender, ILoggingEngine? logger = null)
+        public SessionManager(
+            IProtocolReader protocolReader,
+            IPacketSender packetSender,
+            IWindowManager? windowManager,
+            ILoggingEngine? logger = null,
+            AppearanceConfig? appearanceConfig = null,
+            ControllerConfig? controllerConfig = null,
+            ChannelConfig? channelConfig = null
+        )
         {
             this._protocolReader = protocolReader;
             this._packetSender = packetSender;
+            this._windowManager = windowManager;
             this._logger = logger;
+            this._appearanceConfig = appearanceConfig;
+            this._controllerConfig = controllerConfig;
+            this._channelConfig = channelConfig;
         }
 
         public void BroadcastPacket(Packet packet, CancellationToken token)
@@ -61,8 +79,8 @@ namespace RMF_Server.Logic
                 connection,
                 this._protocolReader,
                 this._packetSender,
-                channelCapacity: ConfigurationManager.ChannelPacketsCapacity,
-                collectingStats: ConfigurationManager.EnableCollectingSessionStats,
+                channelCapacity: this._channelConfig?.ChannelPacketsCapacity ?? default,
+                collectingStats: this._controllerConfig?.EnableCollectingSessionStats ?? false,
                 token: token
             );
             if (this._connections.TryAdd(sessionId, session))
@@ -125,7 +143,10 @@ namespace RMF_Server.Logic
                 this._connections.TryRemove(sessionId, out _);
                 this._endPointIndex.TryRemove(endPoint, out _);
 
-                AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this._connections.Count}");
+                this._windowManager?.SetTitle(this._appearanceConfig != null
+                    ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._connections.Count}"
+                    : $"Online: {this._connections.Count}"
+                );
                 this._logger?.Output($"Client {endPoint} was disconnected");
             }
         }
@@ -141,7 +162,10 @@ namespace RMF_Server.Logic
                 disconnectedClientsCount++;
             }
             this._connections.Clear();
-            AppearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Online: {this._connections.Count}");
+            this._windowManager?.SetTitle(this._appearanceConfig != null
+                    ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._connections.Count}"
+                    : $"Online: {this._connections.Count}"
+            );
             this._logger?.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
         }
     }
