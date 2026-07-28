@@ -8,12 +8,12 @@ namespace RMF_Server.Configurations
 {
     internal class StreamingConfig
     {
-        public int ScreenshotFrameFormat;
-        public int ScreenshotQualityPercentage;
-        public int StreamingFrameFormat;
-        public int StreamingQualityPercentage;
-        public int StreamingFrameUpdateRate;
-        public int StreamingTargetFPS;
-        public bool EnableStreamingStatsOverlay;
+        public int ScreenshotFrameFormat = 0;
+        public int ScreenshotQualityPercentage = 100;
+        public int StreamingFrameFormat = 0;
+        public int StreamingQualityPercentage = 100;
+        public int StreamingFrameUpdateRate = 1;
+        public int StreamingTargetFPS = 1;
+        public bool EnableStreamingStatsOverlay = false;
     }
 }

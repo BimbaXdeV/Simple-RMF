@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using ReactiveUI.Avalonia;
 using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Logic;
+using RMF.Core.Interfaces.Network;
 using RMF.Core.Packets;
 using RMF.Core.Screen;
 using RMF_Server.Configurations;
@@ -25,9 +26,9 @@ namespace RMF_Server.Logic
 {
     internal class AvaloniaManager : IAvaloniaManager
     {
-        private readonly ILoggingEngine? _logger;
-        private readonly AppearanceConfig? _appearanceConfig;
-        private readonly StreamingConfig? _streamingConfig;
+        private readonly ILoggingEngine _logger;
+        private readonly AppearanceConfig _appearanceConfig;
+        private readonly StreamingConfig _streamingConfig;
 
         private StreamingWindow? _window;
         private StreamingViewModel _viewModel;
@@ -43,16 +44,16 @@ namespace RMF_Server.Logic
         }
 
         public AvaloniaManager(
-            ILoggingEngine? logger = null,
-            AppearanceConfig? appearanceConfig = null,
-            StreamingConfig? streamingConfig = null
+            ILoggingEngine logger,
+            AppearanceConfig appearanceConfig,
+            StreamingConfig streamingConfig
         )
         {
             this._logger = logger;
             this._appearanceConfig = appearanceConfig;
             this._streamingConfig = streamingConfig;
 
-            this._viewModel = new StreamingViewModel();
+            this._viewModel = new StreamingViewModel(this._logger);
             this._isFrameProcessing = 0;
             this.UIInitSource = new TaskCompletionSource();
         }
@@ -63,16 +64,15 @@ namespace RMF_Server.Logic
         {
             this._window = new StreamingWindow()
             {
-                Title = this._appearanceConfig?.WindowTitle
+                Title = this._appearanceConfig.WindowTitle
             };
-            this._window.Title = this._appearanceConfig?.WindowTitle;
-            this._window.Width = this._appearanceConfig?.WindowWidth ?? this._window.MaxWidth;
-            this._window.Height = this._appearanceConfig?.WindowHeight ?? this._window.MaxHeight;
-            SetWindowTheme(this._appearanceConfig?.WindowTheme);
+            this._window.Title = this._appearanceConfig.WindowTitle;
+            this._window.Width = this._appearanceConfig.WindowWidth;
+            this._window.Height = this._appearanceConfig.WindowHeight;
 
-            this._viewModel = new StreamingViewModel
+            this._viewModel = new StreamingViewModel(this._logger)
             {
-                IsOverlayEnabled = this._streamingConfig?.EnableStreamingStatsOverlay ?? false
+                IsOverlayEnabled = this._streamingConfig.EnableStreamingStatsOverlay
             };
             this._window.DataContext = this._viewModel;
 
@@ -185,11 +185,11 @@ namespace RMF_Server.Logic
                 {
                     if (isFullFrame && patchCount == 1)
                     {
-                        this._viewModel.UpdateFrame(patches[0], updateOverlay: this._streamingConfig?.EnableStreamingStatsOverlay ?? false);
+                        this._viewModel.UpdateFrame(patches[0], updateOverlay: this._streamingConfig.EnableStreamingStatsOverlay);
                     }
                     else
                     {
-                        this._viewModel.UpdatePatches(patches, patchCount, updateOverlay: this._streamingConfig?.EnableStreamingStatsOverlay ?? false);
+                        this._viewModel.UpdatePatches(patches, patchCount, updateOverlay: this._streamingConfig.EnableStreamingStatsOverlay);
                     }
                 }
                 catch (Exception ex)

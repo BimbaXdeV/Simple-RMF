@@ -8,7 +8,6 @@ using RMF.Core.Packets.Server;
 using RMF_Server.Channels;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
-using RMF_Server.Packets;
 using RMF_Server.Storage;
 using System;
 using System.Buffers;
@@ -30,37 +29,34 @@ namespace RMF_Server.Logic
         private readonly IConnectionListener _listener;
         private readonly IServerSessionManager _sessionManager;
         private readonly IChannelDispatcher _channelDispatcher;
+        private readonly IPathManager _pathManager;
         private readonly ITlsManager _tlsManager;
-        private readonly IFirewall? _firewall;
-        private readonly IWindowManager? _windowManager;
-        private readonly ILoggingEngine? _logger;
-        private readonly AppearanceConfig? _appearanceConfig;
-        private readonly ConnectionConfig? _connectionConfig;
-        private readonly FirewallConfig? _firewallConfig;
-        private readonly ControllerConfig? _controllerConfig;
+        private readonly IFirewall _firewall;
+        private readonly ILoggingEngine _logger;
+        private readonly ConnectionConfig _connectionConfig;
+        private readonly FirewallConfig _firewallConfig;
+        private readonly ControllerConfig _controllerConfig;
 
         public NetworkEngine(
             IConnectionListener listener,
             IServerSessionManager sessionManager,
             IChannelDispatcher channelDispatcher,
+            IPathManager pathManager,
             ITlsManager tlsManager,
-            IFirewall? firewall = null,
-            IWindowManager? windowManager = null,
-            ILoggingEngine? logger = null,
-            AppearanceConfig? appearanceConfig = null,
-            ConnectionConfig? connectionConfig = null,
-            FirewallConfig? firewallConfig = null,
-            ControllerConfig? controllerConfig = null
+            IFirewall firewall,
+            ILoggingEngine logger,
+            ConnectionConfig connectionConfig,
+            FirewallConfig firewallConfig,
+            ControllerConfig controllerConfig
         )
         {
             this._listener = listener;
             this._sessionManager = sessionManager;
             this._channelDispatcher = channelDispatcher;
+            this._pathManager = pathManager;
             this._tlsManager = tlsManager;
             this._firewall = firewall;
-            this._windowManager = windowManager;
             this._logger = logger;
-            this._appearanceConfig = appearanceConfig;
             this._connectionConfig = connectionConfig;
             this._firewallConfig = firewallConfig;
             this._controllerConfig = controllerConfig;
@@ -68,71 +64,68 @@ namespace RMF_Server.Logic
 
         public async Task RunServer(CancellationToken token)
         {
-            this._logger?.Output("Starting TCP server...");
+            this._logger.Output($"Starting network server on {this._listener.GetType().Name}...");
             
-            IPAddress ip = this._connectionConfig?.IPAddress == "Any"
+            IPAddress ip = this._connectionConfig.IPAddress == "Any"
                 ? IPAddress.Any
-                : IPAddress.Parse(this._connectionConfig?.IPAddress ?? "127.0.0.1");
-            int port = (this._connectionConfig?.Port >= 1000 && this._connectionConfig?.Port <= 9999)
+                : IPAddress.Parse(this._connectionConfig.IPAddress ?? "127.0.0.1");
+            
+            int port = (this._connectionConfig.Port >= 1000 && this._connectionConfig.Port <= 9999)
                 ? this._connectionConfig.Port
                 : 8000;
             
             X509Certificate2 serverCertificate = this._tlsManager.GetOrCreateCertificate();
 
-            string bannedIPsPath = PathManager.GetResolvedPath("BannedIPs", "blacklist", "txt");
-            this._firewall?.TryLoadFrom(bannedIPsPath);
+            string bannedIPsPath = this._pathManager.GetResolvedPath("BannedIPs", "blacklist", "txt");
+            this._firewall.TryLoadFrom(bannedIPsPath);
 
             try
             {
                 this._listener.Start();
-                this._windowManager?.SetTitle(this._appearanceConfig != null
-                    ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._sessionManager.TotalConnections}"
-                    : $"Online: {this._sessionManager.TotalConnections}"
-                );
-                this._logger?.Output($"Server successfully started listening at {ip}:{port}");
+                this._logger.Output($"Server successfully started listening at {ip}:{port}");
 
                 while (!token.IsCancellationRequested)
                 {
                     INetworkConnection connection = await this._listener.AcceptConnectionAsync(token);
                     IPEndPoint ipEndPoint = connection.RemoteEndPoint;
-                    string? endPoint = ipEndPoint.ToString();
+                    string endPoint = ipEndPoint.ToString();
 
-                    if (this._sessionManager.TotalConnections >= this._firewallConfig?.MaxConnections)
+                    if (this._sessionManager.TotalConnections >= this._firewallConfig.MaxConnections)
                     {
-                        this._logger?.Warning($"A client {endPoint} attempted to connect to server with maximum capacity ({this._firewallConfig?.MaxConnections}), access denied");
+                        this._logger.Warning($"A client {endPoint} attempted to connect to server with maximum capacity ({this._firewallConfig.MaxConnections}), access denied");
                         connection.Close();
                         continue;
                     }
 
                     if (ipEndPoint == null || string.IsNullOrEmpty(endPoint))
                     {
-                        this._logger?.Warning($"Connection attempt from unknown address, access denied");
+                        this._logger.Warning($"Connection attempt from unknown address, access denied");
                         connection.Close();
                         continue;
                     }
 
-                    if (this._firewall != null && this._firewall.IsBanned(ipEndPoint.Address.ToString()))
+                    if (this._firewall.IsBanned(ipEndPoint.Address.ToString()))
                     {
-                        this._logger?.Warning($"A banned client {endPoint} attempted to connect, access denied");
+                        this._logger.Warning($"A banned client {endPoint} attempted to connect, access denied");
                         connection.Close();
                         continue;
                     }
 
-                    if (this._sessionManager.GetConnectionsFromIP(ipEndPoint.Address) >= this._firewallConfig?.MaxConnectionsPerIP)
+                    if (this._sessionManager.GetConnectionsFromIP(ipEndPoint.Address) >= this._firewallConfig.MaxConnectionsPerIP)
                     {
-                        this._logger?.Warning($"A client {endPoint} attempted to exceed the connection limit ({this._firewallConfig?.MaxConnectionsPerIP}) from a single IP address, access denied");
+                        this._logger.Warning($"A client {endPoint} attempted to exceed the connection limit ({this._firewallConfig.MaxConnectionsPerIP}) from a single IP address, access denied");
                         connection.Close();
                         continue;
                     }
-
+                    
                     SslStream sslStream = new(connection.GetNetworkStream(), false);
                     try
                     {
-                        await sslStream.AuthenticateAsServerAsync(serverCertificate).WaitAsync(TimeSpan.FromSeconds(this._connectionConfig?.ReceiveTimeoutSecs ?? 5), token);
+                        await sslStream.AuthenticateAsServerAsync(serverCertificate).WaitAsync(TimeSpan.FromSeconds(this._connectionConfig.ReceiveTimeoutSecs), token);
                     }
                     catch (Exception ex)
                     {
-                        this._logger?.Error($"TLS handshake failed with client {endPoint}, disconnecting...{Environment.NewLine}{ex}");
+                        this._logger.Error($"TLS handshake failed with client {endPoint}, disconnecting...{Environment.NewLine}{ex}");
                         sslStream.Dispose();
                         this._sessionManager.Disconnect(endPoint);
                         continue;
@@ -142,17 +135,14 @@ namespace RMF_Server.Logic
                     IServerClientSession? session = this._sessionManager.NewConnection(tlsConnection, token);
                     if (session == null)
                     {
-                        this._logger?.Output($"A duplicate connection to the server was detected, the duplicated client {endPoint} was disconnected");
+                        this._logger.Output($"A duplicate connection to the server was detected, the duplicated client {endPoint} was disconnected");
                         connection.Close();
                         continue;
                     }
 
-                    this._windowManager?.SetTitle(this._appearanceConfig != null
-                        ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._sessionManager.TotalConnections}"
-                        : $"Online: {this._sessionManager.TotalConnections}");
-                    this._logger?.Output($"Registered new connection from {endPoint}");
+                    this._logger.Output($"Registered new connection from {endPoint}");
 
-                    if (this._controllerConfig?.EnableWelcomeHandshake == true)
+                    if (this._controllerConfig.EnableWelcomeHandshake)
                     {
                         DateTime connectionTime = DateTime.UtcNow;
                         HandshakePacket handshakePacket = new()
@@ -167,23 +157,23 @@ namespace RMF_Server.Logic
                         session.SendPacket(handshakePacket);
                     }
 
-                    if (this._controllerConfig?.EnableBuildComparison == true)
+                    if (this._controllerConfig.EnableBuildComparison)
                     {
                         ClientVersionRequest versionRequest = new();
                         session.SendPacket(versionRequest);
                     }
 
-                    if (this._controllerConfig?.EnableCollectingClientInfo == true)
+                    if (this._controllerConfig.EnableCollectingClientInfo)
                     {
                         ClientInfoRequest clientInfoRequest = new();
                         session.SendPacket(clientInfoRequest);
                     }
 
-                    if (this._controllerConfig?.EnableClientHeartbeat == true)
+                    if (this._controllerConfig.EnableClientHeartbeat)
                     {
                         session.StartEvent("HeartbeatEvent", new Dictionary<string, object>
                         {
-                            { "IntervalSecs", this._controllerConfig?.ClientHeartbeatIntervalSecs ?? 0 }
+                            { "IntervalSecs", this._controllerConfig.ClientHeartbeatIntervalSecs }
                         });
                     }
 
@@ -195,7 +185,7 @@ namespace RMF_Server.Logic
             }
             catch (Exception ex)
             {
-                this._logger?.Error($"The server return an exception: {ex}");
+                this._logger.Error($"The server return an exception: {ex}");
             }
             finally
             {
@@ -211,12 +201,12 @@ namespace RMF_Server.Logic
             {
                 while (session.IsRunning)
                 {
-                    cts.CancelAfter(TimeSpan.FromSeconds(this._connectionConfig?.ReceiveTimeoutSecs ?? 0));  // Time bomb :D
+                    cts.CancelAfter(TimeSpan.FromSeconds(this._connectionConfig.ReceiveTimeoutSecs));  // Time bomb :D
 
                     PacketHeader header = await session.ReadHeaderAsync(cts.Token);
-                    if (this._firewall != null && session.IsRateLimitExceed(this._firewallConfig?.MaxPacketRate ?? int.MaxValue))
+                    if (session.IsRateLimitExceed(this._firewallConfig.MaxPacketRate))
                     {
-                        this._logger?.Warning($"The client {session.RemoteEndPoint} has exceeded the allowed packet rate limit");
+                        this._logger.Warning($"The client {session.RemoteEndPoint} has exceeded the allowed packet rate limit");
                         this._firewall.Ban(session.RemoteEndPoint.Address.ToString());
                         break;
                     }
@@ -226,7 +216,7 @@ namespace RMF_Server.Logic
                     // For example: 202 => (2)02 => 2
                     if (!this._channelDispatcher.IsChannelExists(header.Id / 100))
                     {
-                        this._logger?.Warning($"Received a packet with unknown id \"{header.Id}\" from the client {session.RemoteEndPoint}");
+                        this._logger.Warning($"Received a packet with unknown id \"{header.Id}\" from the client {session.RemoteEndPoint}");
                         break;
                     }
                     byte[] payload = await session.ReadPayloadAsync(header.Length, token);
@@ -241,7 +231,7 @@ namespace RMF_Server.Logic
                     }
                     catch (Exception ex)
                     {
-                        this._logger?.Error($"Fatal connection error when trying to handle incoming packet from {session.RemoteEndPoint}, disconnecting...{Environment.NewLine}{ex}");
+                        this._logger.Error($"Fatal connection error when trying to handle incoming packet from {session.RemoteEndPoint}, disconnecting...{Environment.NewLine}{ex}");
                         ArrayPool<byte>.Shared.Return(payload);
                         break;
                     }
@@ -249,12 +239,12 @@ namespace RMF_Server.Logic
             }
             catch (EndOfStreamException)
             {
-                this._logger?.Warning($"Client {session.RemoteEndPoint} has closed the connection");
+                this._logger.Warning($"Client {session.RemoteEndPoint} has closed the connection");
             }
 
             catch (OverflowException)
             {
-                this._logger?.Error($"Payload buffer overflow detected from client {session.RemoteEndPoint}, disconnecting...");
+                this._logger.Error($"Payload buffer overflow detected from client {session.RemoteEndPoint}, disconnecting...");
             }
 
             catch (Exception ex) when (ex is IOException || ex is SocketException)
@@ -264,7 +254,7 @@ namespace RMF_Server.Logic
 
             catch (Exception ex)
             {
-                this._logger?.Error($"Failed to handle client event loop: {ex}");
+                this._logger.Error($"Failed to handle client event loop: {ex}");
             }
             finally
             {
@@ -275,7 +265,7 @@ namespace RMF_Server.Logic
         public void Shutdown()
         {
             this._listener.Stop();
-            this._logger?.Output("The server successfully stoped");
+            this._logger.Output("The server successfully stoped");
         }
     }
 }

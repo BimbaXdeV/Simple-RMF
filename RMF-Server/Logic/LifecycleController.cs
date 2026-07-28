@@ -15,10 +15,10 @@ namespace RMF_Server.Logic
 {
     internal class LifecycleController
     {
-        private readonly IServerSessionManager? _sessionManager;
-        private readonly IChannelDispatcher? _channelDispatcher;
-        private readonly ILoggingEngine? _logger;
-        private readonly ControllerConfig? _controllerConfig;
+        private readonly IServerSessionManager _sessionManager;
+        private readonly IChannelDispatcher _channelDispatcher;
+        private readonly ILoggingEngine _logger;
+        private readonly ControllerConfig _controllerConfig;
 
         public bool IsBaseInitialized;
         public CancellationTokenSource? Input { get; private set; }  // Master token source, it starts the whole chain of shutdown
@@ -28,10 +28,10 @@ namespace RMF_Server.Logic
         public CancellationTokenSource? Output { get; private set; }
 
         public LifecycleController(
-            IServerSessionManager? sessionManager = null,
-            IChannelDispatcher? channelDispatcher = null,
-            ILoggingEngine? logger = null,
-            ControllerConfig? controllerConfig = null
+            IServerSessionManager sessionManager,
+            IChannelDispatcher channelDispatcher,
+            ILoggingEngine logger,
+            ControllerConfig controllerConfig
         )
         {
             this._sessionManager = sessionManager;
@@ -65,7 +65,7 @@ namespace RMF_Server.Logic
 
         private async Task WaitForParting(int timeoutSecs)
         {
-            this._logger?.Output("The server is parting...");
+            this._logger.Output("The server is parting...");
             DateTime deadline = DateTime.Now + TimeSpan.FromSeconds(timeoutSecs);
             while (this._sessionManager != null &&
                 this._sessionManager.ConnectionsExist &&
@@ -76,29 +76,29 @@ namespace RMF_Server.Logic
 
             if (this._sessionManager?.ConnectionsExist == true)
             {
-                this._logger?.Warning($"The server parting timeout has expired, {this._sessionManager.TotalConnections} clients are still connected");
+                this._logger.Warning($"The server parting timeout has expired, {this._sessionManager.TotalConnections} clients are still connected");
             }
-            this._logger?.Output("The server successfully parted");
+            this._logger.Output("The server successfully parted");
         }
 
         public async Task BaseShutdown()
         {
             if (!this.IsBaseInitialized)
             {
-                this._logger?.Warning("The server lifecycle is not initialized, shutdown is not required");
+                this._logger.Warning("The server lifecycle is not initialized, shutdown is not required");
                 return;
             }
 
-            this._logger?.Separator();
-            this._logger?.Warning("Cancellation requested, stopping server...");
+            this._logger.Separator();
+            this._logger.Warning("Cancellation requested, stopping server...");
 
             this.Input!.Cancel();
 
-            if (this._controllerConfig?.EnableRelativeParting == true && this._sessionManager != null)
+            if (this._controllerConfig.EnableRelativeParting && this._sessionManager != null)
             {
                 EndOfEventsRequest endOfEventsRequest = new();
                 this._sessionManager.BroadcastPacket(endOfEventsRequest, CancellationToken.None);
-                await WaitForParting(this._controllerConfig?.PartingTimeoutSecs ?? 5);
+                await WaitForParting(this._controllerConfig.PartingTimeoutSecs);
             }
 
             this.Server!.Cancel();
@@ -116,7 +116,7 @@ namespace RMF_Server.Logic
         {
             if (!this.IsFinalInitialized)
             {
-                this._logger?.Warning("The final lifecycle is not initialized, shutdown is not required");
+                this._logger.Warning("The final lifecycle is not initialized, shutdown is not required");
                 return;
             }
 
@@ -146,7 +146,7 @@ namespace RMF_Server.Logic
                 property.SetValue(null, null);
                 disposedSourcesCount++;
             }
-            this._logger?.Output($"During the token cleanup, {disposedSourcesCount} / {totalTokenSources} active sources were cleared successfully");
+            this._logger.Output($"During the token cleanup, {disposedSourcesCount} / {totalTokenSources} active sources were cleared successfully");
         }
     }
 }

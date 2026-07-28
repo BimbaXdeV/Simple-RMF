@@ -8,11 +8,11 @@ namespace RMF_Server.Configurations
 {
     internal class FirewallConfig
     {
-        public int MaxConnections;
-        public int MaxConnectionsPerIP;
-        public int MinPacketLengthKB;
-        public int MaxPacketLengthKB;
-        public int MaxPacketRate;
-        public bool EnableBlacklistSaving;
+        public int MaxConnections = 1;
+        public int MaxConnectionsPerIP = 1;
+        public int MinPacketLengthKB = 0;
+        public int MaxPacketLengthKB = 1;
+        public int MaxPacketRate = 1;
+        public bool EnableBlacklistSaving = false;
     }
 }

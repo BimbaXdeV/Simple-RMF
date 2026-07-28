@@ -262,8 +262,8 @@ namespace RMF_Server.Commands
 
         private void Ver()
         {
-            string? serverVersion = RMFVersion.App?.ToString(3);
-            string? coreVersion = RMFVersion.Core?.ToString(3);
+            string? serverVersion = RmfVersion.App?.ToString(3);
+            string? coreVersion = RmfVersion.Core?.ToString(3);
 
             if (serverVersion != null && coreVersion != null)
             {

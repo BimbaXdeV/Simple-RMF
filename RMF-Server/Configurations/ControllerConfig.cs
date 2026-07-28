@@ -8,13 +8,13 @@ namespace RMF_Server.Configurations
 {
     internal class ControllerConfig
     {
-        public bool EnableCollectingSessionStats;
-        public bool EnableWelcomeHandshake;
-        public bool EnableBuildComparison;
-        public bool EnableCollectingClientInfo;
-        public bool EnableClientHeartbeat;
-        public int ClientHeartbeatIntervalSecs;
-        public bool EnableRelativeParting;
-        public int PartingTimeoutSecs;
+        public bool EnableCollectingSessionStats = false;
+        public bool EnableWelcomeHandshake = false;
+        public bool EnableBuildComparison = false;
+        public bool EnableCollectingClientInfo = false;
+        public bool EnableClientHeartbeat = false;
+        public int ClientHeartbeatIntervalSecs = int.MaxValue - 1;
+        public bool EnableRelativeParting = false;
+        public int PartingTimeoutSecs = 1;
     }
 }

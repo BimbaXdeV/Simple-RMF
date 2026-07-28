@@ -5,8 +5,6 @@
 	<!-- Appearance Settings -->
 	<add key="AppTitle" value="RMF-Server"/>
 	<add key="WindowTitle" value="RMF-Streamer"/>
-	<add key="WindowTheme" value="System"/>
-	<add key="WindowPriority" value="2"/>
 	<add key="WindowWidth" value="960"/>
 	<add key="WindowHeight" value="540"/>
 	

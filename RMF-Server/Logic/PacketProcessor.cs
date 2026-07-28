@@ -90,9 +90,9 @@ namespace RMF_Server.Logic
         {
             if (_sessionManager.GetClientSession(endPoint.ToString(), out _))
             {
-                if (RMFVersion.Core?.Major != packet.CoreMajorVersion ||
-                    RMFVersion.Core?.Minor != packet.CoreMinorVersion ||
-                    RMFVersion.Core?.Build != packet.CoreBuildVersion)
+                if (RmfVersion.Core?.Major != packet.CoreMajorVersion ||
+                    RmfVersion.Core?.Minor != packet.CoreMinorVersion ||
+                    RmfVersion.Core?.Build != packet.CoreBuildVersion)
                 {
                     string clientCoreVersion = $"{packet.CoreMajorVersion}.{packet.CoreMinorVersion}.{packet.CoreBuildVersion}";
 
@@ -101,8 +101,8 @@ namespace RMF_Server.Logic
                     return;
                 }
 
-                if (RMFVersion.App?.Major != packet.AppMajorVersion ||
-                    RMFVersion.App.Minor != packet.AppMinorVersion)
+                if (RmfVersion.App?.Major != packet.AppMajorVersion ||
+                    RmfVersion.App.Minor != packet.AppMinorVersion)
                 {
                     string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
 
@@ -111,7 +111,7 @@ namespace RMF_Server.Logic
                     return;
                 }
 
-                if (RMFVersion.App?.Build != packet.AppBuildVersion)
+                if (RmfVersion.App?.Build != packet.AppBuildVersion)
                 {
                     string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
                     _logger?.Warning($"The connected client has a different build version ({clientAppVersion}), be careful");

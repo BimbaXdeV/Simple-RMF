@@ -23,11 +23,9 @@ namespace RMF_Server.Logic
     {
         private readonly IProtocolReader _protocolReader;
         private readonly IPacketSender _packetSender;
-        private readonly IWindowManager? _windowManager;
-        private readonly ILoggingEngine? _logger;
-        private readonly AppearanceConfig? _appearanceConfig;
-        private readonly ControllerConfig? _controllerConfig;
-        private readonly ChannelConfig? _channelConfig;
+        private readonly ILoggingEngine _logger;
+        private readonly ControllerConfig _controllerConfig;
+        private readonly ChannelConfig _channelConfig;
 
         private readonly ConcurrentDictionary<Guid, IServerClientSession> _connections = [];
         private readonly ConcurrentDictionary<string, Guid> _endPointIndex = [];
@@ -36,21 +34,19 @@ namespace RMF_Server.Logic
         public bool ConnectionsExist => !this._connections.IsEmpty;
         public int TotalConnections => this._connections.Count;
 
+        public event Action<int>? ConnectionCountChanged;
+
         public SessionManager(
             IProtocolReader protocolReader,
             IPacketSender packetSender,
-            IWindowManager? windowManager,
-            ILoggingEngine? logger = null,
-            AppearanceConfig? appearanceConfig = null,
-            ControllerConfig? controllerConfig = null,
-            ChannelConfig? channelConfig = null
+            ILoggingEngine logger,
+            ControllerConfig controllerConfig,
+            ChannelConfig channelConfig
         )
         {
             this._protocolReader = protocolReader;
             this._packetSender = packetSender;
-            this._windowManager = windowManager;
             this._logger = logger;
-            this._appearanceConfig = appearanceConfig;
             this._controllerConfig = controllerConfig;
             this._channelConfig = channelConfig;
         }
@@ -67,7 +63,7 @@ namespace RMF_Server.Logic
                 }
                 catch (Exception ex)
                 {
-                    this._logger?.Warning($"Failed to transfer {session.GetType().Name} to \"{session.RemoteEndPoint}\" : {ex.Message}");
+                    this._logger.Warning($"Failed to transfer {session.GetType().Name} to \"{session.RemoteEndPoint}\" : {ex.Message}");
                 }
             }
         }
@@ -90,6 +86,7 @@ namespace RMF_Server.Logic
                 IPAddress sessionIP = connection.RemoteEndPoint.Address;
                 this._ipConnectionsCount.AddOrUpdate(sessionIP, 1, (_, actualCount) => actualCount + 1);
 
+                this.ConnectionCountChanged?.Invoke(this.TotalConnections);
                 return session;
             }
             return null;
@@ -125,7 +122,14 @@ namespace RMF_Server.Logic
             return this._ipConnectionsCount.TryGetValue(ip, out int count) ? count : 0;
         }
 
+        // By default, it is not possible to prevent the method from notifying about online status changes.
+        // However, method ClearConnections() must not trigger an event for every disconnected client
         public void Disconnect(string endPoint)
+        {
+            DisconnectInternal(endPoint, true);
+        }
+
+        private void DisconnectInternal(string endPoint, bool notifyOfChanges)
         {
             if (!string.IsNullOrEmpty(endPoint) &&
                 this._endPointIndex.TryGetValue(endPoint, out Guid sessionId) && sessionId != Guid.Empty &&
@@ -143,11 +147,13 @@ namespace RMF_Server.Logic
                 this._connections.TryRemove(sessionId, out _);
                 this._endPointIndex.TryRemove(endPoint, out _);
 
-                this._windowManager?.SetTitle(this._appearanceConfig != null
-                    ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._connections.Count}"
-                    : $"Online: {this._connections.Count}"
-                );
-                this._logger?.Output($"Client {endPoint} was disconnected");
+                this._logger.Output($"Client {endPoint} was disconnected");
+
+                if (notifyOfChanges)
+                {
+                    // There was a knock on the door 20 000 times... ClearConnections(), thought Stierlitz
+                    this.ConnectionCountChanged?.Invoke(this.TotalConnections);
+                }
             }
         }
 
@@ -158,15 +164,12 @@ namespace RMF_Server.Logic
 
             foreach (KeyValuePair<Guid, IServerClientSession> entry in this._connections)
             {
-                Disconnect(entry.Value.RemoteEndPoint.ToString());
+                DisconnectInternal(entry.Value.RemoteEndPoint.ToString(), false);
                 disconnectedClientsCount++;
             }
             this._connections.Clear();
-            this._windowManager?.SetTitle(this._appearanceConfig != null
-                    ? $"{this._appearanceConfig.AppTitle}  |  Online: {this._connections.Count}"
-                    : $"Online: {this._connections.Count}"
-            );
-            this._logger?.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
+            this._logger.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
+            this.ConnectionCountChanged?.Invoke(this.TotalConnections);
         }
     }
 }

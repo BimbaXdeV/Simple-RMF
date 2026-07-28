@@ -8,6 +8,6 @@ namespace RMF_Server.Configurations
 {
     internal class ListenerConfig
     {
-        public int ListenerDelayMsecs;
+        public int ListenerDelayMsecs = 100;
     }
 }

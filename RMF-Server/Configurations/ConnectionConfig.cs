@@ -8,9 +8,9 @@ namespace RMF_Server.Configurations
 {
     internal class ConnectionConfig
     {
-        public string? IPAddress;
-        public int Port;
-        public int ReceiveTimeoutSecs;
-        public bool EnableForceShutdown;
+        public string IPAddress = "0.0.0.0";
+        public int Port = 1000;
+        public int ReceiveTimeoutSecs = int.MaxValue;
+        public bool EnableForceShutdown = false;
     }
 }

@@ -8,6 +8,6 @@ namespace RMF.Core.Interfaces.Logic
 {
     public interface IWindowManager
     {
-        void SetTitle(string newTitle);
+        void UpdateTitleOnline(int connectionCount);
     }
 }

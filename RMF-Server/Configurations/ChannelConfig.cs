@@ -8,6 +8,6 @@ namespace RMF_Server.Configurations
 {
     internal class ChannelConfig
     {
-        public int ChannelPacketsCapacity;
+        public int ChannelPacketsCapacity = 1;
     }
 }

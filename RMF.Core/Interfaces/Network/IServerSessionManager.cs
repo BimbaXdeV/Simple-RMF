@@ -14,6 +14,8 @@ namespace RMF.Core.Interfaces.Network
         bool ConnectionsExist { get; }
         int TotalConnections { get; }
 
+        event Action<int>? ConnectionCountChanged;
+
         void BroadcastPacket(Packet packet, CancellationToken token);
         IServerClientSession? NewConnection(INetworkConnection connection, CancellationToken token);
         bool GetClientSession(string endPoint, out IServerClientSession? session);

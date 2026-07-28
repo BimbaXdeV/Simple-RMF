@@ -10,9 +10,7 @@ namespace RMF_Server.Configurations
     {
         public string AppTitle = "Server";
         public string WindowTitle = "Streamer";
-        public string WindowTheme = "Default";
-        public int WindowPriority;
-        public int WindowWidth;
-        public int WindowHeight;
+        public int WindowWidth = 800;
+        public int WindowHeight = 450;
     }
 }
