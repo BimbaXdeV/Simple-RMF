@@ -14,5 +14,6 @@ namespace RMF_Server.Configurations
         public int MaxPacketLengthKB = 1;
         public int MaxPacketRate = 1;
         public bool EnableBlacklistSaving = false;
+        public string BlacklistFilePath = string.Empty;
     }
 }

@@ -8,6 +8,7 @@ namespace RMF_Server.Configurations
 {
     internal class StreamingConfig
     {
+        public string ScreenshotsFilePath = string.Empty;
         public int ScreenshotFrameFormat = 0;
         public int ScreenshotQualityPercentage = 100;
         public int StreamingFrameFormat = 0;

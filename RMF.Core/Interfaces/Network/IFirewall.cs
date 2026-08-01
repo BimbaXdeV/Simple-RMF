@@ -8,8 +8,8 @@ namespace RMF.Core.Interfaces.Network
 {
     public interface IFirewall
     {
-        bool TryLoadFrom(string path);
-        bool TrySaveTo(string path);
+        bool TryLoadBlacklist();
+        bool TrySaveBlacklist();
         bool IsBanned(string ipAddress);
         string[] GetBannedIPs(int? limit = null);
         void Ban(string? ipAddress);

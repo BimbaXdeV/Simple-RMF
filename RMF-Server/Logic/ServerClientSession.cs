@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace RMF_Server.Storage
+namespace RMF_Server.Logic
 {
     internal class ServerClientSession : ClientSession, IServerClientSession
     {
@@ -26,23 +26,23 @@ namespace RMF_Server.Storage
             CancellationToken token = default
         ) : base(connection, reader, packetSender, channelCapacity, collectingStats, token)
         {
-            this._lastResetTicks = DateTime.UtcNow.Ticks;
+            _lastResetTicks = DateTime.UtcNow.Ticks;
         }
 
         public bool IsRateLimitExceed(int maxRate)
         {
             long currentTicks = DateTime.UtcNow.Ticks;
-            long lastReset = Interlocked.Read(ref this._lastResetTicks);
+            long lastReset = Interlocked.Read(ref _lastResetTicks);
 
             if (currentTicks - lastReset >= TimeSpan.TicksPerSecond)
             {
                 if (Interlocked.CompareExchange(ref _lastResetTicks, currentTicks, lastReset) == lastReset)
                 {
-                    Interlocked.Exchange(ref this._rateLimitCounter, 0);
+                    Interlocked.Exchange(ref _rateLimitCounter, 0);
                 }
             }
 
-            int currentRate = Interlocked.Increment(ref this._rateLimitCounter);
+            int currentRate = Interlocked.Increment(ref _rateLimitCounter);
             return currentRate > maxRate;
         }
     }

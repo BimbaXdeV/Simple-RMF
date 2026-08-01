@@ -21,8 +21,10 @@
 	<add key="MaxPacketLengthKB" value="768"/>
 	<add key="MaxPacketRate" value="100"/>
 	<add key="EnableBlacklistSaving" value="true"/>
+	<add key="BlacklistFilePath" value="Resources/"/>
 	
 	<!-- TLS Settings -->
+	<add key="CertificateFilePath" value="TLS/"/>
 	<add key="CertificateName" value="Simple RMF (Server)"/>
 	<add key="CertificateFileName" value="server"/>
 	<add key="CertificatePassword" value="yourpass"/>
@@ -42,6 +44,7 @@
 	<add key="ChannelPacketsCapacity" value="5"/>
 	
 	<!-- Streaming Settings -->
+	<add key="ScreenshotsFilePath" value="Screenshots/%endPoint%/"/>
 	<add key="ScreenshotFrameFormat" value="3"/>
 	<add key="ScreenshotQualityPercentage" value="90"/>
 	<add key="StreamingFrameFormat" value="1"/>
@@ -60,6 +63,7 @@
 	
 	<!-- Logging Settings -->
 	<add key="EnableLogSaving" value="true"/>
+	<add key="LoggingFilePath" value="Debugger/"/>
 	<add key="EnableMultipleBackup" value="true"/>
 	<add key="MaxLogFileCapacityMB" value="1"/>
 	<add key="LoggingHistoryLength" value="500"/>

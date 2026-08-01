@@ -9,6 +9,7 @@ namespace RMF_Server.Configurations
     internal class LoggingConfig
     {
         public bool EnableLogSaving = false;
+        public string LoggingFilePath = string.Empty;
         public bool EnableMultipleBackup = false;
         public int MaxLogFileCapacityMB = 1;
         public int LoggingHistoryLength = 1;

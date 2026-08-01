@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RMF_Server.Configurations;
+using RMF_Server.Logic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,31 +13,29 @@ namespace RMF_Server.Debugger
 {
     internal class RmfLoggerProvider : ILoggerProvider
     {
+        private readonly IThemeManager _themeManager;
         private readonly LoggingConfig _loggingConfig;
-        private readonly IThemeManager? _themeManager;
 
         private readonly ConcurrentQueue<string> _logQueue;
         private readonly string[] _history;
         private bool _isExecutorRunning;
         private readonly bool _isAdminTyping;
 
-        private readonly string _logFormat;
         private readonly Regex _ansiRegex;
 
         private readonly CancellationTokenSource _cts;
         private readonly Task _executorTask;
 
-        public RmfLoggerProvider(int historyLength, LoggingConfig loggingConfig, IThemeManager? themeManager)
+        public RmfLoggerProvider(int historyLength, IThemeManager themeManager, LoggingConfig loggingConfig)
         {
-            this._loggingConfig = loggingConfig;
             this._themeManager = themeManager;
+            this._loggingConfig = loggingConfig;
 
             this._logQueue = new ConcurrentQueue<string>();
             this._history = new string[historyLength];
             this._isExecutorRunning = false;
             this._isAdminTyping = false;
 
-            this._logFormat = "{colorStart}[ {dateTime} ]{datetimeColorEnd} ({logLevel}){logLevelColorEnd} {categoryName} : {message}{colorEnd}";
             this._ansiRegex = new(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
             this._cts = new CancellationTokenSource();
@@ -98,7 +97,11 @@ namespace RMF_Server.Debugger
 
             if (this._loggingConfig.EnableLogSaving)
             {
-                SaveBackup("");
+                SaveBackup(PathResolver.GetResolvedPath(
+                    this._loggingConfig.LoggingFilePath,
+                    fileName: "rmf-server",
+                    fileFormat: "log"
+                ));
             }
         }
 

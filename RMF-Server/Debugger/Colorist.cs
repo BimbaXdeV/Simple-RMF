@@ -22,11 +22,27 @@ namespace RMF_Server.Debugger
             return string.Format(ColorPref, r, g, b);
         }
 
-        public static string ColoredFilterGrayScale(byte W)
+        public static string ColoredFilterRGB(ThemeColor color)
         {
-            return string.Format(ColorPref, W, W, W);
+            if (color.R == byte.MaxValue && color.G == byte.MaxValue && color.B == byte.MaxValue)
+            {
+                // Due to the large number of standard color pins, there is no need to overload the console with color formats
+                return string.Empty;
+            }
 
+            return string.Format(ColorPref, color.R, color.G, color.B);
         }
+
+        //public static string ColoredFilterGrayScale(byte w)
+        //{
+        //    return string.Format(ColorPref, w, w, w);
+        //}
+
+        //public static string ColoredFilterGrayScale(ThemeColor color)
+        //{
+        //    byte w = (byte)((color.R + color.G + color.B) / 3);
+        //    return string.Format(ColorPref, w, w, w);
+        //}
 
         public static string ResetColor()
         {

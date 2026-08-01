@@ -5,7 +5,6 @@ using RMF.Core.Packets.Client;
 using RMF.Core.Screen;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
-using RMF_Server.Storage;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -22,20 +21,23 @@ namespace RMF_Server.Logic
     {
         private readonly IAvaloniaManager _avaloniaManager;
         private readonly IServerSessionManager _sessionManager;
-        private readonly ILoggingEngine? _logger;
-        private readonly AppearanceConfig? _appearanceConfig;
+        private readonly ILoggingEngine _logger;
+        private readonly AppearanceConfig _appearanceConfig;
+        private readonly StreamingConfig _streamingConfig;
 
         public PacketProcessor(
             IAvaloniaManager avaloniaManager,
             IServerSessionManager sessionManager,
-            ILoggingEngine? logger = null,
-            AppearanceConfig? appearanceConfig = null
+            ILoggingEngine logger,
+            AppearanceConfig appearanceConfig,
+            StreamingConfig streamingConfig
         )
         {
-            _avaloniaManager = avaloniaManager;
-            _sessionManager = sessionManager;
-            _logger = logger;
-            _appearanceConfig = appearanceConfig;
+            this._avaloniaManager = avaloniaManager;
+            this._sessionManager = sessionManager;
+            this._logger = logger;
+            this._appearanceConfig = appearanceConfig;
+            this._streamingConfig = streamingConfig;
         }
 
         // Manual method, but lightning fast to execute
@@ -168,11 +170,17 @@ namespace RMF_Server.Logic
                 return;
             }
 
-            string savePath = Path.GetFullPath(PathManager.GetResolvedPath("DesktopScreenshots",
-                                                                           fileName: "%endPoint%_%datetime%",
-                                                                           fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower(),
-                                                                           endPoint: endPoint.Address.ToString(),
-                                                                           UpdateCachedDate: true));
+            //string savePath = Path.GetFullPath(PathResolver.GetResolvedPath("DesktopScreenshots",
+            //                                                               fileName: "%endPoint%_%datetime%",
+            //                                                               fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower(),
+            //                                                               endPoint: endPoint.Address.ToString(),
+            //                                                               UpdateCachedDate: true));
+
+            string savePath = Path.GetFullPath(PathResolver.GetResolvedPath(
+                this._streamingConfig.ScreenshotsFilePath,
+                fileName: "%endPoint%_%datetime%",
+                fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower() ?? string.Empty
+            ));
 
             try
             {

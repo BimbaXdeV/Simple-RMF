@@ -9,7 +9,7 @@ namespace RMF.Core.Interfaces.Network
 {
     public interface ITlsManager
     {
-        bool TryLoadCertificate(string path);
+        bool TryLoadCertificate();
         X509Certificate2 GetOrCreateCertificate();
     }
 }

@@ -31,24 +31,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="Storage\commands.xml">
+		<None Update="Resources\commands.xml">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Storage\config.xml">
+		<None Update="Resources\config.xml">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Storage\extpaths.xml">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Storage\theme.xml">
+		<None Update="Resources\theme.xml">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="UI\StreamingWindow.axaml">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Theme\" />
 	</ItemGroup>
 </Project>

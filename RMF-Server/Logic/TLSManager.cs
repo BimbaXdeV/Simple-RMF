@@ -15,25 +15,30 @@ namespace RMF_Server.Logic
 {
     internal class TlsManager : ITlsManager
     {
-        private readonly ILoggingEngine? _logger;
-        private readonly TlsConfig? _tlsConfig;
+        private readonly ILoggingEngine _logger;
+        private readonly TlsConfig _tlsConfig;
 
-        private X509Certificate2? ServerCertificate;
+        private X509Certificate2? _serverCertificate;
 
-        public TlsManager(ILoggingEngine? logger = null, TlsConfig? tlsConfig = null)
+        private string CertificateFilePath => PathResolver.GetResolvedPath(
+            this._tlsConfig.CertificateFilePath,
+            fileName: this._tlsConfig.CertificateFileName,
+            fileFormat: "pfx"
+        );
+
+        public TlsManager(ILoggingEngine logger, TlsConfig tlsConfig)
         {
             this._logger = logger;
             this._tlsConfig = tlsConfig;
         }
 
-        public bool TryLoadCertificate(string path)
+        public bool TryLoadCertificate()
         {
-            if (this._tlsConfig?.CertificateFileName == null || this._tlsConfig?.CertificatePassword == null)
-            {
-                this._logger?.Error("Certificate file name or password is not set in the configuration. Unable to load TLS certificate");
-                return false;
-            }
+            return TryLoadCertificateInternal(this.CertificateFilePath);
+        }
 
+        private bool TryLoadCertificateInternal(string path)
+        {
             if (!File.Exists(path))
             {
                 return false;
@@ -41,40 +46,35 @@ namespace RMF_Server.Logic
 
             try
             {
-                this.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile(path, this._tlsConfig?.CertificatePassword);
+                this._serverCertificate = X509CertificateLoader.LoadPkcs12FromFile(path, this._tlsConfig.CertificatePassword);
                 return true;
             }
             catch (Exception ex)
             {
-                this._logger?.Error($"Failed to load TLS certificate from path: \"{path}\": {ex}");
+                this._logger.Error($"Failed to load TLS certificate from path: \"{path}\": {ex}");
                 return false;
             }
         }
 
         public X509Certificate2 GetOrCreateCertificate()
         {
-            if (this.ServerCertificate != null)
+            if (this._serverCertificate != null)
             {
-                return this.ServerCertificate;
+                return this._serverCertificate;
             }
 
-            string certPath = PathManager.GetResolvedPath(
-                "Certificate",
-                fileName: this._tlsConfig?.CertificateFileName,
-                fileFormat: "pfx"
-            );
-
-            if (TryLoadCertificate(certPath))
+            string path = this.CertificateFilePath;
+            if (TryLoadCertificateInternal(path))
             {
-                this._logger?.Output($"TLS certificate successfully loaded from path: \"{certPath}\"");
-                return this.ServerCertificate!;
+                this._logger.Output($"TLS certificate successfully loaded from path: \"{path}\"");
+                return this._serverCertificate!;
             }
 
-            this._logger?.Output($"No TLS certificate found, creating a self-signed one, trying to create...");
+            this._logger.Output($"No TLS certificate found, creating a self-signed one, trying to create...");
 
             using RSA rsa = RSA.Create(2048);
             CertificateRequest request = new(
-                "CN=" + this._tlsConfig?.CertificateName,
+                "CN=" + this._tlsConfig.CertificateName,
                 rsa,
                 HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1
@@ -82,21 +82,20 @@ namespace RMF_Server.Logic
 
             X509Certificate2 cert = request.CreateSelfSigned(
                 DateTimeOffset.Now,
-                DateTime.Now.AddDays(this._tlsConfig?.CertificateDurationDays ?? 365)
+                DateTime.Now.AddDays(this._tlsConfig.CertificateDurationDays)
             );
-            this.ServerCertificate = cert;
-            this._logger?.Output($"TLS certificate \"{this._tlsConfig?.CertificateName}\" was successfully created");
+            this._serverCertificate = cert;
+            this._logger.Output($"TLS certificate \"{this._tlsConfig.CertificateName}\" was successfully created");
 
-            byte[] certBytes = cert.Export(X509ContentType.Pfx, this._tlsConfig?.CertificatePassword);
-            string? directory = Path.GetDirectoryName(certPath);
+            byte[] certBytes = cert.Export(X509ContentType.Pfx, this._tlsConfig.CertificatePassword);
+            string? directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory))
             {
                 Directory.CreateDirectory(directory);
             }
-            File.WriteAllBytes(certPath, certBytes);
-            this._logger?.Output($"The new TLS certificate is saved to {certPath}");
+            File.WriteAllBytes(path, certBytes);
+            this._logger.Output($"The new TLS certificate is saved to {path}");
             return cert;
-
         }
     }
 }

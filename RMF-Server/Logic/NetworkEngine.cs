@@ -8,7 +8,6 @@ using RMF.Core.Packets.Server;
 using RMF_Server.Channels;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
-using RMF_Server.Storage;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -29,7 +28,6 @@ namespace RMF_Server.Logic
         private readonly IConnectionListener _listener;
         private readonly IServerSessionManager _sessionManager;
         private readonly IChannelDispatcher _channelDispatcher;
-        private readonly IPathManager _pathManager;
         private readonly ITlsManager _tlsManager;
         private readonly IFirewall _firewall;
         private readonly ILoggingEngine _logger;
@@ -41,7 +39,6 @@ namespace RMF_Server.Logic
             IConnectionListener listener,
             IServerSessionManager sessionManager,
             IChannelDispatcher channelDispatcher,
-            IPathManager pathManager,
             ITlsManager tlsManager,
             IFirewall firewall,
             ILoggingEngine logger,
@@ -53,7 +50,6 @@ namespace RMF_Server.Logic
             this._listener = listener;
             this._sessionManager = sessionManager;
             this._channelDispatcher = channelDispatcher;
-            this._pathManager = pathManager;
             this._tlsManager = tlsManager;
             this._firewall = firewall;
             this._logger = logger;
@@ -76,7 +72,11 @@ namespace RMF_Server.Logic
             
             X509Certificate2 serverCertificate = this._tlsManager.GetOrCreateCertificate();
 
-            string bannedIPsPath = this._pathManager.GetResolvedPath("BannedIPs", "blacklist", "txt");
+            string bannedIPsPath = PathResolver.GetResolvedPath(
+                this._firewallConfig.BlacklistFilePath,
+                fileName: "blacklist",
+                fileFormat: "txt"
+            );
             this._firewall.TryLoadFrom(bannedIPsPath);
 
             try

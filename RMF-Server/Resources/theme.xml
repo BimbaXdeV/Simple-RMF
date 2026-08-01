@@ -14,8 +14,10 @@
 	<add key="ParameterName" R="123" G="209" B="179"/>
 
 	<!-- Logging Colors -->
-	<add key="OutputDatetime" R="193" G="255" B="128"/>
-	<add key="WarningLog" R="255" G="187" B="51"/>
-	<add key="ErrorLog" R="255" G="94" B="94"/>
+	<add key="LoggingTrace" R="128" G="200" B="255"/>
+	<add key="LoggingInfo" R="193" G="255" B="128"/>
+	<add key="LoggingWarning" R="255" G="187" B="51"/>
+	<add key="LoggingError" R="255" G="94" B="94"/>
+	<add key="LoggingCritical" R="200" G="26" B="26"/>
 	<add key="Separator" R="175" G="175" B="175"/>
 </ColorTheme>
