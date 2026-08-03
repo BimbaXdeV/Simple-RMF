@@ -17,7 +17,6 @@ namespace RMF_Server.Logic
         Task ShowWindow();
         Task HideWindow();
         void SetWindowTitle(string newTitle);
-        void SetWindowTheme(string? theme);
         void UpdateBitmap(ScreenPatch[] patches, int patchCount, bool isFullFrame);
     }
 }

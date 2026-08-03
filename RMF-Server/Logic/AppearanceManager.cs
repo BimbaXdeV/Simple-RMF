@@ -1,5 +1,6 @@
 ﻿using Avalonia.Platform;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Logic;
 using RMF.Core.Interfaces.Network;
@@ -18,14 +19,14 @@ namespace RMF_Server.Logic
     internal class AppearanceManager : IWindowManager, IDisposable
     {
         private readonly IServerSessionManager _sessionManager;
-        private readonly ILoggingEngine _logger;
+        private readonly ILogger _logger;
         private readonly AppearanceConfig _appearanceConfig;
 
-        private const byte MaxTitleLength = 48;
+        private const byte _maxTitleLength = 48;
 
         public AppearanceManager(
             IServerSessionManager sessionManager,
-            ILoggingEngine logger,
+            ILogger logger,
             AppearanceConfig appearanceConfig
         )
         {
@@ -45,13 +46,14 @@ namespace RMF_Server.Logic
         public void UpdateTitleOnline(int connectionCount)
         {
             int titleHeaderLength = this._appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
-            if (connectionCount <= 0 || titleHeaderLength + connectionCount.ToString().Length > MaxTitleLength)
+            if (connectionCount <= 0 || titleHeaderLength + connectionCount.ToString().Length > _maxTitleLength)
             {
-                this._logger.Warning($"Failed to update application title, received too long string (max length: {MaxTitleLength})");
+                this._logger.LogWarning("Failed to update application title, received too long string (max length: {MaxTitleLength})", _maxTitleLength);
                 return;
             }
 
-            Console.Title = $"{this._appearanceConfig.AppTitle} | Online: {connectionCount}";
+            //Console.Title = $"{this._appearanceConfig.AppTitle} | Online: {connectionCount}";
+            Console.Title = this._appearanceConfig.AppTitle + " | Online: " + connectionCount;
         }
 
         public void Dispose()

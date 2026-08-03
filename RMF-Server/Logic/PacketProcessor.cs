@@ -1,4 +1,5 @@
-﻿using RMF.Core.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Packets;
 using RMF.Core.Packets.Client;
@@ -21,14 +22,14 @@ namespace RMF_Server.Logic
     {
         private readonly IAvaloniaManager _avaloniaManager;
         private readonly IServerSessionManager _sessionManager;
-        private readonly ILoggingEngine _logger;
+        private readonly ILogger _logger;
         private readonly AppearanceConfig _appearanceConfig;
         private readonly StreamingConfig _streamingConfig;
 
         public PacketProcessor(
             IAvaloniaManager avaloniaManager,
             IServerSessionManager sessionManager,
-            ILoggingEngine logger,
+            ILogger logger,
             AppearanceConfig appearanceConfig,
             StreamingConfig streamingConfig
         )
@@ -85,12 +86,12 @@ namespace RMF_Server.Logic
         private void ProcessHeartbeatPacket(HeartbeatPacket packet, IPEndPoint endPoint)
         {
             double delay = (DateTime.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(packet.TurnedTimestamp)).TotalMilliseconds;
-            _logger?.Message($"Received heartbeat from {endPoint} : {delay}ms delay");
+            this._logger.Log(LogLevel.None, "Received heartbeat from {EndPoint} : {NetworkLatency} ms delay", endPoint, delay);
         }
 
         private void ProcessClientVersionPacket(ClientVersionPacket packet, IPEndPoint endPoint)
         {
-            if (_sessionManager.GetClientSession(endPoint.ToString(), out _))
+            if (this._sessionManager.GetClientSession(endPoint.ToString(), out _))
             {
                 if (RmfVersion.Core?.Major != packet.CoreMajorVersion ||
                     RmfVersion.Core?.Minor != packet.CoreMinorVersion ||
@@ -98,25 +99,22 @@ namespace RMF_Server.Logic
                 {
                     string clientCoreVersion = $"{packet.CoreMajorVersion}.{packet.CoreMinorVersion}.{packet.CoreBuildVersion}";
 
-                    _logger?.Warning($"Client {endPoint} is running a different version of RMF.Core ({clientCoreVersion}), disconnecting...");
-                    _sessionManager.Disconnect(endPoint.ToString());
+                    this._logger.LogError("Client {EndPoint} is running a different version of RMF.Core ({ReceivedCoreVersion}), disconnecting...", endPoint, clientCoreVersion);
+                    this._sessionManager.Disconnect(endPoint.ToString());
                     return;
                 }
 
-                if (RmfVersion.App?.Major != packet.AppMajorVersion ||
-                    RmfVersion.App.Minor != packet.AppMinorVersion)
+                string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
+                if (RmfVersion.App?.Major != packet.AppMajorVersion || RmfVersion.App.Minor != packet.AppMinorVersion)
                 {
-                    string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
-
-                    _logger?.Warning($"Client {endPoint} is running a different version of RMF.App ({clientAppVersion}), disconnecting...");
-                    _sessionManager.Disconnect(endPoint.ToString());
+                    this._logger.LogError("Client {EndPoint} is running a different version of RMF.App ({ReceivedAppVersion}), disconnecting...", endPoint, clientAppVersion);
+                    this._sessionManager.Disconnect(endPoint.ToString());
                     return;
                 }
 
                 if (RmfVersion.App?.Build != packet.AppBuildVersion)
                 {
-                    string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
-                    _logger?.Warning($"The connected client has a different build version ({clientAppVersion}), be careful");
+                    this._logger.LogWarning("The connected client has a different build version ({ReceivedAppVersion}), be careful", clientAppVersion);
                 }
             }
         }
@@ -126,7 +124,8 @@ namespace RMF_Server.Logic
             double ramCaparityGB = packet.RAMCapacity / 1024.0 / 1024.0 / 1024.0;
             double vramCaparityGB = packet.VRAMCapacity / 1024.0 / 1024.0 / 1024.0;
 
-            _logger?.Message(
+            this._logger.Log(
+                LogLevel.None,
                 "Info about " + endPoint + Environment.NewLine +
                 "- Machine name: " + packet.MachineName + Environment.NewLine +
                 "- Username:     " + packet.OSName + Environment.NewLine +
@@ -138,26 +137,26 @@ namespace RMF_Server.Logic
 
         private async Task ProcessEndOfStreamingPacket(EndOfStreamingPacket packet, IPEndPoint endPoint)
         {
-            if (_sessionManager.GetClientSession(endPoint.ToString(), out IServerClientSession? session))
+            if (this._sessionManager.GetClientSession(endPoint.ToString(), out IServerClientSession? session))
             {
-                if (session!.RemoteEndPoint == _avaloniaManager.StreamingClientEndPoint)
+                if (session!.RemoteEndPoint == this._avaloniaManager.StreamingClientEndPoint)
                 {
                     try
                     {
-                        _avaloniaManager.SetWindowTitle(_appearanceConfig?.WindowTitle ?? string.Empty);
-                        await _avaloniaManager.HideWindow();
+                        this._avaloniaManager.SetWindowTitle(_appearanceConfig?.WindowTitle ?? string.Empty);
+                        await this._avaloniaManager.HideWindow();
                     }
                     finally
                     {
-                        _avaloniaManager.StreamingClientEndPoint = null;
+                        this._avaloniaManager.StreamingClientEndPoint = null;
                         string breakReason = !string.IsNullOrEmpty(packet.Reason) ? "Reason: " + packet.Reason : string.Empty;
-                        _logger?.Output($"Streaming session ended with {endPoint}{breakReason}");
+                        this._logger.LogInformation("Streaming session ended with {EndPoint}. {Reason}", endPoint, breakReason);
                     }
                 }
                 else
                 {
-                    _logger?.Warning($"Received an end of streaming packet from \"{endPoint}\" while the streaming session is active with {_avaloniaManager.StreamingClientEndPoint}, disconnecting...");
-                    _sessionManager.Disconnect(endPoint.ToString());
+                    this._logger.LogError("Received an end of streaming packet from {EndPoint} while the streaming session is active with {StreamingEndPoint}, disconnecting...", endPoint, this._avaloniaManager.StreamingClientEndPoint);
+                    this._sessionManager.Disconnect(endPoint.ToString());
                 }
             }
         }
@@ -166,15 +165,9 @@ namespace RMF_Server.Logic
         {
             if (packet.ImageData == null)
             {
-                _logger?.Message($"Failed to save an empty screenshot from \"{endPoint}\"");
+                this._logger.Log(LogLevel.None, "Failed to save an empty screenshot from {EndPoint}", endPoint);
                 return;
             }
-
-            //string savePath = Path.GetFullPath(PathResolver.GetResolvedPath("DesktopScreenshots",
-            //                                                               fileName: "%endPoint%_%datetime%",
-            //                                                               fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower(),
-            //                                                               endPoint: endPoint.Address.ToString(),
-            //                                                               UpdateCachedDate: true));
 
             string savePath = Path.GetFullPath(PathResolver.GetResolvedPath(
                 this._streamingConfig.ScreenshotsFilePath,
@@ -191,47 +184,47 @@ namespace RMF_Server.Logic
                 }
 
                 await File.WriteAllBytesAsync(savePath, packet.ImageData.AsMemory(0, packet.ImageLength));
-                _logger?.Message($"Screenshot from {endPoint} successfully saved on path: \"{savePath}\"");
+                this._logger.Log(LogLevel.None, "Screenshot from {EndPoint} successfully saved on path: {FilePath}", endPoint, savePath);
             }
             catch (Exception ex)
             {
-                _logger?.Error($"Failed to save screenshot: {ex.Message}");
+                this._logger.LogError("Failed to save screenshot: {Exception}", ex);
             }
         }
 
         private void ProcessStreamFramePacket(StreamFramePacket packet, IPEndPoint endPoint)
         {
-            if (_sessionManager.GetClientSession(endPoint.ToString(), out IServerClientSession? session))
+            if (this._sessionManager.GetClientSession(endPoint.ToString(), out IServerClientSession? session))
             {
-                IPEndPoint? actualStreamer = _avaloniaManager.StreamingClientEndPoint;
+                IPEndPoint? actualStreamer = this._avaloniaManager.StreamingClientEndPoint;
                 if (actualStreamer == null)
                 {
-                    _logger?.Warning($"Received a streaming frame from \"{endPoint}\" while no streaming session is active, nothing to do");
+                    this._logger.LogWarning("Received a streaming frame from {EndPoint} while no streaming session is active, nothing to do", endPoint);
                     return;
                 }
 
                 if (session!.RemoteEndPoint != actualStreamer)
                 {
-                    _logger?.Warning($"Received a streaming frame from \"{endPoint}\" while the streaming session is active with {_avaloniaManager.StreamingClientEndPoint}, disconnecting...");
-                    _sessionManager.Disconnect(endPoint.ToString());
+                    this._logger.LogError("Received a streaming frame from {EndPoint} while the streaming session is active with {StreamingEndPoint}, disconnecting...", endPoint, _avaloniaManager.StreamingClientEndPoint);
+                    this._sessionManager.Disconnect(endPoint.ToString());
                     return;
                 }
 
                 if (packet.Patches == null || packet.PatchesCount == 0)
                 {
-                    _logger?.Message($"Received an empty streaming frame from \"{endPoint}\", disconnecting...");
-                    _sessionManager.Disconnect(endPoint.ToString());
+                    this._logger.LogError("Received an empty streaming frame from {EndPoint}, disconnecting...", endPoint);
+                    this._sessionManager.Disconnect(endPoint.ToString());
                     return;
                 }
-                _avaloniaManager.UpdateBitmap(packet.Patches, packet.PatchesCount, packet.IsFullFrame);
+                this._avaloniaManager.UpdateBitmap(packet.Patches, packet.PatchesCount, packet.IsFullFrame);
             }
         }
 
         private void ProcessPartingPacket(PartingPacket packet, IPEndPoint endPoint)
         {
-            _logger?.Output($"Received a parting packet from {endPoint} with status code {packet.StatusCode} ({Enum.GetName(typeof(PartingStatusCodes), packet.StatusCode)})");
-            _logger?.Message($"Total {endPoint} uptime: {TimeSpan.FromSeconds(packet.UptimeSecs).ToString(@"dd\.hh\:mm\:ss")} | received: {packet.ReceivedPackets} | sent: {packet.SentPackets}", leftOffset: _logger?.LogHeaderLength ?? 0);
-            _sessionManager.Disconnect(endPoint.ToString());
+            this._logger.LogInformation("Received a parting packet from {EndPoint} with status code {StatusCode} ({StatusName})", endPoint, packet.StatusCode, Enum.GetName(typeof(PartingStatusCodes), packet.StatusCode));
+            this._logger.Log(LogLevel.None, "Total {EndPoint} uptime: {Uptime} | received: {ReceivedPackets} | sent: {SentPackets}", endPoint, TimeSpan.FromSeconds(packet.UptimeSecs).ToString(@"dd\.hh\:mm\:ss"), packet.ReceivedPackets, packet.SentPackets);
+            this._sessionManager.Disconnect(endPoint.ToString());
         }
     }
 }

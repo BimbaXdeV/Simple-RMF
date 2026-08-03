@@ -1,4 +1,5 @@
 ﻿using Avalonia.Utilities;
+using Microsoft.Extensions.Logging;
 using RMF.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -11,11 +12,11 @@ namespace RMF_Server.Debugger
 {
     internal static class XmlThemeLoader
     {
-        public static (Dictionary<string, ThemeColor> Data, int Total) Load(string path, ILoggingEngine? logger = null)
+        public static (Dictionary<string, ThemeColor> Data, int Total) Load(string path, ILogger logger)
         {
             if (!File.Exists(path))
             {
-                logger?.Error($"Unable to load theme on path: {path}");
+                logger.LogError("Unable to load theme on path: {FilePath}", path);
                 return ([], 0);
             }
 
@@ -35,7 +36,7 @@ namespace RMF_Server.Debugger
 
             if (themeDict == null)
             {
-                logger?.Error($"The theme file has been corrupted. Please check its integrity on path: {path}");
+                logger.LogError("The theme file has been corrupted. Please check its integrity on path: {FilePath}", path);
                 return ([], 0);
             }
 

@@ -14,27 +14,32 @@ namespace RMF_Server.Debugger
     internal class RmfLoggerProvider : ILoggerProvider
     {
         private readonly IThemeManager _themeManager;
+        private readonly IConsoleSynchronizer _consoleSync;
         private readonly LoggingConfig _loggingConfig;
 
         private readonly ConcurrentQueue<string> _logQueue;
         private readonly string[] _history;
         private bool _isExecutorRunning;
-        private readonly bool _isAdminTyping;
 
         private readonly Regex _ansiRegex;
 
         private readonly CancellationTokenSource _cts;
         private readonly Task _executorTask;
 
-        public RmfLoggerProvider(int historyLength, IThemeManager themeManager, LoggingConfig loggingConfig)
+        public RmfLoggerProvider(
+            int historyLength,
+            IThemeManager themeManager,
+            IConsoleSynchronizer consoleSync,
+            LoggingConfig loggingConfig
+        )
         {
             this._themeManager = themeManager;
+            this._consoleSync = consoleSync;
             this._loggingConfig = loggingConfig;
 
             this._logQueue = new ConcurrentQueue<string>();
             this._history = new string[historyLength];
             this._isExecutorRunning = false;
-            this._isAdminTyping = false;
 
             this._ansiRegex = new(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
@@ -60,8 +65,17 @@ namespace RMF_Server.Debugger
             {
                 while (!token.IsCancellationRequested || !this._logQueue.IsEmpty)
                 {
-                    if (!this._isAdminTyping && this._logQueue.TryDequeue(out string? log))
+                    if (!this._consoleSync.isAdminTyping && this._logQueue.TryDequeue(out string? log))
                     {
+                        // So that the bastard can`t clear the console in the middle of queue processing
+                        // or while printing a long log :D
+                        if (log == RmfLoggerExtensions.ClearConsoleCommand)
+                        {
+                            Console.Clear();
+                            continue;
+                        }
+
+                        // Just a standard logger output. Ya, completely standard...
                         Console.WriteLine(log);
                     }
                     else
@@ -97,15 +111,11 @@ namespace RMF_Server.Debugger
 
             if (this._loggingConfig.EnableLogSaving)
             {
-                SaveBackup(PathResolver.GetResolvedPath(
-                    this._loggingConfig.LoggingFilePath,
-                    fileName: "rmf-server",
-                    fileFormat: "log"
-                ));
+                SaveBackup();
             }
         }
 
-        private void SaveBackup(string path)
+        private void SaveBackup()
         {
             if (this._history == null || this._history.Length == 0)
             {
@@ -124,6 +134,12 @@ namespace RMF_Server.Debugger
                     Console.WriteLine("The log history contains only nulls, nothing to do");
                     return;
                 }
+
+                string path = PathResolver.GetResolvedPath(
+                    this._loggingConfig.LoggingFilePath,
+                    fileName: "rmf-server",
+                    fileFormat: "log"
+                );
 
                 string? directoryPath = Path.GetDirectoryName(path);
                 if (!string.IsNullOrWhiteSpace(directoryPath))

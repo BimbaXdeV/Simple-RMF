@@ -1,4 +1,5 @@
-﻿using RMF.Core.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
@@ -16,18 +17,21 @@ namespace RMF_Server.Channels
 {
     internal class ChannelDispatcher : IChannelDispatcher
     {
+        private readonly IPacketFactory _packetFactory;
         private readonly IServerPacketProcessor _packetProcessor;
-        private readonly ILoggingEngine? _logger;
-        private readonly ChannelConfig? _channelConfig;
+        private readonly ILogger _logger;
+        private readonly ChannelConfig _channelConfig;
 
         private readonly Dictionary<int, ChannelContext> _channels;
 
         public ChannelDispatcher(
+            IPacketFactory packetFactory,
             IServerPacketProcessor packetProcessor,
-            ILoggingEngine? logger = null,
-            ChannelConfig? channelConfig = null
+            ILogger logger,
+            ChannelConfig channelConfig
         )
         {
+            this._packetFactory = packetFactory;
             this._packetProcessor = packetProcessor;
             this._logger = logger;
             this._channelConfig = channelConfig;
@@ -43,10 +47,10 @@ namespace RMF_Server.Channels
             {
                 await foreach (PacketContext context in reader.ReadAllAsync(token ?? CancellationToken.None))
                 {
-                    Packet? packet = PacketFactory.GetPacket(context.Id);
+                    Packet? packet = this._packetFactory.CreatePacket(context.Id);
                     if (packet == null)
                     {
-                        this._logger?.Warning($"Received an unknown packet \"{context.Id}\" from the client {context.EndPoint}");
+                        this._logger.LogWarning("Received an unknown packet \"{PacketId}\" from the client {EndPoint}", context.Id, context.EndPoint);
                         ArrayPool<byte>.Shared.Return(context.Payload);
                         continue;
                     }
@@ -61,7 +65,7 @@ namespace RMF_Server.Channels
                     }
                     catch (Exception ex)
                     {
-                        this._logger?.Warning($"Failed to process packet with ID {context.Id} from {context.EndPoint}{Environment.NewLine}{ex}");
+                        this._logger.LogError("Failed to process packet with ID {PacketId} from {EndPoint}\n{Exception}", context.Id, context.EndPoint, ex);
                     }
                     finally
                     {
@@ -80,16 +84,16 @@ namespace RMF_Server.Channels
             finally
             {
                 channel.Writer.Complete();
-                this._logger?.Output($"Channel for key {id} has been closed");
+                this._logger.LogInformation("Channel for key {ChannelId} has been closed", id);
             }
         }
 
         public (int, int) StartFound()
         {
-            HashSet<int> channelKeys = PacketFactory.GetClientPacketsIDs().Select(x => x / 100).ToHashSet();
+            HashSet<int> channelKeys = this._packetFactory.GetClientPacketsIDs().Select(x => x / 100).ToHashSet();
             if (channelKeys.Count == 0)
             {
-                this._logger?.Warning("Failed to get IDs of existing packages. Make sure you have already loaded all packages into RMF.Core.Packets.PacketAssembler before calling");
+                this._logger.LogError("Failed to get IDs of existing packages. Make sure you have already loaded all packages into RMF.Core.Packets.PacketFactory before calling");
                 return (0, 0);
             }
 
@@ -98,7 +102,7 @@ namespace RMF_Server.Channels
             {
                 if (this._channels.ContainsKey(k))
                 {
-                    this._logger?.Warning($"Failed to open channel for key {k}, it already exists");
+                    this._logger.LogWarning("Failed to open channel for key {ChannelId}, it already exists", k);
                     continue;
                 }
 
@@ -127,8 +131,8 @@ namespace RMF_Server.Channels
             int channelKey = context.Id / 100;
             if (!IsChannelExists(channelKey))
             {
-                // Just in case OpenTCP validator suffers changes in structure
-                this._logger?.Warning($"Unable to find an open channel for packet {context.Id} reveiced from {context.EndPoint}");
+                // Just in case NetworkEngine validator suffers changes in structure
+                this._logger.LogWarning("Unable to find an open channel for packet {PacketId} reveiced from {EndPoint}", context.Id, context.EndPoint);
                 ArrayPool<byte>.Shared.Return(context.Payload);
                 return;
             }
@@ -152,7 +156,7 @@ namespace RMF_Server.Channels
             }
             await Task.WhenAll(terminationTasks);
 
-            this._logger?.Output($"Successfully closed {terminateChannelsCounter} channels out of {totalActiveChannels} active");
+            this._logger.LogInformation("Successfully closed {ClosedChannels} channels out of {TotalChannels} active", terminateChannelsCounter, totalActiveChannels);
             this._channels.Clear();
         }
 

@@ -1,6 +1,7 @@
 ﻿using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 using ReactiveUI;
 using RMF.Core.Interfaces;
 using RMF.Core.Screen;
@@ -20,9 +21,9 @@ namespace RMF_Server.UI
 {
     public class StreamingViewModel : ReactiveObject
     {
-        private readonly ILoggingEngine? _logger;
+        private readonly ILogger _logger;
 
-        public StreamingViewModel(ILoggingEngine? logger) : base()
+        public StreamingViewModel(ILogger logger) : base()
         {
             this._logger = logger;
         }
@@ -71,8 +72,8 @@ namespace RMF_Server.UI
                 this.DisplaySource = new WriteableBitmap(
                     new Avalonia.PixelSize(width, height),
                     new Avalonia.Vector(96, 96),
-                    Avalonia.Platform.PixelFormat.Bgra8888,
-                    Avalonia.Platform.AlphaFormat.Premul
+                    PixelFormat.Bgra8888,
+                    AlphaFormat.Premul
                 );
             }
         }
@@ -101,6 +102,26 @@ namespace RMF_Server.UI
             this.FrameTimeMsecs = (float)(DateTime.Now - lastUpdatedTime).TotalMilliseconds;
         }
 
+        private string TranslateCodecExceptionMessage(SKCodecResult result)
+        {
+            // Yes, it looks like "Borsch borsch = new Borsh().GetBorsch()", but it isa rather important analysis tool,
+            // albeit a crutch. To be honest, I haven`t yet had time to test which error is triggered by which situation,
+            // so here are the raw lines :>
+            return result switch
+            {
+                SKCodecResult.IncompleteInput => "incomplete input data",
+                SKCodecResult.ErrorInInput => "error in input data",
+                SKCodecResult.InvalidConversion => "invalid conversion",
+                SKCodecResult.InvalidScale => "invalid scale",
+                SKCodecResult.InvalidParameters => "invalid parameters",
+                SKCodecResult.InvalidInput => "invalid input data",
+                SKCodecResult.CouldNotRewind => "could not rewind input",
+                SKCodecResult.InternalError => "internal error occurred",
+                SKCodecResult.Unimplemented => "unimplemented codec method",
+                _ => "unknown error occurred"
+            };
+        }
+
         public unsafe void UpdateFrame(ScreenPatch frame, bool updateOverlay = false)
         {
             ValidateSource(frame.Width, frame.Height);
@@ -109,10 +130,10 @@ namespace RMF_Server.UI
             using (ILockedFramebuffer buffer = this.DisplaySource!.Lock())
             {
                 using MemoryStream ms = new(frame.Data, 0, frame.Length);
-                using SKCodec codec = SKCodec.Create(ms);
-                if (codec == null)
+                using SKCodec codec = SKCodec.Create(ms, out SKCodecResult result);
+                if (codec == null || result != SKCodecResult.Success)
                 {
-                    this._logger?.Warning($"Failed to decode screen frame");
+                    this._logger.LogError("Failed to decode screen frame: {Exception}", TranslateCodecExceptionMessage(result));
                     return;
                 }
 
@@ -153,7 +174,7 @@ namespace RMF_Server.UI
                     }
                     catch (Exception ex)
                     {
-                        this._logger?.Error($"Failed to write a new frame into bitmap: {ex}");
+                        this._logger.LogError("Failed to write a new frame into bitmap: {Exception}", ex);
                     }
                     finally
                     {
@@ -182,15 +203,15 @@ namespace RMF_Server.UI
                     ScreenPatch patch = patches[i];
                     if (patch.Length <= 0 || patch.Data == null)
                     {
-                        this._logger?.Warning("Received an empty patch, nothing to do");
+                        this._logger.LogWarning("Received an empty patch, nothing to do");
                         continue;
                     }
 
                     using MemoryStream ms = new(patch.Data, 0, patch.Length);
-                    using SKCodec codec = SKCodec.Create(ms);
+                    using SKCodec codec = SKCodec.Create(ms, out SKCodecResult result);
                     if (codec == null)
                     {
-                        this._logger?.Warning($"Failed to decode screen patch");
+                        this._logger.LogWarning("Failed to decode screen patch: {Exception}", TranslateCodecExceptionMessage(result));
                         continue;
                     }
 
@@ -217,7 +238,7 @@ namespace RMF_Server.UI
                     }
                     catch (Exception ex)
                     {
-                        this._logger?.Error($"Failed to write a dirty rectangle into bitmap: {ex}");
+                        this._logger.LogError("Failed to write a dirty rectangle into bitmap: {Exception}", ex);
                     }
                     finally
                     {

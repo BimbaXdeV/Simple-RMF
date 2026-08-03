@@ -1,4 +1,5 @@
-﻿using RMF.Core.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using RMF.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace RMF.Core.Packets
 {
     public static class ReflectionPacketLoader
     {
-        public static (Dictionary<short, Type> Data, int Total) Load(ILoggingEngine? logger = null)
+        public static (Dictionary<short, Type> Data, int Total) Load(ILogger logger)
         {
             Type basePacketType = typeof(Packet);
 
@@ -25,7 +26,7 @@ namespace RMF.Core.Packets
                 short? packetId = (short?)(packetType.GetProperty("ID")?.GetValue(null));
                 if (packetId == null)
                 {
-                    logger?.Warning($"Failed to load {packetType.Name}: the packet type must contains property \"ID\"");
+                    logger.LogWarning("Failed to load {PacketName}: the packet type must contains property \"ID\"", packetType.Name);
                     continue;
                 }
 

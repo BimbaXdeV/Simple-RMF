@@ -12,12 +12,12 @@ namespace RMF_Server.Debugger
     {
         private readonly IThemeManager _themeManager;
 
-        private readonly string _categoryName;
-        private readonly ConcurrentQueue<string> _queue;
-
-        private static int _maxLogLevelNameLength = Enum.GetValues<LogLevel>().Max(l => l.ToString().Length);
+        private static readonly int _maxLogLevelNameLength = Enum.GetValues<LogLevel>().Max(l => l.ToString().Length);
         private static int _maxCategoryNameLength = 0;
         private static readonly Lock _lengthLock = new();
+
+        private readonly string _categoryName;
+        private readonly ConcurrentQueue<string> _queue;
 
         public RmfLogger(string categoryName, ConcurrentQueue<string> queue, IThemeManager themeManager)
         {
@@ -48,11 +48,13 @@ namespace RMF_Server.Debugger
             string categoryStr = _categoryName.PadRight(_maxCategoryNameLength);
 
             string logColorFormat = Colorist.ColoredFilterRGB(this._themeManager.GetColor("Logging" + logLevel.ToString()));
-            string formattedLog = logLevel == LogLevel.Trace || logLevel == LogLevel.Debug || logLevel == LogLevel.Information
-                ? $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr}{Colorist.ResetColor()} : {message}"
-                : $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr} : {message}{Colorist.ResetColor()}";
+            string formattedLog = logLevel == LogLevel.Information || logLevel == LogLevel.Debug || logLevel == LogLevel.Trace
+                ? $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr}{Colorist.ResetColor()} : {message}"  // The base console output levels color only the left part of the metadata;
+                : $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr} : {message}{Colorist.ResetColor()}"; // Other important alerts regarding unpredictable behavior are fully highlighted in color
 
-            //string formattedLog = $"[ {DateTime.Now:HH:mm:ss} ] ({logLevel}) {string.Format("{0,-20}", _categoryName)} : {message}";
+            // If you don't like this specific solution, you can use this declaration instead:
+            // string formattedLog = $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr} : {message}{Colorist.ResetColor()}";
+
             this._queue.Enqueue(formattedLog);
         }
 

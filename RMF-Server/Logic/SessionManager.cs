@@ -1,4 +1,5 @@
-﻿using RMF.Core.Bases;
+﻿using Microsoft.Extensions.Logging;
+using RMF.Core.Bases;
 using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Logic;
 using RMF.Core.Interfaces.Network;
@@ -22,7 +23,7 @@ namespace RMF_Server.Logic
     {
         private readonly IProtocolReader _protocolReader;
         private readonly IPacketSender _packetSender;
-        private readonly ILoggingEngine _logger;
+        private readonly ILogger _logger;
         private readonly ControllerConfig _controllerConfig;
         private readonly ChannelConfig _channelConfig;
 
@@ -38,7 +39,7 @@ namespace RMF_Server.Logic
         public SessionManager(
             IProtocolReader protocolReader,
             IPacketSender packetSender,
-            ILoggingEngine logger,
+            ILogger logger,
             ControllerConfig controllerConfig,
             ChannelConfig channelConfig
         )
@@ -62,7 +63,7 @@ namespace RMF_Server.Logic
                 }
                 catch (Exception ex)
                 {
-                    this._logger.Warning($"Failed to transfer {session.GetType().Name} to \"{session.RemoteEndPoint}\" : {ex.Message}");
+                    this._logger.LogError("Failed to transfer {PacketName} to {EndPoint} : {Exception}", packet.GetType().Name, session.RemoteEndPoint, ex);
                 }
             }
         }
@@ -146,7 +147,7 @@ namespace RMF_Server.Logic
                 this._connections.TryRemove(sessionId, out _);
                 this._endPointIndex.TryRemove(endPoint, out _);
 
-                this._logger.Output($"Client {endPoint} was disconnected");
+                this._logger.LogInformation("Client {EndPoint} was disconnected", endPoint);
 
                 if (notifyOfChanges)
                 {
@@ -167,7 +168,7 @@ namespace RMF_Server.Logic
                 disconnectedClientsCount++;
             }
             this._connections.Clear();
-            this._logger.Output($"Cleanup finished, disconnected {disconnectedClientsCount} / {totalConnectedClients}");
+            this._logger.LogInformation("Cleanup finished, disconnected {DisconnectedClientsCount} / {TotalClientsCount}", disconnectedClientsCount, totalConnectedClients);
             this.ConnectionCountChanged?.Invoke(this.TotalConnections);
         }
     }

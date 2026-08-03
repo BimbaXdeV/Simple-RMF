@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 using ReactiveUI.Avalonia;
 using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Logic;
@@ -26,7 +27,7 @@ namespace RMF_Server.Logic
 {
     internal class AvaloniaManager : IAvaloniaManager
     {
-        private readonly ILoggingEngine _logger;
+        private readonly ILogger _logger;
         private readonly AppearanceConfig _appearanceConfig;
         private readonly StreamingConfig _streamingConfig;
 
@@ -44,7 +45,7 @@ namespace RMF_Server.Logic
         }
 
         public AvaloniaManager(
-            ILoggingEngine logger,
+            ILogger logger,
             AppearanceConfig appearanceConfig,
             StreamingConfig streamingConfig
         )
@@ -53,7 +54,11 @@ namespace RMF_Server.Logic
             this._appearanceConfig = appearanceConfig;
             this._streamingConfig = streamingConfig;
 
-            this._viewModel = new StreamingViewModel(this._logger);
+            this._viewModel = new StreamingViewModel(this._logger)
+            {
+                IsOverlayEnabled = this._streamingConfig.EnableStreamingStatsOverlay
+            };
+
             this._isFrameProcessing = 0;
             this.UIInitSource = new TaskCompletionSource();
         }
@@ -69,11 +74,6 @@ namespace RMF_Server.Logic
             this._window.Title = this._appearanceConfig.WindowTitle;
             this._window.Width = this._appearanceConfig.WindowWidth;
             this._window.Height = this._appearanceConfig.WindowHeight;
-
-            this._viewModel = new StreamingViewModel(this._logger)
-            {
-                IsOverlayEnabled = this._streamingConfig.EnableStreamingStatsOverlay
-            };
             this._window.DataContext = this._viewModel;
 
             this._window.Closed += (s, e) => this._window = null;
@@ -118,33 +118,17 @@ namespace RMF_Server.Logic
         {
             if (this._window == null)
             {
-                this._logger?.Warning("Failed to update window title, the window instance is not initialized");
+                this._logger.LogWarning("Failed to update window title, the window instance is not initialized");
                 return;
             }
 
             if (string.IsNullOrEmpty(newTitle))
             {
-                this._logger?.Warning("Failed to update window title, received an empty string");
+                this._logger.LogWarning("Failed to update window title, received an empty string");
                 return;
             }
 
             Dispatcher.UIThread.InvokeAsync(() => this._window.Title = newTitle);
-        }
-
-        public void SetWindowTheme(string? theme)
-        {
-            if (this._window != null)
-            {
-                ThemeVariant variant = theme switch
-                {
-                    "L" => ThemeVariant.Light,
-                    "Light" => ThemeVariant.Light,
-                    "D" => ThemeVariant.Dark,
-                    "Dark" => ThemeVariant.Dark,
-                    _ => ThemeVariant.Default
-                };
-                this._window.RequestedThemeVariant = variant;
-            }
         }
 
         private void ReturnRectsMemory(ScreenPatch[] patches, int patchCount)
@@ -162,7 +146,7 @@ namespace RMF_Server.Logic
             }
             catch (Exception ex)
             {
-                this._logger?.Warning($"Failed to return patch memory: {ex}");
+                this._logger.LogError("Failed to return patch memory: {Exception}", ex);
             }
         }
 
@@ -194,7 +178,7 @@ namespace RMF_Server.Logic
                 }
                 catch (Exception ex)
                 {
-                    this._logger?.Warning($"Failed to update frame bitmap: {ex}");
+                    this._logger.LogError("Failed to update frame bitmap: {Exception}", ex);
                 }
                 finally
                 {
