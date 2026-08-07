@@ -13,6 +13,9 @@ namespace RMF_Server.Configurations
         public bool EnableMultipleBackup = false;
         public int MaxLogFileCapacityMB = 1;
         public int LoggingHistoryLength = 1;
+        public bool EnableLoggingInlineCommands = false;
+        public char LoggingSeparatorChar = char.MinValue;
+        public int LoggingSeparatorLength = 0;
         public int LoggingHandlerDelayMsecs = 100;
     }
 }

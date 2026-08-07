@@ -8,6 +8,7 @@ namespace RMF_Server.Debugger
 {
     internal interface IConsoleSynchronizer
     {
-        bool isAdminTyping { get; set; }
+        bool IsLoggingRunning { get; set; }
+        bool IsAdminTyping { get; set; }
     }
 }

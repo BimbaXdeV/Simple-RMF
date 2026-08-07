@@ -86,7 +86,7 @@ namespace RMF_Server.Logic
         private void ProcessHeartbeatPacket(HeartbeatPacket packet, IPEndPoint endPoint)
         {
             double delay = (DateTime.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(packet.TurnedTimestamp)).TotalMilliseconds;
-            this._logger.Log(LogLevel.None, "Received heartbeat from {EndPoint} : {NetworkLatency} ms delay", endPoint, delay);
+            this._logger.LogInformation("Received heartbeat from {EndPoint} : {NetworkLatency} ms delay", endPoint, delay);
         }
 
         private void ProcessClientVersionPacket(ClientVersionPacket packet, IPEndPoint endPoint)
@@ -124,8 +124,7 @@ namespace RMF_Server.Logic
             double ramCaparityGB = packet.RAMCapacity / 1024.0 / 1024.0 / 1024.0;
             double vramCaparityGB = packet.VRAMCapacity / 1024.0 / 1024.0 / 1024.0;
 
-            this._logger.Log(
-                LogLevel.None,
+            this._logger.LogInformation(
                 "Info about " + endPoint + Environment.NewLine +
                 "- Machine name: " + packet.MachineName + Environment.NewLine +
                 "- Username:     " + packet.OSName + Environment.NewLine +
@@ -165,7 +164,7 @@ namespace RMF_Server.Logic
         {
             if (packet.ImageData == null)
             {
-                this._logger.Log(LogLevel.None, "Failed to save an empty screenshot from {EndPoint}", endPoint);
+                this._logger.LogError("Failed to save an empty screenshot from {EndPoint}", endPoint);
                 return;
             }
 
@@ -175,21 +174,14 @@ namespace RMF_Server.Logic
                 fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower() ?? string.Empty
             ));
 
-            try
+            string? directory = Path.GetDirectoryName(savePath);
+            if (!string.IsNullOrEmpty(directory))
             {
-                string? directory = Path.GetDirectoryName(savePath);
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
+                Directory.CreateDirectory(directory);
+            }
 
-                await File.WriteAllBytesAsync(savePath, packet.ImageData.AsMemory(0, packet.ImageLength));
-                this._logger.Log(LogLevel.None, "Screenshot from {EndPoint} successfully saved on path: {FilePath}", endPoint, savePath);
-            }
-            catch (Exception ex)
-            {
-                this._logger.LogError("Failed to save screenshot: {Exception}", ex);
-            }
+            await File.WriteAllBytesAsync(savePath, packet.ImageData.AsMemory(0, packet.ImageLength));
+            this._logger.LogInformation("Screenshot from {EndPoint} successfully saved on path: {FilePath}", endPoint, savePath);
         }
 
         private void ProcessStreamFramePacket(StreamFramePacket packet, IPEndPoint endPoint)
@@ -223,7 +215,7 @@ namespace RMF_Server.Logic
         private void ProcessPartingPacket(PartingPacket packet, IPEndPoint endPoint)
         {
             this._logger.LogInformation("Received a parting packet from {EndPoint} with status code {StatusCode} ({StatusName})", endPoint, packet.StatusCode, Enum.GetName(typeof(PartingStatusCodes), packet.StatusCode));
-            this._logger.Log(LogLevel.None, "Total {EndPoint} uptime: {Uptime} | received: {ReceivedPackets} | sent: {SentPackets}", endPoint, TimeSpan.FromSeconds(packet.UptimeSecs).ToString(@"dd\.hh\:mm\:ss"), packet.ReceivedPackets, packet.SentPackets);
+            this._logger.LogInformation("Total {EndPoint} uptime: {Uptime} | received: {ReceivedPackets} | sent: {SentPackets}", endPoint, TimeSpan.FromSeconds(packet.UptimeSecs).ToString(@"dd\.hh\:mm\:ss"), packet.ReceivedPackets, packet.SentPackets);
             this._sessionManager.Disconnect(endPoint.ToString());
         }
     }

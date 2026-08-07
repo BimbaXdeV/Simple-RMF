@@ -49,7 +49,12 @@ namespace RMF_Server.Debugger
 
         public ILogger CreateLogger(string categoryName)
         {
-            return new RmfLogger(categoryName, this._logQueue, this._themeManager);
+            return new RmfLogger(
+                categoryName,
+                this._logQueue,
+                this._themeManager,
+                this._consoleSync
+            );
         }
 
         public async Task RunExecutor(CancellationToken token)
@@ -61,28 +66,27 @@ namespace RMF_Server.Debugger
             }
 
             this._isExecutorRunning = true;
+            this._consoleSync.IsLoggingRunning = true;
             try
             {
                 while (!token.IsCancellationRequested || !this._logQueue.IsEmpty)
                 {
-                    if (!this._consoleSync.isAdminTyping && this._logQueue.TryDequeue(out string? log))
+                    if (!this._consoleSync.IsAdminTyping && this._logQueue.TryDequeue(out string? log))
                     {
-                        // So that the bastard can`t clear the console in the middle of queue processing
-                        // or while printing a long log :D
-                        if (log == RmfLoggerExtensions.ClearConsoleCommand)
+                        if (!this._loggingConfig.EnableLoggingInlineCommands)
                         {
-                            Console.Clear();
+                            // Just a standard logger output. Ya, completely standard...
+                            Console.WriteLine(log);
                             continue;
                         }
 
-                        // Just a standard logger output. Ya, completely standard...
-                        Console.WriteLine(log);
+                        HandleMessageLog(log);
                     }
                     else
                     {
                         try
                         {
-                            await Task.Delay(this._loggingConfig?.LoggingHandlerDelayMsecs ?? 250, CancellationToken.None);
+                            await Task.Delay(this._loggingConfig.LoggingHandlerDelayMsecs, CancellationToken.None);
                         }
                         catch (Exception)
                         {
@@ -93,7 +97,34 @@ namespace RMF_Server.Debugger
             finally
             {
                 this._isExecutorRunning = false;
+                this._consoleSync.IsLoggingRunning = false;
                 Console.WriteLine("Logging output executor has been stopped, subsequent logs will be output out of order");
+            }
+        }
+
+        private void HandleMessageLog(string log)
+        {
+            switch (log)
+            {
+                case RmfLoggerExtensions.LogoCommand:
+                    ThemeColor logoColor = this._themeManager.GetColor("Logo");
+                    string logoColorPref = Colorist.GetColoredFilterRGB(logoColor);
+                    Console.WriteLine(logoColorPref + RmfConstants.ServerLogo + Colorist.ResetColor());
+                    break;
+
+                case RmfLoggerExtensions.SeparatorCommand:
+                    ThemeColor separatorColor = this._themeManager.GetColor("Separator");
+                    string separatorColorPref = Colorist.GetColoredFilterRGB(separatorColor);
+                    Console.WriteLine(separatorColorPref + string.Join("", Enumerable.Repeat(this._loggingConfig.LoggingSeparatorChar, this._loggingConfig.LoggingSeparatorLength)) + Colorist.ResetColor());
+                    break;
+
+                case RmfLoggerExtensions.ClearConsoleCommand:
+                    Console.Clear();
+                    break;
+
+                default:
+                    Console.WriteLine(log);
+                    break;
             }
         }
 

@@ -21,7 +21,7 @@ namespace RMF_Server.Logic
         private readonly FirewallConfig _firewallConfig;
 
         private readonly Regex _ipExtractor;
-        private ConcurrentDictionary<string, byte> _bannedIPs;
+        private readonly ConcurrentDictionary<string, byte> _bannedIPs;
         private bool _isChanged;
 
         private string BlacklistFilePath => PathResolver.GetResolvedPath(
@@ -138,10 +138,10 @@ namespace RMF_Server.Logic
             return this._bannedIPs.ContainsKey(ipAddress);
         }
 
-        public string[] GetBannedIPs(int? limit = null)
+        public string[] GetBannedIPs(int limit = -1)
         {
             ICollection<string> keys = this._bannedIPs.Keys;
-            return limit == null ? keys.ToArray() : keys.Take(limit.Value).ToArray();
+            return limit <= 0 ? keys.ToArray() : keys.Take(limit).ToArray();
         }
 
         public void Ban(string? ipAddress)

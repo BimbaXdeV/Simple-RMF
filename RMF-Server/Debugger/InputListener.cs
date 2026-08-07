@@ -92,12 +92,12 @@ namespace RMF_Server.Debugger
                                 if (cm == null)
                                 {
                                     this._logger.LogError("Unknown command: \"{CommandName}\". Type \"{CommandSign}cmlst\" to see all available inline commands", commandName, this._commandConfig.InlineCommandDefautSign);
-                                    this._consoleSync.isAdminTyping = false;
+                                    this._consoleSync.IsAdminTyping = false;
                                     continue;
                                 }
 
                                 await this._commandHandler.SearchHandle(command, cm, cts);
-                                this._consoleSync.isAdminTyping = false;
+                                this._consoleSync.IsAdminTyping = false;
                                 break;
 
                             case ConsoleKey.Escape:
@@ -112,7 +112,7 @@ namespace RMF_Server.Debugger
                                 {
                                     this._inputBuffer.Clear();
                                     HideChars(Console.CursorLeft);
-                                    this._consoleSync.isAdminTyping = false;
+                                    this._consoleSync.IsAdminTyping = false;
                                 }
                                 break;
 
@@ -132,7 +132,7 @@ namespace RMF_Server.Debugger
                                 if (this._inputBuffer.Length == 0)
                                 {
                                     HideChars(this._commandSign.Length);
-                                    this._consoleSync.isAdminTyping = false;
+                                    this._consoleSync.IsAdminTyping = false;
                                 }
                                 break;
 
@@ -177,10 +177,10 @@ namespace RMF_Server.Debugger
                                 }
 
                                 // The "IsAdminTyping" flag blocks the logger from writing to the console until an administrator command is sent or cancelled
-                                if (!this._consoleSync.isAdminTyping)
+                                if (!this._consoleSync.IsAdminTyping)
                                 {
                                     Console.Write(this._commandSign);
-                                    this._consoleSync.isAdminTyping = true;
+                                    this._consoleSync.IsAdminTyping = true;
                                 }
                                 AddChar(key.KeyChar);
 
@@ -196,7 +196,7 @@ namespace RMF_Server.Debugger
                                         {
                                             this._suggestionBuffer.Append(suggestionPart);
                                             ThemeColor suggestionColor = this._themeManager.GetColor("AdminSuggestion");
-                                            Console.Write($"{Colorist.ColoredFilterRGB(suggestionColor)}{suggestionPart}{Colorist.ResetColor()}");
+                                            Console.Write($"{Colorist.GetColoredFilterRGB(suggestionColor)}{suggestionPart}{Colorist.ResetColor()}");
                                             Console.CursorLeft -= suggestionPart.Length;
 
                                         }

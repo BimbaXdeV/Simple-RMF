@@ -174,7 +174,7 @@ namespace RMF_Server.Commands
             {
                 ThemeColor paramColor = this._themeManager.GetColor("ParameterName");
                 string parametersNamesPerformance = cm.Parameters != null
-                    ? " " + Colorist.ColoredFilterRGB(paramColor) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor()
+                    ? " " + Colorist.GetColoredFilterRGB(paramColor) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor()
                     : "";
                 string descriptionPerformance = cm.Description ?? "Description is empty...";
                 

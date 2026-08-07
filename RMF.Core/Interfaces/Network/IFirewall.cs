@@ -11,7 +11,7 @@ namespace RMF.Core.Interfaces.Network
         bool TryLoadBlacklist();
         bool TrySaveBlacklist();
         bool IsBanned(string ipAddress);
-        string[] GetBannedIPs(int? limit = null);
+        string[] GetBannedIPs(int limit = -1);
         void Ban(string? ipAddress);
     }
 }

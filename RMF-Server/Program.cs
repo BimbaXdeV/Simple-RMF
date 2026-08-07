@@ -1,19 +1,16 @@
-﻿using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Threading;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using RMF.Core.Events;
-using RMF.Core.Interfaces;
-using RMF.Core.Packets;
-using RMF_Server.Channels;
+using Microsoft.Extensions.Logging;
+using RMF.Core.Loaders;
 using RMF_Server.Commands;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
+using RMF_Server.DI;
 using RMF_Server.Logic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,34 +21,8 @@ namespace RMF_Server
         [STAThread]
         static async Task Main(string[] args)
         {
-            IHostBuilder builder = Host.CreateDefaultBuilder(args);
-
-            builder.ConfigureServices(services =>
-            {
-                services.AddSingleton<ILoggingEngine, Logging>();
-
-                // Server logic
-                services.AddSingleton<ICommandManager>(provider =>
-                {
-                    ILoggingEngine logger = provider.GetRequiredService<ILoggingEngine>();
-
-                    CommandManager commandManager = new();
-
-                    return;
-                });
-
-                // Configurations
-                services.AddSingleton<AppearanceConfig>();
-                services.AddSingleton<ConnectionConfig>();
-                services.AddSingleton<FirewallConfig>();
-                services.AddSingleton<TlsConfig>();
-                services.AddSingleton<ControllerConfig>();
-                services.AddSingleton<ChannelConfig>();
-                services.AddSingleton<StreamingConfig>();
-                services.AddSingleton<CommandConfig>();
-                services.AddSingleton<ListenerConfig>();
-                services.AddSingleton<LoggingConfig>();
-            });
+            RmfServerHost server = new(args);
+            await server.RunAsync();
 
             //appearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
             //(int colorsLoaded, int totalColors) = ThemeManager.Load();
@@ -101,7 +72,7 @@ namespace RMF_Server
             //{
             //    await AvaloniaManager.WaitForUIReady();
             //    Logging.Output("UI Thread successfully initialized");
-                
+
             //    try
             //    {
             //        await InputListener.StartListen(LifecycleController.Input!);

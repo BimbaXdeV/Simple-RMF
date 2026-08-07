@@ -11,6 +11,7 @@ namespace RMF_Server.Debugger
     internal class RmfLogger : ILogger
     {
         private readonly IThemeManager _themeManager;
+        private readonly IConsoleSynchronizer _consoleSync;
 
         private static readonly int _maxLogLevelNameLength = Enum.GetValues<LogLevel>().Max(l => l.ToString().Length);
         private static int _maxCategoryNameLength = 0;
@@ -19,9 +20,15 @@ namespace RMF_Server.Debugger
         private readonly string _categoryName;
         private readonly ConcurrentQueue<string> _queue;
 
-        public RmfLogger(string categoryName, ConcurrentQueue<string> queue, IThemeManager themeManager)
+        public RmfLogger(
+            string categoryName,
+            ConcurrentQueue<string> queue,
+            IThemeManager themeManager,
+            IConsoleSynchronizer consoleSync
+        )
         {
             this._themeManager = themeManager;
+            this._consoleSync = consoleSync;
 
             int lastDotIndex = categoryName.LastIndexOf('.');
             this._categoryName = lastDotIndex >= 0 ? categoryName.Substring(lastDotIndex + 1) : categoryName;
@@ -47,7 +54,7 @@ namespace RMF_Server.Debugger
             string logLevelStr = "(" + logLevel.ToString().PadRight(_maxLogLevelNameLength) + ")";
             string categoryStr = _categoryName.PadRight(_maxCategoryNameLength);
 
-            string logColorFormat = Colorist.ColoredFilterRGB(this._themeManager.GetColor("Logging" + logLevel.ToString()));
+            string logColorFormat = Colorist.GetColoredFilterRGB(this._themeManager.GetColor("Logging" + logLevel.ToString()));
             string formattedLog = logLevel == LogLevel.Information || logLevel == LogLevel.Debug || logLevel == LogLevel.Trace
                 ? $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr}{Colorist.ResetColor()} : {message}"  // The base console output levels color only the left part of the metadata;
                 : $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr} : {message}{Colorist.ResetColor()}"; // Other important alerts regarding unpredictable behavior are fully highlighted in color
@@ -55,7 +62,14 @@ namespace RMF_Server.Debugger
             // If you don't like this specific solution, you can use this declaration instead:
             // string formattedLog = $"{logColorFormat}{datetimeStr} {logLevelStr} {categoryStr} : {message}{Colorist.ResetColor()}";
 
-            this._queue.Enqueue(formattedLog);
+            if (this._consoleSync.IsLoggingRunning)
+            {
+                this._queue.Enqueue(formattedLog);
+            }
+            else
+            {
+                Console.WriteLine(formattedLog);
+            }
         }
 
         public bool IsEnabled(LogLevel logLevel) => true;

@@ -4,9 +4,17 @@
     {
         // It is accessed directly via a memory address, bypassing the cache.
         // This should prevent desync... Probably
+        private volatile bool _isLoggingRunning;
+
+        public bool IsLoggingRunning
+        {
+            get => this._isLoggingRunning;
+            set => this._isLoggingRunning = value;
+        }
+
         private volatile bool _isAdminTyping;
 
-        public bool isAdminTyping
+        public bool IsAdminTyping
         {
             get => this._isAdminTyping;
             set => this._isAdminTyping = value;

@@ -1,4 +1,5 @@
-﻿using RMF.Core.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using RMF.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,11 +11,11 @@ namespace RMF_Server.Commands
 {
     internal static class XmlCommandLoader
     {
-        public static (List<Command> Data, int Total) Load(string path, ILoggingEngine? logger = null)
+        public static (List<Command> Data, int Total) Load(string path, ILogger logger)
         {
             if (!File.Exists(path))
             {
-                logger?.Error($"Unable to load commands on path: {path}");
+                logger.LogError("Unable to load commands on path: {FilePath}", path);
                 return ([], 0);
             }
 
@@ -23,7 +24,7 @@ namespace RMF_Server.Commands
 
             if (commandsDict == null)
             {
-                logger?.Error($"The commands file has been corrupted. Please check its integrity");
+                logger.LogError($"The commands file has been corrupted. Please check its integrity");
                 return ([], 0);
             }
 
@@ -33,7 +34,7 @@ namespace RMF_Server.Commands
                 string? cmName = el.Attribute("name")?.Value;
                 if (string.IsNullOrEmpty(cmName))
                 {
-                    logger?.Warning("Failed to load an empty command, missing");
+                    logger.LogError("Failed to load an empty command, missing the name");
                     continue;
                 }
 
@@ -52,7 +53,7 @@ namespace RMF_Server.Commands
 
                 if (!pNameIndexes.SequenceEqual(pTypeIndexes))
                 {
-                    logger?.Warning($"Failed to load command \"{cmName}\": parameter names and types mismatch");
+                    logger.LogError("Failed to load command \"{CommandName}\": parameter names and types mismatch", cmName);
                     continue;
                 }
 
@@ -65,7 +66,7 @@ namespace RMF_Server.Commands
                         XAttribute? paramNameAttr = el.Attribute($"paramname{i}");
                         if (paramNameAttr == null)
                         {
-                            logger?.Warning($"Failed to load command \"{cmName}\": missing parameter name for \"paramname{i}\"");
+                            logger.LogError("Failed to load command \"{CommandName}\": missing parameter name for \"paramname{Index}\"", cmName, i);
                             continue;
                         }
                         parameters.Add(new CommandParameter
@@ -77,7 +78,7 @@ namespace RMF_Server.Commands
                 }
                 catch (Exception ex)
                 {
-                    logger?.Warning($"Failed to load \"{cmName}\" command parameters from xml: {ex.Message}");
+                    logger.LogError("Failed to load \"{CommandName}\" command parameters from xml: {Exception}", cmName, ex);
                     continue;
                 }
 
