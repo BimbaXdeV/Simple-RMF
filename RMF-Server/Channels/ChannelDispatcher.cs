@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Avalonia.Logging;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF_Server.Configurations;
+using RMF_Server.Logic;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -15,7 +18,7 @@ using System.Threading.Channels;
 
 namespace RMF_Server.Channels
 {
-    internal class ChannelDispatcher : IChannelDispatcher
+    internal class ChannelDispatcher : IChannelDispatcher, IHostedService
     {
         private readonly IPacketFactory _packetFactory;
         private readonly IServerPacketProcessor _packetProcessor;
@@ -88,13 +91,13 @@ namespace RMF_Server.Channels
             }
         }
 
-        public (int, int) StartFound()
+        public Task StartAsync(CancellationToken token)
         {
             HashSet<int> channelKeys = this._packetFactory.GetClientPacketsIDs().Select(x => x / 100).ToHashSet();
             if (channelKeys.Count == 0)
             {
                 this._logger.LogError("Failed to get IDs of existing packages. Make sure you have already loaded all packages into RMF.Core.Packets.PacketFactory before calling");
-                return (0, 0);
+                return Task.CompletedTask;
             }
 
             int initializedChannelsCounter = 0;
@@ -115,15 +118,23 @@ namespace RMF_Server.Channels
                     : Channel.CreateUnbounded<PacketContext>();
 
                 CancellationTokenSource cts = new();
-                Task workerTask = InboundChannelWorker(rawChannel, id: k, token: cts.Token);
+                Task workerTask = Task.Factory.StartNew(
+                    () => InboundChannelWorker(rawChannel, id: k, token: cts.Token),
+                    TaskCreationOptions.LongRunning
+                );
 
                 this._channels[k] = new ChannelContext(
                     rawChannel,
                     workerTask,
                     cts
                 );
+                initializedChannelsCounter++;
             }
-            return (initializedChannelsCounter, channelKeys.Count);
+
+            // I really didn`t want to ruin the perfect aesthetic setup of the component initialization but that damn IHostedService... :)))
+            // Thanks to it, you can admire how one of the aligned initialization logs has treacherously drifted off into the manager
+            this._logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Process channels", initializedChannelsCounter, channelKeys.Count);
+            return Task.CompletedTask;
         }
 
         public async Task EnqueuePacketAsync(PacketContext context)
@@ -139,7 +150,7 @@ namespace RMF_Server.Channels
             await this._channels[channelKey].Channel.Writer.WriteAsync(context);
         }
 
-        public async Task CloseChannels()
+        public async Task StopAsync(CancellationToken token)
         {
             int terminateChannelsCounter = 0;
             int totalActiveChannels = this._channels.Count;

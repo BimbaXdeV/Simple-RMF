@@ -17,5 +17,6 @@ namespace RMF_Server.Logic
                            ||                                                    
                           ''''                                                   
 ";
+        public const string InitComponentLogTemplate = "{Label, -16}: {Loaded} / {Total}";
     }
 }

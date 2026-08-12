@@ -1,4 +1,5 @@
 ﻿using Avalonia.Media;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RMF.Core.Bases;
 using RMF.Core.Interfaces;
@@ -23,6 +24,7 @@ namespace RMF_Server.Commands
 {
     internal class CommandHandler : ICommandHandler
     {
+        private readonly IHostApplicationLifetime _lifetime;
         private readonly ICommandManager _commandManager;
         private readonly IAvaloniaManager _avaloniaManager;
         private readonly IServerSessionManager _sessionManager;
@@ -34,6 +36,7 @@ namespace RMF_Server.Commands
         private readonly StreamingConfig _streamingConfig;
 
         public CommandHandler(
+            IHostApplicationLifetime lifetime,
             ICommandManager commandManager,
             IAvaloniaManager avaloniaManager,
             IServerSessionManager sessionManager,
@@ -45,6 +48,7 @@ namespace RMF_Server.Commands
             StreamingConfig streamingConfig
         )
         {
+            this._lifetime = lifetime;
             this._commandManager = commandManager;
             this._avaloniaManager = avaloniaManager;
             this._sessionManager = sessionManager;
@@ -113,7 +117,7 @@ namespace RMF_Server.Commands
             // Here will be the command handling logic
         }
 
-        public async Task SearchHandle(string input, Command command, CancellationTokenSource cts)
+        public async Task SearchHandle(string input, Command command, CancellationToken token)
         {
             string[] inputCommandStructure = input.Split(' ');
             string commandName = inputCommandStructure[0];
@@ -147,9 +151,9 @@ namespace RMF_Server.Commands
                 {
                     assembledParams[p.Position] = input;
                 }
-                else if (p.ParameterType == typeof(CancellationTokenSource))
+                else if (p.ParameterType == typeof(CancellationToken))
                 {
-                    assembledParams[p.Position] = cts;
+                    assembledParams[p.Position] = token;
                 }
             }
 
@@ -250,10 +254,10 @@ namespace RMF_Server.Commands
             RmfLoggerExtensions.ClearConsole(this._logger);
         }
 
-        private void Shutdown(string input, CancellationTokenSource cts)
+        private void Shutdown(string input)
         {
             this._logger.LogInformation("The \"{CommandName}\" command received. Initiating shutdown process...", input);
-            cts.Cancel();
+            this._lifetime.StopApplication();
         }
 
         private void Certdata()

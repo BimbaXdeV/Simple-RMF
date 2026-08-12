@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RMF.Core.Bases;
 using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Logic;
@@ -24,7 +25,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal class NetworkEngine
+    internal class NetworkEngine : BackgroundService
     {
         private readonly IConnectionListener _listener;
         private readonly IServerSessionManager _sessionManager;
@@ -59,17 +60,9 @@ namespace RMF_Server.Logic
             this._controllerConfig = controllerConfig;
         }
 
-        public async Task RunServer(CancellationToken token)
+        protected override async Task ExecuteAsync(CancellationToken token)
         {
             this._logger.LogInformation("Starting network server on {ListenerName}...", this._listener.GetType().Name);
-            
-            IPAddress ip = this._connectionConfig.IPAddress == "Any"
-                ? IPAddress.Any
-                : IPAddress.Parse(this._connectionConfig.IPAddress ?? "127.0.0.1");
-            
-            int port = (this._connectionConfig.Port >= 1000 && this._connectionConfig.Port <= 9999)
-                ? this._connectionConfig.Port
-                : 8000;
             
             X509Certificate2 serverCertificate = this._tlsManager.GetOrCreateCertificate();
 
@@ -78,7 +71,8 @@ namespace RMF_Server.Logic
             try
             {
                 this._listener.Start();
-                this._logger.LogInformation("Server successfully started listening at {IpAddress}:{Port}", ip, port);
+                IPEndPoint listenedEndPoint = this._listener.ListenedEndPoint;
+                this._logger.LogInformation("Server successfully started listening at {IpAddress}:{Port}", listenedEndPoint.Address, listenedEndPoint.Port);
 
                 while (!token.IsCancellationRequested)
                 {
@@ -257,7 +251,7 @@ namespace RMF_Server.Logic
             }
         }
 
-        public void Shutdown()
+        private void Shutdown()
         {
             this._listener.Stop();
             this._logger.LogInformation("The server successfully stoped");

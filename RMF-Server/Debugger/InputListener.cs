@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RMF.Core.Interfaces;
 using RMF_Server.Commands;
 using RMF_Server.Configurations;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Debugger
 {
-    internal class InputListener
+    internal class InputListener : BackgroundService
     {
         private readonly ICommandHandler _commandHandler;
         private readonly ICommandManager _commandManager;
@@ -49,7 +50,7 @@ namespace RMF_Server.Debugger
             this._commandSign = "> " + this._commandConfig.InlineCommandDefautSign;
         }
 
-        public async Task StartListening(CancellationTokenSource cts)
+        protected override async Task ExecuteAsync(CancellationToken token)
         {
             if (this._isListening)
             {
@@ -57,7 +58,6 @@ namespace RMF_Server.Debugger
                 return;
             }
 
-            CancellationToken token = cts.Token;
             this._isListening = true;
             this._logger.LogInformation("Input listener successfully started waiting admin\'s command");
             try
@@ -96,7 +96,7 @@ namespace RMF_Server.Debugger
                                     continue;
                                 }
 
-                                await this._commandHandler.SearchHandle(command, cm, cts);
+                                await this._commandHandler.SearchHandle(command, cm, token);
                                 this._consoleSync.IsAdminTyping = false;
                                 break;
 

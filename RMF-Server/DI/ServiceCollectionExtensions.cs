@@ -12,10 +12,10 @@ namespace RMF_Server.DI
     {
         public static IServiceCollection AddSingletonXmlConfig<TConfig>(this IServiceCollection services) where TConfig : class, new()
         {
-            return services.AddSingleton<TConfig>(provider =>
+            return services.AddSingleton(provider =>
             {
-                XmlConfigLoader loader = provider.GetRequiredService<XmlConfigLoader>();
-                return loader.GetConfig<TConfig>();
+                XmlConfigProvider configProvider = provider.GetRequiredService<XmlConfigProvider>();
+                return configProvider.GetConfig<TConfig>();
             });
         }
     }

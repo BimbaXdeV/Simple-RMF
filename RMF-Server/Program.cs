@@ -22,7 +22,7 @@ namespace RMF_Server
         static async Task Main(string[] args)
         {
             RmfServerHost server = new(args);
-            await server.RunAsync();
+            await server.RunAsync(args);
 
             //appearanceManager.SetTitle($"{ConfigurationManager.AppTitle}  |  Offline");
             //(int colorsLoaded, int totalColors) = ThemeManager.Load();

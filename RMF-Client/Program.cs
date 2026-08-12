@@ -17,7 +17,7 @@ namespace RMF_Client
 
             (int configurationsLoaded, int totalConfigurations) = ConfigurationManager.Load();
             (int packetsLoaded, int totalPackets) = PacketFactory.RegisterFound();
-            (int eventsLoaded, int totalEvents) = EventAssembler.RegisterFound("Client");
+            (int eventsLoaded, int totalEvents) = EventFactory.RegisterFound("Client");
 
             // Transferring fields data from server configurations to core packet configurations
             SettingsSynchronizer.Upload(typeof(ConfigurationManager), typeof(PacketConfigurations));

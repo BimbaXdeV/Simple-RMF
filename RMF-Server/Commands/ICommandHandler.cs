@@ -9,6 +9,6 @@ namespace RMF_Server.Commands
     internal interface ICommandHandler
     {
         void SwitchHandle(string command);
-        Task SearchHandle(string input, Command command, CancellationTokenSource cts);
+        Task SearchHandle(string input, Command command, CancellationToken token);
     }
 }

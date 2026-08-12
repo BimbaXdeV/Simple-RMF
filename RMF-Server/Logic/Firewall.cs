@@ -144,6 +144,11 @@ namespace RMF_Server.Logic
             return limit <= 0 ? keys.ToArray() : keys.Take(limit).ToArray();
         }
 
+        public int GetBannedIPsCount()
+        {
+            return this._bannedIPs.Count;
+        }
+
         public void Ban(string? ipAddress)
         {
             if (!string.IsNullOrEmpty(ipAddress) && this._ipExtractor.IsMatch(ipAddress))

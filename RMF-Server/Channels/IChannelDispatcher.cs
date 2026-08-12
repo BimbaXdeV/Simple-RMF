@@ -9,9 +9,7 @@ namespace RMF_Server.Channels
 {
     public interface IChannelDispatcher
     {
-        (int, int) StartFound();
         Task EnqueuePacketAsync(PacketContext context);
-        Task CloseChannels();
         bool IsChannelExists(int key);
     }
 }

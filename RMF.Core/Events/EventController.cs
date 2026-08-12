@@ -17,12 +17,12 @@ namespace RMF.Core.Events
         {
             if (!this.RunningTasks.ContainsKey(eventName))
             {
-                IEvent? backgroundEvent = EventAssembler.GetEvent(eventName);
+                IEvent? backgroundEvent = EventFactory.CreateEvent(eventName);
                 if (backgroundEvent != null)
                 {
                     if (eventSettings != null)
                     {
-                        EventAssembler.ApplyEventSettings(backgroundEvent, eventSettings);
+                        EventFactory.ApplyEventSettings(backgroundEvent, eventSettings);
                     }
                     CancellationTokenSource newCts = new();
                     EventContainer container = new(backgroundEvent, newCts);

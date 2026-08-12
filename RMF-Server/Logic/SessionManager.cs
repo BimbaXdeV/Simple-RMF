@@ -168,7 +168,7 @@ namespace RMF_Server.Logic
                 disconnectedClientsCount++;
             }
             this._connections.Clear();
-            this._logger.LogInformation("Cleanup finished, disconnected {DisconnectedClientsCount} / {TotalClientsCount}", disconnectedClientsCount, totalConnectedClients);
+            this._logger.LogInformation("Cleanup finished, disconnected {Disconnected} / {Total}", disconnectedClientsCount, totalConnectedClients);
             this.ConnectionCountChanged?.Invoke(this.TotalConnections);
         }
     }

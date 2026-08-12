@@ -32,7 +32,7 @@ namespace RMF_Server.Logic
         private readonly StreamingConfig _streamingConfig;
 
         private StreamingWindow? _window;
-        private StreamingViewModel _viewModel;
+        private readonly StreamingViewModel _viewModel;
 
         private int _isFrameProcessing;
 
