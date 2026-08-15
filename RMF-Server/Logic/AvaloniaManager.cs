@@ -27,7 +27,7 @@ namespace RMF_Server.Logic
 {
     internal class AvaloniaManager : IAvaloniaManager
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<AvaloniaManager> _logger;
         private readonly AppearanceConfig _appearanceConfig;
         private readonly StreamingConfig _streamingConfig;
 
@@ -36,7 +36,7 @@ namespace RMF_Server.Logic
 
         private int _isFrameProcessing;
 
-        public readonly TaskCompletionSource UIInitSource;
+        public TaskCompletionSource UIInitSource { get; }
 
         public IPEndPoint? StreamingClientEndPoint
         {
@@ -45,7 +45,7 @@ namespace RMF_Server.Logic
         }
 
         public AvaloniaManager(
-            ILogger logger,
+            ILogger<AvaloniaManager> logger,
             AppearanceConfig appearanceConfig,
             StreamingConfig streamingConfig
         )

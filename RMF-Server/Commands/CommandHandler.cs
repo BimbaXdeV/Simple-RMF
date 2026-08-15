@@ -31,7 +31,7 @@ namespace RMF_Server.Commands
         private readonly ITlsManager _tlsManager;
         private readonly IFirewall _firewall;
         private readonly IThemeManager _themeManager;
-        private readonly ILogger _logger;
+        private readonly ILogger<CommandHandler> _logger;
         private readonly AppearanceConfig _appearanceConfig;
         private readonly StreamingConfig _streamingConfig;
 
@@ -43,7 +43,7 @@ namespace RMF_Server.Commands
             ITlsManager tlsManager,
             IFirewall firewall,
             IThemeManager themeManager,
-            ILogger logger,
+            ILogger<CommandHandler> logger,
             AppearanceConfig appearanceConfig,
             StreamingConfig streamingConfig
         )

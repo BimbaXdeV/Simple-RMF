@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Bases;
 using RMF.Core.Interfaces;
+using RMF.Core.Interfaces.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +13,9 @@ namespace RMF.Core.Events
     {
         public bool IsEvRunning { get; private set; } = false;
 
-        protected abstract Task HandleLogic(ClientSession session, CancellationToken token);
+        protected abstract Task HandleLogic(ISession session, CancellationToken token);
         
-        public async Task ExecuteAsync(ClientSession session, CancellationToken token)
+        public async Task ExecuteAsync(ISession session, CancellationToken token)
         {
             this.IsEvRunning = true;
             try

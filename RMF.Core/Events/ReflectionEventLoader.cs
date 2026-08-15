@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RMF.Core.Loaders;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -11,13 +12,14 @@ namespace RMF.Core.Events
     {
         private static readonly string _namespaceFormat = "{0}.Events.{1}";
 
-        public static (Dictionary<string, Type> Data, int Total) FindEvents(string programSide)
+        public static LoadResult<Dictionary<string, Type>> FindEvents(string programSide)
         {
             Assembly? executingAssembly = Assembly.GetExecutingAssembly();
             string? projectName = executingAssembly?.GetName().Name;
+
             if (executingAssembly == null || string.IsNullOrEmpty(projectName))
             {
-                return (new Dictionary<string, Type>(), 0);
+                return LoadResult<Dictionary<string, Type>>.Failure($"Unable to load events on the {programSide} side, failed to retrieve the currently executing project assembly");
             }
 
             programSide = char.ToUpper(programSide[0]) + programSide.Substring(1).ToLower();  // You can enter the name in any case
@@ -34,7 +36,7 @@ namespace RMF.Core.Events
             {
                 eventTypes.TryAdd(t.Name, t);
             }
-            return (eventTypes, foundEvents.Length);
+            return LoadResult<Dictionary<string, Type>>.Success(eventTypes, foundEvents.Length);
         }
     }
 }

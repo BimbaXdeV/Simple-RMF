@@ -19,14 +19,14 @@ namespace RMF_Server.Logic
     internal class AppearanceManager : IWindowManager, IDisposable
     {
         private readonly IServerSessionManager _sessionManager;
-        private readonly ILogger _logger;
+        private readonly ILogger<AppearanceManager> _logger;
         private readonly AppearanceConfig _appearanceConfig;
 
         private const byte _maxTitleLength = 48;
 
         public AppearanceManager(
             IServerSessionManager sessionManager,
-            ILogger logger,
+            ILogger<AppearanceManager> logger,
             AppearanceConfig appearanceConfig
         )
         {
@@ -52,7 +52,6 @@ namespace RMF_Server.Logic
                 return;
             }
 
-            //Console.Title = $"{this._appearanceConfig.AppTitle} | Online: {connectionCount}";
             Console.Title = this._appearanceConfig.AppTitle + " | Online: " + connectionCount;
         }
 

@@ -16,7 +16,7 @@ namespace RMF_Server.Debugger
         private readonly ICommandHandler _commandHandler;
         private readonly ICommandManager _commandManager;
         private readonly IThemeManager _themeManager;
-        private readonly ILogger _logger;
+        private readonly ILogger<InputListener> _logger;
         private readonly IConsoleSynchronizer _consoleSync;
         private readonly CommandConfig _commandConfig;
         private readonly ListenerConfig _listenerConfig;
@@ -30,7 +30,7 @@ namespace RMF_Server.Debugger
             ICommandHandler commandHandler,
             ICommandManager commandManager,
             IThemeManager themeManager,
-            ILogger logger,
+            ILogger<InputListener> logger,
             IConsoleSynchronizer consoleSync,
             CommandConfig commandConfig,
             ListenerConfig listenerConfig
@@ -62,6 +62,7 @@ namespace RMF_Server.Debugger
             this._logger.LogInformation("Input listener successfully started waiting admin\'s command");
             try
             {
+                await Task.Yield();
                 while (!token.IsCancellationRequested)
                 {
                     if (Console.KeyAvailable)

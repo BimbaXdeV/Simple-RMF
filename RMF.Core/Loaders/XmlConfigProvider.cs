@@ -17,7 +17,16 @@ namespace RMF.Core.Loaders
 
         public T GetConfig<T>() where T : new()
         {
-            return (T)this._configInstances[typeof(T)];
+            if (this._configInstances.TryGetValue(typeof(T), out object? instance))
+            {
+                return (T)instance;
+            }
+            else
+            {
+                T newInstance = new();
+                this._configInstances[typeof(T)] = newInstance;
+                return newInstance;
+            }
         }
     }
 }

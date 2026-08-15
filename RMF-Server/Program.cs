@@ -18,7 +18,6 @@ namespace RMF_Server
 {
     internal class Program
     {
-        [STAThread]
         static async Task Main(string[] args)
         {
             RmfServerHost server = new(args);

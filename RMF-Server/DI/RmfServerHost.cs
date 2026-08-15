@@ -30,12 +30,19 @@ namespace RMF_Server.DI
 
         public RmfServerHost(string[] args)
         {
-            // Logging dependencies
+            // -- Part of the server component initialization --
+            // All necessary components must be initialized before the DI container is built,
+            // which should save resources during server startup;
+
+            // [!] Ultimately, the decision was made to completely abandon partial resource loading
+            // and instead throw an exception immediately if external files or parsing systems failed
+
+            // Logging dependencies (color theme + synchronizer + config)
+            Console.WriteLine("Loading logging dependencies...");
             LoadResult<Dictionary<Type, object>> configLoadResult = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
             if (!configLoadResult.IsSuccess)
             {
-                Console.WriteLine($"[FATAL] {configLoadResult.ExceptionMessage}");
-                Environment.Exit(1);
+                throw new FileLoadException(configLoadResult.ExceptionMessage);
             }
             XmlConfigProvider configProvider = new(configLoadResult.Data!);
             LoggingConfig loggingConfig = configProvider.GetConfig<LoggingConfig>();
@@ -44,38 +51,58 @@ namespace RMF_Server.DI
             LoadResult< Dictionary<string, ThemeColor>> themeLoadResult = XmlThemeLoader.Load(Path.Combine("Resources", "theme.xml"));
             if (!themeLoadResult.IsSuccess)
             {
-                Console.WriteLine($"[FATAL] {themeLoadResult.ExceptionMessage}");
+                throw new FileLoadException(themeLoadResult.ExceptionMessage);
             }
             ThemeManager themeManager = new(themeLoadResult.Data!, new ThemeColor(255, 255, 255, 255));
 
-            IHostBuilder builder = Host.CreateDefaultBuilder(args);
+            // Network packets
+            LoadResult<Dictionary<short, Type>> packetLoadResult = ReflectionPacketLoader.Load();
+            if (!packetLoadResult.IsSuccess)
+            {
+                throw new TypeLoadException(packetLoadResult.ExceptionMessage);
+            }
+            PacketFactory packetFactory = new(packetLoadResult.Data!);
 
+            // Server events
+            LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Server");
+            if (!eventLoadResult.IsSuccess)
+            {
+                throw new TypeLoadException(eventLoadResult.ExceptionMessage);
+            }
+            EventFactory eventFactory = new(eventLoadResult.Data!);
+
+            // Admin commands
+            LoadResult<List<Command>> commandLoadResult = XmlCommandLoader.Load(Path.Combine("Resources", "commands.xml"));
+            if (!commandLoadResult.IsSuccess)
+            {
+                throw new FileLoadException(commandLoadResult.ExceptionMessage);
+            }
+            CommandManager commandManager = new(commandLoadResult.Data);
+
+            // Firewall reserve
+            string? firewallLoadMessage = null;
+
+            // -- Assembling services into a DI container --
+            Console.WriteLine("Assembling services into a DI container...");
+            IHostBuilder builder = Host.CreateDefaultBuilder(args);
             builder.ConfigureServices(services =>
             {
-                // Logging dependencies (color theme + synchronizer + config)
-                services.AddSingleton(provider =>
-                {
-                    ILogger<ThemeManager> logger = provider.GetRequiredService<ILogger<ThemeManager>>();
-                    logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Theme colors", themeLoadResult.Data!.Count, themeLoadResult.Total);
-                    return themeManager;
-                });
+                // Logging dependencies implementation
+                services.AddSingleton<IThemeManager>(themeManager);
                 services.AddSingleton<IConsoleSynchronizer, ConsoleSynchronizer>();
                 services.AddSingleton(loggingConfig);
 
-                // Logging
+                // Logging provider + background executor
+                services.AddSingleton<RmfLoggerProvider>();
                 services.AddLogging(builder =>
                 {
                     builder.ClearProviders();
-                    builder.Services.AddSingleton<ILoggerProvider, RmfLoggerProvider>();
+                    builder.Services.AddSingleton<ILoggerProvider>(provider => provider.GetRequiredService<RmfLoggerProvider>());
                 });
+                services.AddHostedService(provider => provider.GetRequiredService<RmfLoggerProvider>());
 
                 // Configurations
-                services.AddSingleton(provider =>
-                {
-                    ILogger<XmlConfigProvider> logger = provider.GetRequiredService<ILogger<XmlConfigProvider>>();
-                    logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Configurations", configLoadResult.Data!.Count, configLoadResult.Total);
-                    return configProvider;
-                });
+                services.AddSingleton(configProvider);
                 services.AddSingletonXmlConfig<AppearanceConfig>();
                 services.AddSingletonXmlConfig<ConnectionConfig>();
                 services.AddSingletonXmlConfig<FirewallConfig>();
@@ -87,8 +114,13 @@ namespace RMF_Server.DI
                 services.AddSingletonXmlConfig<ListenerConfig>();
 
                 // Sessions & Network
-                services.AddSingleton<IProtocolReader, ProtocolReader>();
+                services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>
+                {
+                    FirewallConfig firewallConfig = provider.GetRequiredService<FirewallConfig>();
+                    return new ProtocolReader(firewallConfig.MinPacketLengthKB, firewallConfig.MaxPacketLengthKB);
+                });
                 services.AddSingleton<IPacketSender, StreamManager>();
+                services.AddSingleton<IEventFactory>(eventFactory);
                 services.AddSingleton<IServerSessionManager, SessionManager>();
 
                 // UI
@@ -96,41 +128,12 @@ namespace RMF_Server.DI
                 services.AddSingleton<IWindowManager, AppearanceManager>();
 
                 // Commands
-                services.AddSingleton<ICommandManager, CommandManager>(provider =>
-                {
-                    ILogger<CommandManager> logger = provider.GetRequiredService<ILogger<CommandManager>>();
-
-                    LoadResult<List<Command>> commandLoadResult = XmlCommandLoader.Load(Path.Combine("Resources", "commands.xml"));
-                    CommandManager commandManager = new(commandLoadResult.Data);
-
-                    logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Inline commands", commandLoadResult.Data?.Count ?? 0, commandLoadResult.Total);
-                    return commandManager;
-                });
+                services.AddSingleton<ICommandManager>(commandManager);
                 services.AddSingleton<ICommandHandler, CommandHandler>();
 
                 // Packets
-                services.AddSingleton<IPacketFactory, PacketFactory>(provider =>
-                {
-                    ILogger<PacketFactory> logger = provider.GetRequiredService<ILogger<PacketFactory>>();
-
-                    (Dictionary<short, Type> packetsLoaded, int totalPackets) = ReflectionPacketLoader.Load(logger);
-                    PacketFactory packetFactory = new(packetsLoaded);
-
-                    logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Network packets", packetsLoaded.Count, totalPackets);
-                    return packetFactory;
-                });
-
-                // Events
-                services.AddSingleton<IEventFactory, EventFactory>(provider =>
-                {
-                    ILogger<EventFactory> logger = provider.GetRequiredService<ILogger<EventFactory>>();
-
-                    (Dictionary<string, Type> eventsLoaded, int totalEvents) = ReflectionEventLoader.FindEvents("Server");
-                    EventFactory eventFactory = new(eventsLoaded);
-                    
-                    logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Server events", eventsLoaded.Count, totalEvents);
-                    return eventFactory;
-                });
+                services.AddSingleton<IPacketFactory>(packetFactory);
+                services.AddSingleton<IServerPacketProcessor, PacketProcessor>();
 
                 // Channels
                 services.AddSingleton<IChannelDispatcher, ChannelDispatcher>();
@@ -162,7 +165,11 @@ namespace RMF_Server.DI
                     if (firewall.TryLoadBlacklist())
                     {
                         int blacklistLength = firewall.GetBannedIPsCount();
-                        logger.LogInformation("Firewall connection blacklist loaded successfully ({Total} IPs)", blacklistLength);
+                        firewallLoadMessage = $"Firewall connection blacklist loaded successfully ({blacklistLength} IPs)";
+                    }
+                    else
+                    {
+                        
                     }
                     return firewall;
                 });
@@ -170,18 +177,34 @@ namespace RMF_Server.DI
                 services.AddHostedService<InputListener>();
             });
 
+            Console.WriteLine("Building DI container...");
             this._host = builder.Build();
+
+            // -- Start outputs --
+            ILogger<RmfServerHost> logger = this._host.Services.GetRequiredService<ILogger<RmfServerHost>>();
+
+            logger.InsertLogo();
+            logger.InsertSeparator();
+
+            logger.LogInformation("Initialized components");
+            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Configurations", configLoadResult.Data!.Count, configLoadResult.Total);
+            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Theme colors", themeLoadResult.Data!.Count, themeLoadResult.Total);
+            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Network packets", packetLoadResult.Data!.Count, packetLoadResult.Total);
+            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Server events", eventLoadResult.Data!.Count, eventLoadResult.Total);
+            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Admin commands", commandLoadResult.Data!.Count, commandLoadResult.Total);
         }
 
+        [STAThread]
         public async Task RunAsync(string[] args)
         {
             IAvaloniaManager avaloniaManager = this._host.Services.GetRequiredService<IAvaloniaManager>();
 
-            await this._host.RunAsync();
+            await this._host.StartAsync();
 
             try
             {
-                await avaloniaManager.WaitForUIReady();
+                Console.WriteLine("Starting Avalonia UI...");
+                avaloniaManager.UIInitSource.TrySetResult();
                 avaloniaManager.BuildAvaloniaApp()
                                .StartWithClassicDesktopLifetime(args);
             }

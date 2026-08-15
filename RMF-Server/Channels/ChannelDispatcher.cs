@@ -18,11 +18,11 @@ using System.Threading.Channels;
 
 namespace RMF_Server.Channels
 {
-    internal class ChannelDispatcher : IChannelDispatcher, IHostedService
+    internal class ChannelDispatcher : BackgroundService, IChannelDispatcher
     {
         private readonly IPacketFactory _packetFactory;
         private readonly IServerPacketProcessor _packetProcessor;
-        private readonly ILogger _logger;
+        private readonly ILogger<ChannelDispatcher> _logger;
         private readonly ChannelConfig _channelConfig;
 
         private readonly Dictionary<int, ChannelContext> _channels;
@@ -30,7 +30,7 @@ namespace RMF_Server.Channels
         public ChannelDispatcher(
             IPacketFactory packetFactory,
             IServerPacketProcessor packetProcessor,
-            ILogger logger,
+            ILogger<ChannelDispatcher> logger,
             ChannelConfig channelConfig
         )
         {
@@ -42,56 +42,7 @@ namespace RMF_Server.Channels
             this._channels = [];
         }
 
-        private async Task InboundChannelWorker(Channel<PacketContext> channel, int id = 0, CancellationToken? token = null)
-        {
-            ChannelReader<PacketContext> reader = channel.Reader;
-
-            try
-            {
-                await foreach (PacketContext context in reader.ReadAllAsync(token ?? CancellationToken.None))
-                {
-                    Packet? packet = this._packetFactory.CreatePacket(context.Id);
-                    if (packet == null)
-                    {
-                        this._logger.LogWarning("Received an unknown packet \"{PacketId}\" from the client {EndPoint}", context.Id, context.EndPoint);
-                        ArrayPool<byte>.Shared.Return(context.Payload);
-                        continue;
-                    }
-
-                    try
-                    {
-                        ReadOnlySpan<byte> payloadSpan = context.Payload.AsSpan(0, context.Length);
-                        SpanReader payloadReader = new(payloadSpan);
-
-                        packet.Deserialize(ref payloadReader);
-                        await this._packetProcessor.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
-                    }
-                    catch (Exception ex)
-                    {
-                        this._logger.LogError("Failed to process packet with ID {PacketId} from {EndPoint}\n{Exception}", context.Id, context.EndPoint, ex);
-                    }
-                    finally
-                    {
-                        // To avoid allocating unnecessary memory, we allocate a free byte[] from the async pool, which must be returned after use
-                        ArrayPool<byte>.Shared.Return(context.Payload);
-                        if (packet is IReleasable releasable)
-                        {
-                            releasable.Release();
-                        }
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            finally
-            {
-                channel.Writer.Complete();
-                this._logger.LogInformation("Channel for key {ChannelId} has been closed", id);
-            }
-        }
-
-        public Task StartAsync(CancellationToken token)
+        protected override Task ExecuteAsync(CancellationToken token)
         {
             HashSet<int> channelKeys = this._packetFactory.GetClientPacketsIDs().Select(x => x / 100).ToHashSet();
             if (channelKeys.Count == 0)
@@ -137,6 +88,56 @@ namespace RMF_Server.Channels
             return Task.CompletedTask;
         }
 
+        private async Task InboundChannelWorker(Channel<PacketContext> channel, int id = 0, CancellationToken token = default)
+        {
+            ChannelReader<PacketContext> reader = channel.Reader;
+
+            try
+            {
+                await Task.Yield();
+                await foreach (PacketContext context in reader.ReadAllAsync(token))
+                {
+                    Packet? packet = this._packetFactory.CreatePacket(context.Id);
+                    if (packet == null)
+                    {
+                        this._logger.LogWarning("Received an unknown packet \"{PacketId}\" from the client {EndPoint}", context.Id, context.EndPoint);
+                        ArrayPool<byte>.Shared.Return(context.Payload);
+                        continue;
+                    }
+
+                    try
+                    {
+                        ReadOnlySpan<byte> payloadSpan = context.Payload.AsSpan(0, context.Length);
+                        SpanReader payloadReader = new(payloadSpan);
+
+                        packet.Deserialize(ref payloadReader);
+                        await this._packetProcessor.SwitchHandle(packet, context.EndPoint);  // When scaling, a new case needs to be added
+                    }
+                    catch (Exception ex)
+                    {
+                        this._logger.LogError("Failed to process packet with ID {PacketId} from {EndPoint}\n{Exception}", context.Id, context.EndPoint, ex);
+                    }
+                    finally
+                    {
+                        // To avoid allocating unnecessary memory, we allocate a free byte[] from the async pool, which must be returned after use
+                        ArrayPool<byte>.Shared.Return(context.Payload);
+                        if (packet is IReleasable releasable)
+                        {
+                            releasable.Release();
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                channel.Writer.Complete();
+                this._logger.LogInformation("Channel for key {ChannelId} has been closed", id);
+            }
+        }
+
         public async Task EnqueuePacketAsync(PacketContext context)
         {
             int channelKey = context.Id / 100;
@@ -150,7 +151,7 @@ namespace RMF_Server.Channels
             await this._channels[channelKey].Channel.Writer.WriteAsync(context);
         }
 
-        public async Task StopAsync(CancellationToken token)
+        public override async Task StopAsync(CancellationToken token)
         {
             int terminateChannelsCounter = 0;
             int totalActiveChannels = this._channels.Count;
@@ -169,6 +170,8 @@ namespace RMF_Server.Channels
 
             this._logger.LogInformation("Successfully closed {ClosedChannels} channels out of {TotalChannels} active", terminateChannelsCounter, totalActiveChannels);
             this._channels.Clear();
+
+            await base.StopAsync(token);
         }
 
         public bool IsChannelExists(int key)

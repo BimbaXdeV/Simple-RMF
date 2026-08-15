@@ -12,6 +12,7 @@ namespace RMF_Server.Logic
     internal interface IAvaloniaManager
     {
         IPEndPoint? StreamingClientEndPoint { get; set; }
+        TaskCompletionSource UIInitSource { get; }
         Task WaitForUIReady();
         AppBuilder BuildAvaloniaApp();
         Task ShowWindow();

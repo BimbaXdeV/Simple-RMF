@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RMF.Core.Interfaces;
+using RMF.Core.Loaders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace RMF.Core.Packets
 {
     public static class ReflectionPacketLoader
     {
-        public static (Dictionary<short, Type> Data, int Total) Load(ILogger logger)
+        public static LoadResult<Dictionary<short, Type>> Load()
         {
             Type basePacketType = typeof(Packet);
 
@@ -23,16 +24,18 @@ namespace RMF.Core.Packets
             Dictionary<short, Type> packetTypes = [];
             foreach (Type packetType in foundPacketTypes)
             {
-                short? packetId = (short?)(packetType.GetProperty("ID")?.GetValue(null));
+                // It`s needed purely for the fun of it. Without it, reflection refuses to retrieve the packet ID.
+                object packetInstance = Activator.CreateInstance(packetType)!;
+
+                short? packetId = (short?)(packetType.GetProperty("ID")?.GetValue(packetInstance));
                 if (packetId == null)
                 {
-                    logger.LogWarning("Failed to load {PacketName}: the packet type must contains property \"ID\"", packetType.Name);
-                    continue;
+                    return LoadResult<Dictionary<short, Type>>.Failure($"Packet type {packetType.Name} does not have a valid static ID property");
                 }
 
                 packetTypes.TryAdd((short)packetId, packetType);
             }
-            return (packetTypes, foundPacketTypes.Length);
+            return LoadResult<Dictionary<short, Type>>.Success(packetTypes, foundPacketTypes.Length);
         }
     }
 }

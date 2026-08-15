@@ -32,7 +32,7 @@ namespace RMF_Server.Logic
         private readonly IChannelDispatcher _channelDispatcher;
         private readonly ITlsManager _tlsManager;
         private readonly IFirewall _firewall;
-        private readonly ILogger _logger;
+        private readonly ILogger<NetworkEngine> _logger;
         private readonly ConnectionConfig _connectionConfig;
         private readonly FirewallConfig _firewallConfig;
         private readonly ControllerConfig _controllerConfig;
@@ -43,7 +43,7 @@ namespace RMF_Server.Logic
             IChannelDispatcher channelDispatcher,
             ITlsManager tlsManager,
             IFirewall firewall,
-            ILogger logger,
+            ILogger<NetworkEngine> logger,
             ConnectionConfig connectionConfig,
             FirewallConfig firewallConfig,
             ControllerConfig controllerConfig
@@ -74,6 +74,7 @@ namespace RMF_Server.Logic
                 IPEndPoint listenedEndPoint = this._listener.ListenedEndPoint;
                 this._logger.LogInformation("Server successfully started listening at {IpAddress}:{Port}", listenedEndPoint.Address, listenedEndPoint.Port);
 
+                await Task.Yield();
                 while (!token.IsCancellationRequested)
                 {
                     INetworkConnection connection = await this._listener.AcceptConnectionAsync(token);

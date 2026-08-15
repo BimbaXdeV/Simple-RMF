@@ -48,6 +48,7 @@ namespace RMF.Core.Bases
             INetworkConnection connection,
             IProtocolReader reader,
             IPacketSender packetSender,
+            IEventFactory eventFactory,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
@@ -57,7 +58,7 @@ namespace RMF.Core.Bases
             this.Reader = reader;
             this.PacketSender = packetSender;
 
-            this._events = new EventController();
+            this._events = new EventController(eventFactory);
             this.OutboundChannel = Channel.CreateBounded<Packet>(
                 new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1000)
                 {

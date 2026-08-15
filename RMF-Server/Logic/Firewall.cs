@@ -17,7 +17,7 @@ namespace RMF_Server.Logic
 {
     internal class Firewall : IFirewall, IDisposable
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<Firewall> _logger;
         private readonly FirewallConfig _firewallConfig;
 
         private readonly Regex _ipExtractor;
@@ -30,7 +30,7 @@ namespace RMF_Server.Logic
             fileFormat: "txt"
         );
 
-        public Firewall(ILogger logger, FirewallConfig firewallConfig)
+        public Firewall(ILogger<Firewall> logger, FirewallConfig firewallConfig)
         {
             this._logger = logger;
             this._firewallConfig = firewallConfig;

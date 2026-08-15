@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RMF_Server.Configurations;
 using RMF_Server.Logic;
 using System;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Debugger
 {
-    internal class RmfLoggerProvider : ILoggerProvider
+    internal class RmfLoggerProvider : BackgroundService, ILoggerProvider
     {
         private readonly IThemeManager _themeManager;
         private readonly IConsoleSynchronizer _consoleSync;
@@ -23,11 +24,7 @@ namespace RMF_Server.Debugger
 
         private readonly Regex _ansiRegex;
 
-        private readonly CancellationTokenSource _cts;
-        private readonly Task _executorTask;
-
         public RmfLoggerProvider(
-            int historyLength,
             IThemeManager themeManager,
             IConsoleSynchronizer consoleSync,
             LoggingConfig loggingConfig
@@ -38,13 +35,10 @@ namespace RMF_Server.Debugger
             this._loggingConfig = loggingConfig;
 
             this._logQueue = new ConcurrentQueue<string>();
-            this._history = new string[historyLength];
+            this._history = new string[this._loggingConfig.LoggingHistoryLength];
             this._isExecutorRunning = false;
 
             this._ansiRegex = new(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
-
-            this._cts = new CancellationTokenSource();
-            this._executorTask = Task.Run(() => RunExecutor(this._cts.Token));
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -57,7 +51,7 @@ namespace RMF_Server.Debugger
             );
         }
 
-        public async Task RunExecutor(CancellationToken token)
+        protected override async Task ExecuteAsync(CancellationToken token)
         {
             if (this._isExecutorRunning)
             {
@@ -69,6 +63,9 @@ namespace RMF_Server.Debugger
             this._consoleSync.IsLoggingRunning = true;
             try
             {
+                // If the loggers have managed to dump a zillion logs into the queue,
+                // it won`t hand control over to the DI container builder until it has output them all
+                await Task.Yield();
                 while (!token.IsCancellationRequested || !this._logQueue.IsEmpty)
                 {
                     if (!this._consoleSync.IsAdminTyping && this._logQueue.TryDequeue(out string? log))
@@ -125,24 +122,6 @@ namespace RMF_Server.Debugger
                 default:
                     Console.WriteLine(log);
                     break;
-            }
-        }
-
-        public void Dispose()
-        {
-            this._cts.Cancel();
-
-            try
-            {
-                this._executorTask.Wait(TimeSpan.FromSeconds(3));
-            }
-            catch (AggregateException)
-            {
-            }
-
-            if (this._loggingConfig.EnableLogSaving)
-            {
-                SaveBackup();
             }
         }
 
@@ -210,6 +189,15 @@ namespace RMF_Server.Debugger
             {
                 Console.WriteLine($"Failed to write log history to file: {ex}");
             }
+        }
+
+        public override void Dispose()
+        {
+            if (this._loggingConfig.EnableLogSaving)
+            {
+                SaveBackup();
+            }
+            base.Dispose();
         }
     }
 }

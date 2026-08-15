@@ -22,14 +22,14 @@ namespace RMF_Server.Logic
     {
         private readonly IAvaloniaManager _avaloniaManager;
         private readonly IServerSessionManager _sessionManager;
-        private readonly ILogger _logger;
+        private readonly ILogger<PacketProcessor> _logger;
         private readonly AppearanceConfig _appearanceConfig;
         private readonly StreamingConfig _streamingConfig;
 
         public PacketProcessor(
             IAvaloniaManager avaloniaManager,
             IServerSessionManager sessionManager,
-            ILogger logger,
+            ILogger<PacketProcessor> logger,
             AppearanceConfig appearanceConfig,
             StreamingConfig streamingConfig
         )

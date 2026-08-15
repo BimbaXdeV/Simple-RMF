@@ -16,7 +16,7 @@ namespace RMF_Server.Logic
 {
     internal class TlsManager : ITlsManager
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<TlsManager> _logger;
         private readonly TlsConfig _tlsConfig;
 
         private X509Certificate2? _serverCertificate;
@@ -27,7 +27,7 @@ namespace RMF_Server.Logic
             fileFormat: "pfx"
         );
 
-        public TlsManager(ILogger logger, TlsConfig tlsConfig)
+        public TlsManager(ILogger<TlsManager> logger, TlsConfig tlsConfig)
         {
             this._logger = logger;
             this._tlsConfig = tlsConfig;

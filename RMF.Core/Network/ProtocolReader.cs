@@ -13,16 +13,18 @@ namespace RMF.Core.Network
 {
     public class ProtocolReader : IProtocolReader
     {
-        private readonly long _bytesLimit;
+        private readonly long _minBytes;
+        private readonly long _maxBytes;
 
-        public ProtocolReader(long bytesLimit)
+        public ProtocolReader(long minBytes = 0, long maxBytes = 2048)
         {
-            this._bytesLimit = bytesLimit;
+            this._minBytes = minBytes;
+            this._maxBytes = maxBytes;
         }
 
         private void ValidateStreamLength(int length)
         {
-            if (length > this._bytesLimit || length < 0)
+            if (length < this._minBytes || length > this._maxBytes)
             {
                 throw new OverflowException("The payload size exceeds the allowed buffer limit");
             }

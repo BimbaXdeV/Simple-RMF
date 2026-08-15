@@ -23,7 +23,8 @@ namespace RMF_Server.Logic
     {
         private readonly IProtocolReader _protocolReader;
         private readonly IPacketSender _packetSender;
-        private readonly ILogger _logger;
+        private readonly IEventFactory _eventFactory;
+        private readonly ILogger<SessionManager> _logger;
         private readonly ControllerConfig _controllerConfig;
         private readonly ChannelConfig _channelConfig;
 
@@ -39,13 +40,15 @@ namespace RMF_Server.Logic
         public SessionManager(
             IProtocolReader protocolReader,
             IPacketSender packetSender,
-            ILogger logger,
+            IEventFactory eventFactory,
+            ILogger<SessionManager> logger,
             ControllerConfig controllerConfig,
             ChannelConfig channelConfig
         )
         {
             this._protocolReader = protocolReader;
             this._packetSender = packetSender;
+            this._eventFactory = eventFactory;
             this._logger = logger;
             this._controllerConfig = controllerConfig;
             this._channelConfig = channelConfig;
@@ -75,6 +78,7 @@ namespace RMF_Server.Logic
                 connection,
                 this._protocolReader,
                 this._packetSender,
+                this._eventFactory,
                 channelCapacity: this._channelConfig?.ChannelPacketsCapacity ?? default,
                 collectingStats: this._controllerConfig?.EnableCollectingSessionStats ?? false,
                 token: token

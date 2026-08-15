@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Bases;
+using RMF.Core.Interfaces.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,6 @@ namespace RMF.Core.Interfaces
     {
         public bool IsEvRunning { get; }
 
-        public Task ExecuteAsync(ClientSession session, CancellationToken token);
+        public Task ExecuteAsync(ISession session, CancellationToken token);
     }
 }

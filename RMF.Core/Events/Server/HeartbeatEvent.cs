@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Bases;
+using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets.Client;
 using RMF.Core.Packets.Server;
@@ -16,7 +17,7 @@ namespace RMF.Core.Events.Server
     {
         public int IntervalSecs { get; set; } = 0;
 
-        protected override async Task HandleLogic(ClientSession session, CancellationToken token)
+        protected override async Task HandleLogic(ISession session, CancellationToken token)
         {
             if (this.IntervalSecs <= 0)
             {

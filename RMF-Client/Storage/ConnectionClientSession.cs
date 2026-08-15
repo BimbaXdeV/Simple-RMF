@@ -21,10 +21,11 @@ namespace RMF_Client.Storage
             INetworkConnection connection,
             IProtocolReader reader,
             IPacketSender packetSender,
+            IEventFactory eventFactory,
             int channelCapacity = 0,
             bool collectingStats = false,
             CancellationToken token = default
-        ) : base(connection, reader, packetSender, channelCapacity, collectingStats, token)
+        ) : base(connection, reader, packetSender, eventFactory, channelCapacity, collectingStats, token)
         {
             this.ConnectedTime = DateTime.UtcNow;
         }
