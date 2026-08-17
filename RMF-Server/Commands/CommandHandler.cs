@@ -31,6 +31,7 @@ namespace RMF_Server.Commands
         private readonly ITlsManager _tlsManager;
         private readonly IFirewall _firewall;
         private readonly IThemeManager _themeManager;
+        private readonly IConsoleExtensions _consoleExtensions;
         private readonly ILogger<CommandHandler> _logger;
         private readonly AppearanceConfig _appearanceConfig;
         private readonly StreamingConfig _streamingConfig;
@@ -43,6 +44,7 @@ namespace RMF_Server.Commands
             ITlsManager tlsManager,
             IFirewall firewall,
             IThemeManager themeManager,
+            IConsoleExtensions consoleExtensions,
             ILogger<CommandHandler> logger,
             AppearanceConfig appearanceConfig,
             StreamingConfig streamingConfig
@@ -55,6 +57,7 @@ namespace RMF_Server.Commands
             this._tlsManager = tlsManager;
             this._firewall = firewall;
             this._themeManager = themeManager;
+            this._consoleExtensions = consoleExtensions;
             this._logger = logger;
             this._appearanceConfig = appearanceConfig;
             this._streamingConfig = streamingConfig;
@@ -157,7 +160,7 @@ namespace RMF_Server.Commands
                 }
             }
 
-            object? processResult = processMethod.Invoke(null, assembledParams);
+            object? processResult = processMethod.Invoke(this, assembledParams);
             if (processResult is Task taskResult)
             {
                 await taskResult;
@@ -178,14 +181,14 @@ namespace RMF_Server.Commands
             {
                 ThemeColor paramColor = this._themeManager.GetColor("ParameterName");
                 string parametersNamesPerformance = cm.Parameters != null
-                    ? " " + Colorist.GetColoredFilterRGB(paramColor) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor()
+                    ? " " + paramColor + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + ThemeColor.AnsiReset
                     : "";
                 string descriptionPerformance = cm.Description ?? "Description is empty...";
                 
                 ThemeColor commandColor = this._themeManager.GetColor("CommandName");
                 this._logger.LogInformation(
                     "{StartCommandColor}- {CommandName}{EndCommandColor}{Parameters} : {Description}",
-                    commandColor, cm.Name, Colorist.ResetColor(), parametersNamesPerformance, descriptionPerformance
+                    commandColor, cm.Name, ThemeColor.AnsiReset, parametersNamesPerformance, descriptionPerformance
                 );
             }
         }
@@ -251,7 +254,7 @@ namespace RMF_Server.Commands
 
         private void Clear()
         {
-            RmfLoggerExtensions.ClearConsole(this._logger);
+            this._consoleExtensions.ClearConsole(this._logger);
         }
 
         private void Shutdown(string input)

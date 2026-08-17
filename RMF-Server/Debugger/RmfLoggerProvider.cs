@@ -70,14 +70,8 @@ namespace RMF_Server.Debugger
                 {
                     if (!this._consoleSync.IsAdminTyping && this._logQueue.TryDequeue(out string? log))
                     {
-                        if (!this._loggingConfig.EnableLoggingInlineCommands)
-                        {
-                            // Just a standard logger output. Ya, completely standard...
-                            Console.WriteLine(log);
-                            continue;
-                        }
-
-                        HandleMessageLog(log);
+                        // Just a standard logger output. Ya, completely standard...
+                        Console.WriteLine(log);
                     }
                     else
                     {
@@ -85,7 +79,7 @@ namespace RMF_Server.Debugger
                         {
                             await Task.Delay(this._loggingConfig.LoggingHandlerDelayMsecs, CancellationToken.None);
                         }
-                        catch (Exception)
+                        catch
                         {
                         }
                     }
@@ -96,32 +90,6 @@ namespace RMF_Server.Debugger
                 this._isExecutorRunning = false;
                 this._consoleSync.IsLoggingRunning = false;
                 Console.WriteLine("Logging output executor has been stopped, subsequent logs will be output out of order");
-            }
-        }
-
-        private void HandleMessageLog(string log)
-        {
-            switch (log)
-            {
-                case RmfLoggerExtensions.LogoCommand:
-                    ThemeColor logoColor = this._themeManager.GetColor("Logo");
-                    string logoColorPref = Colorist.GetColoredFilterRGB(logoColor);
-                    Console.WriteLine(logoColorPref + RmfConstants.ServerLogo + Colorist.ResetColor());
-                    break;
-
-                case RmfLoggerExtensions.SeparatorCommand:
-                    ThemeColor separatorColor = this._themeManager.GetColor("Separator");
-                    string separatorColorPref = Colorist.GetColoredFilterRGB(separatorColor);
-                    Console.WriteLine(separatorColorPref + string.Join("", Enumerable.Repeat(this._loggingConfig.LoggingSeparatorChar, this._loggingConfig.LoggingSeparatorLength)) + Colorist.ResetColor());
-                    break;
-
-                case RmfLoggerExtensions.ClearConsoleCommand:
-                    Console.Clear();
-                    break;
-
-                default:
-                    Console.WriteLine(log);
-                    break;
             }
         }
 

@@ -36,7 +36,7 @@ namespace RMF.Core.Events
             {
                 eventTypes.TryAdd(t.Name, t);
             }
-            return LoadResult<Dictionary<string, Type>>.Success(eventTypes, foundEvents.Length);
+            return LoadResult<Dictionary<string, Type>>.Success(eventTypes, eventTypes.Count, foundEvents.Length);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Logging;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,10 +29,11 @@ namespace RMF_Server.DI
     internal class RmfServerHost
     {
         private readonly IHost _host;
+        private readonly ILogger _bootLogger;
 
         public RmfServerHost(string[] args)
         {
-            // -- Part of the server component initialization --
+            // ---- Part of the server component initialization ----
             // All necessary components must be initialized before the DI container is built,
             // which should save resources during server startup;
 
@@ -38,7 +41,6 @@ namespace RMF_Server.DI
             // and instead throw an exception immediately if external files or parsing systems failed
 
             // Logging dependencies (color theme + synchronizer + config)
-            Console.WriteLine("Loading logging dependencies...");
             LoadResult<Dictionary<Type, object>> configLoadResult = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
             if (!configLoadResult.IsSuccess)
             {
@@ -53,7 +55,7 @@ namespace RMF_Server.DI
             {
                 throw new FileLoadException(themeLoadResult.ExceptionMessage);
             }
-            ThemeManager themeManager = new(themeLoadResult.Data!, new ThemeColor(255, 255, 255, 255));
+            ThemeManager themeManager = new(themeLoadResult.Data!, new ThemeColor(255, 255, 255));
 
             // Network packets
             LoadResult<Dictionary<short, Type>> packetLoadResult = ReflectionPacketLoader.Load();
@@ -79,27 +81,42 @@ namespace RMF_Server.DI
             }
             CommandManager commandManager = new(commandLoadResult.Data);
 
-            // Firewall reserve
-            string? firewallLoadMessage = null;
+            // ---- Registering the logger provider and initial console output ----
+            ConsoleSynchronizer consoleSynchronizer = new();
+            RmfLoggerProvider loggerProvider = new(themeManager, consoleSynchronizer, loggingConfig);
+            RmfConsoleAppearance consoleAppearance = new(themeManager, loggingConfig);
+            this._bootLogger = loggerProvider.CreateLogger("RmfServerBoot");
 
-            // -- Assembling services into a DI container --
-            Console.WriteLine("Assembling services into a DI container...");
+            consoleAppearance.DrawLogo(this._bootLogger);
+            consoleAppearance.LogSeparator(this._bootLogger);
+
+            this._bootLogger.LogInformation("Initialized components:");
+            consoleAppearance.LogInitialization(this._bootLogger, "Configurations", configLoadResult.Loaded, configLoadResult.Total);
+            consoleAppearance.LogInitialization(this._bootLogger, "Theme colors", themeLoadResult.Loaded, themeLoadResult.Total);
+            consoleAppearance.LogInitialization(this._bootLogger, "Network packets", packetLoadResult.Loaded, packetLoadResult.Total);
+            consoleAppearance.LogInitialization(this._bootLogger, "Server events", eventLoadResult.Loaded, eventLoadResult.Total);
+            consoleAppearance.LogInitialization(this._bootLogger, "Admin commands", commandLoadResult.Loaded, commandLoadResult.Total);
+            consoleAppearance.LogSeparator(this._bootLogger);
+            this._bootLogger.LogInformation("Preparing to launch the server:");
+
+            // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
             builder.ConfigureServices(services =>
             {
                 // Logging dependencies implementation
                 services.AddSingleton<IThemeManager>(themeManager);
-                services.AddSingleton<IConsoleSynchronizer, ConsoleSynchronizer>();
+                services.AddSingleton<IConsoleSynchronizer>(consoleSynchronizer);
                 services.AddSingleton(loggingConfig);
 
-                // Logging provider + background executor
-                services.AddSingleton<RmfLoggerProvider>();
+                // Logging provider & extensions implementation + background executor
+                services.AddSingleton(loggerProvider);
                 services.AddLogging(builder =>
                 {
                     builder.ClearProviders();
-                    builder.Services.AddSingleton<ILoggerProvider>(provider => provider.GetRequiredService<RmfLoggerProvider>());
+                    builder.Services.AddSingleton<ILoggerProvider>(loggerProvider);
                 });
                 services.AddHostedService(provider => provider.GetRequiredService<RmfLoggerProvider>());
+                services.AddSingleton<IConsoleExtensions>(consoleAppearance);
 
                 // Configurations
                 services.AddSingleton(configProvider);
@@ -156,60 +173,42 @@ namespace RMF_Server.DI
                     return new TcpListenerAdapter(listener);
                 });
                 services.AddSingleton<ITlsManager, TlsManager>();
-                services.AddSingleton<IFirewall, Firewall>(provider =>
-                {
-                    ILogger<Firewall> logger = provider.GetRequiredService<ILogger<Firewall>>();
-                    FirewallConfig firewallConfig = provider.GetRequiredService<FirewallConfig>();
-                    
-                    Firewall firewall = new(logger, firewallConfig);
-                    if (firewall.TryLoadBlacklist())
-                    {
-                        int blacklistLength = firewall.GetBannedIPsCount();
-                        firewallLoadMessage = $"Firewall connection blacklist loaded successfully ({blacklistLength} IPs)";
-                    }
-                    else
-                    {
-                        
-                    }
-                    return firewall;
-                });
+                services.AddSingleton<IFirewall, Firewall>();
                 services.AddHostedService<NetworkEngine>();
                 services.AddHostedService<InputListener>();
             });
 
-            Console.WriteLine("Building DI container...");
             this._host = builder.Build();
-
-            // -- Start outputs --
-            ILogger<RmfServerHost> logger = this._host.Services.GetRequiredService<ILogger<RmfServerHost>>();
-
-            logger.InsertLogo();
-            logger.InsertSeparator();
-
-            logger.LogInformation("Initialized components");
-            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Configurations", configLoadResult.Data!.Count, configLoadResult.Total);
-            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Theme colors", themeLoadResult.Data!.Count, themeLoadResult.Total);
-            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Network packets", packetLoadResult.Data!.Count, packetLoadResult.Total);
-            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Server events", eventLoadResult.Data!.Count, eventLoadResult.Total);
-            logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Admin commands", commandLoadResult.Data!.Count, commandLoadResult.Total);
         }
 
         [STAThread]
         public async Task RunAsync(string[] args)
         {
+            IHostApplicationLifetime lifetime = this._host.Services.GetRequiredService<IHostApplicationLifetime>();
             IAvaloniaManager avaloniaManager = this._host.Services.GetRequiredService<IAvaloniaManager>();
+
+            lifetime.ApplicationStopping.Register(() =>
+            {
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        desktopLifetime.Shutdown();
+                    });
+                }
+            });
 
             await this._host.StartAsync();
 
             try
             {
-                Console.WriteLine("Starting Avalonia UI...");
                 avaloniaManager.UIInitSource.TrySetResult();
                 avaloniaManager.BuildAvaloniaApp()
                                .StartWithClassicDesktopLifetime(args);
             }
             finally
             {
+                IConsoleExtensions consoleExtensions = this._host.Services.GetRequiredService<IConsoleExtensions>();
                 await this._host.StopAsync();
             }
         }

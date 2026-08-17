@@ -10,8 +10,6 @@ namespace RMF.Core.Loaders
 {
     public static class XmlConfigLoader
     {
-        //private readonly Dictionary<string, string> _cachedConfig;
-
         public static LoadResult<Dictionary<Type, object>> Load(string configPath)
         {
             if (!File.Exists(configPath))
@@ -35,9 +33,15 @@ namespace RMF.Core.Loaders
                 }
 
 
-                IEnumerable<Type> configTypes = Assembly.GetExecutingAssembly()
-                                                        .GetTypes()
-                                                        .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Config"));
+                IEnumerable<Type>? configTypes = Assembly.GetEntryAssembly()?
+                                                         .GetTypes()
+                                                         .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Config"));
+
+                if (configTypes == null)
+                {
+                    return LoadResult<Dictionary<Type, object>>.Failure("Unable to load config types from the entry assembly");
+                }
+
                 Dictionary<Type, object> configInstances = [];
                 int loadedConfigsCount = 0;
                 foreach (Type configType in configTypes)
@@ -68,7 +72,7 @@ namespace RMF.Core.Loaders
                     configInstances.TryAdd(configType, configInstance);
                 }
 
-                return LoadResult<Dictionary<Type, object>>.Success(configInstances, configDict.Count);
+                return LoadResult<Dictionary<Type, object>>.Success(configInstances, loadedConfigsCount, configDict.Count);
             }
             catch (Exception ex)
             {

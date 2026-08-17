@@ -89,7 +89,7 @@ namespace RMF_Server.Commands
                     }
                 }
 
-                return LoadResult<List<Command>>.Success(commands, commandsDict.Count());
+                return LoadResult<List<Command>>.Success(commands, commands.Count, commandsDict.Count());
             }
             catch (Exception ex)
             {

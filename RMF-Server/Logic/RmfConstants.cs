@@ -17,6 +17,6 @@ namespace RMF_Server.Logic
                            ||                                                    
                           ''''                                                   
 ";
-        public const string InitComponentLogTemplate = "{Label, -16}: {Loaded} / {Total}";
+        public const string InitComponentLogTemplate = "{Indent}{Label, -16}: {StartColor}{Loaded} / {Total}{EndColor}";
     }
 }

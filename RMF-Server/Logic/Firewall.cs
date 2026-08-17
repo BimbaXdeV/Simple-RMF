@@ -83,6 +83,8 @@ namespace RMF_Server.Logic
                         }
                     }
                 }
+
+                this._logger.LogInformation("Firewall connection blacklist loaded successfully ({Total} IPs)", this._bannedIPs.Count);
                 this._isChanged = false;
                 return true;
             }
@@ -123,6 +125,7 @@ namespace RMF_Server.Logic
                 {
                     this._logger.LogInformation("No changes detected in the banned IPs, skipping file update");
                 }
+
                 this._isChanged = false;
                 return true;
             }
@@ -171,8 +174,10 @@ namespace RMF_Server.Logic
 
         public void Dispose()
         {
-            TrySaveBlacklist();
-            this._bannedIPs.Clear();
+            if (this._firewallConfig.EnableBlacklistSaving)
+            {
+                TrySaveBlacklist();
+            }
         }
     }
 }

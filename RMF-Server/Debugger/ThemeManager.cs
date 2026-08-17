@@ -19,7 +19,7 @@ namespace RMF_Server.Debugger
 
         public ThemeManager(Dictionary<string, ThemeColor> theme, ThemeColor? defaultColor = null)
         {
-            this._defaultColor = defaultColor ?? new ThemeColor(255, 255, 255, 255);
+            this._defaultColor = defaultColor ?? new ThemeColor(255, 255, 255);
             this._colors = theme;
         }
 

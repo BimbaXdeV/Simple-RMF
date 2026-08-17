@@ -255,7 +255,7 @@ namespace RMF_Server.Logic
         private void Shutdown()
         {
             this._listener.Stop();
-            this._logger.LogInformation("The server successfully stoped");
+            this._logger.LogInformation("Server network engine successfully stoped");
         }
     }
 }

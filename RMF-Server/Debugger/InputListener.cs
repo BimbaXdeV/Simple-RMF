@@ -197,7 +197,7 @@ namespace RMF_Server.Debugger
                                         {
                                             this._suggestionBuffer.Append(suggestionPart);
                                             ThemeColor suggestionColor = this._themeManager.GetColor("AdminSuggestion");
-                                            Console.Write($"{Colorist.GetColoredFilterRGB(suggestionColor)}{suggestionPart}{Colorist.ResetColor()}");
+                                            Console.Write($"{suggestionColor}{suggestionPart}{ThemeColor.AnsiReset}");
                                             Console.CursorLeft -= suggestionPart.Length;
 
                                         }
@@ -218,6 +218,8 @@ namespace RMF_Server.Debugger
                 this._inputBuffer.Clear();
                 this._suggestionBuffer.Clear();
                 this._isListening = false;
+
+                this._logger.LogInformation("The input listener has stopped, the use of admin commands is restricted");
             }
         }
 

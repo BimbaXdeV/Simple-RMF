@@ -35,7 +35,7 @@ namespace RMF.Core.Packets
 
                 packetTypes.TryAdd((short)packetId, packetType);
             }
-            return LoadResult<Dictionary<short, Type>>.Success(packetTypes, foundPacketTypes.Length);
+            return LoadResult<Dictionary<short, Type>>.Success(packetTypes, packetTypes.Count, foundPacketTypes.Length);
         }
     }
 }

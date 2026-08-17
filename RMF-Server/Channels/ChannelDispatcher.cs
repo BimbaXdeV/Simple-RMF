@@ -51,7 +51,6 @@ namespace RMF_Server.Channels
                 return Task.CompletedTask;
             }
 
-            int initializedChannelsCounter = 0;
             foreach (int k in channelKeys)
             {
                 if (this._channels.ContainsKey(k))
@@ -74,17 +73,10 @@ namespace RMF_Server.Channels
                     TaskCreationOptions.LongRunning
                 );
 
-                this._channels[k] = new ChannelContext(
-                    rawChannel,
-                    workerTask,
-                    cts
-                );
-                initializedChannelsCounter++;
+                this._channels.TryAdd(k, new ChannelContext(rawChannel, workerTask, cts));
             }
 
-            // I really didn`t want to ruin the perfect aesthetic setup of the component initialization but that damn IHostedService... :)))
-            // Thanks to it, you can admire how one of the aligned initialization logs has treacherously drifted off into the manager
-            this._logger.LogInformation(RmfConstants.InitComponentLogTemplate, "Process channels", initializedChannelsCounter, channelKeys.Count);
+            this._logger.LogInformation("Successfully started {Loaded} inbound channels", this._channels.Count);
             return Task.CompletedTask;
         }
 
@@ -151,6 +143,11 @@ namespace RMF_Server.Channels
             await this._channels[channelKey].Channel.Writer.WriteAsync(context);
         }
 
+        public bool IsChannelExists(int key)
+        {
+            return this._channels.ContainsKey(key);
+        }
+
         public override async Task StopAsync(CancellationToken token)
         {
             int terminateChannelsCounter = 0;
@@ -172,11 +169,6 @@ namespace RMF_Server.Channels
             this._channels.Clear();
 
             await base.StopAsync(token);
-        }
-
-        public bool IsChannelExists(int key)
-        {
-            return this._channels.ContainsKey(key);
         }
     }
 }

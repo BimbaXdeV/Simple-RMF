@@ -31,8 +31,7 @@ namespace RMF_Server.Debugger
                         {
                             { "R", x.Attribute("R")?.Value },
                             { "G", x.Attribute("G")?.Value },
-                            { "B", x.Attribute("B")?.Value },
-                            { "A", x.Attribute("A")?.Value }
+                            { "B", x.Attribute("B")?.Value }
                         }
                     );
 
@@ -47,14 +46,13 @@ namespace RMF_Server.Debugger
                     Dictionary<string, string?> channels = color.Value;
                     if (byte.TryParse(channels["R"], out byte r) &&
                         byte.TryParse(channels["G"], out byte g) &&
-                        byte.TryParse(channels["B"], out byte b) &&
-                        byte.TryParse(channels["A"], out byte a))
+                        byte.TryParse(channels["B"], out byte b))
                     {
-                        theme.TryAdd(color.Key, new ThemeColor(r, g, b, a));
+                        theme.TryAdd(color.Key, new ThemeColor(r, g, b));
                     }
                 }
 
-                return LoadResult<Dictionary<string, ThemeColor>>.Success(theme, themeDict.Count);
+                return LoadResult<Dictionary<string, ThemeColor>>.Success(theme, theme.Count, themeDict.Count);
             }
             catch (Exception ex)
             {
