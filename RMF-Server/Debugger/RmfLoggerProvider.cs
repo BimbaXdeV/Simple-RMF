@@ -77,7 +77,7 @@ namespace RMF_Server.Debugger
                     {
                         try
                         {
-                            await Task.Delay(this._loggingConfig.LoggingHandlerDelayMsecs, CancellationToken.None);
+                            await Task.Delay(this._loggingConfig.LoggingHandlerDelayMsecs, token);
                         }
                         catch
                         {
@@ -89,6 +89,7 @@ namespace RMF_Server.Debugger
             {
                 this._isExecutorRunning = false;
                 this._consoleSync.IsLoggingRunning = false;
+
                 Console.WriteLine("Logging output executor has been stopped, subsequent logs will be output out of order");
             }
         }

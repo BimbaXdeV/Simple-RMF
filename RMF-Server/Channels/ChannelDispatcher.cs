@@ -68,10 +68,7 @@ namespace RMF_Server.Channels
                     : Channel.CreateUnbounded<PacketContext>();
 
                 CancellationTokenSource cts = new();
-                Task workerTask = Task.Factory.StartNew(
-                    () => InboundChannelWorker(rawChannel, id: k, token: cts.Token),
-                    TaskCreationOptions.LongRunning
-                );
+                Task workerTask = Task.Run(() => InboundChannelWorker(rawChannel, cts.Token), cts.Token);
 
                 this._channels.TryAdd(k, new ChannelContext(rawChannel, workerTask, cts));
             }
@@ -80,7 +77,7 @@ namespace RMF_Server.Channels
             return Task.CompletedTask;
         }
 
-        private async Task InboundChannelWorker(Channel<PacketContext> channel, int id = 0, CancellationToken token = default)
+        private async Task InboundChannelWorker(Channel<PacketContext> channel, CancellationToken token)
         {
             ChannelReader<PacketContext> reader = channel.Reader;
 
@@ -126,7 +123,6 @@ namespace RMF_Server.Channels
             finally
             {
                 channel.Writer.Complete();
-                this._logger.LogInformation("Channel for key {ChannelId} has been closed", id);
             }
         }
 
@@ -150,7 +146,7 @@ namespace RMF_Server.Channels
 
         public override async Task StopAsync(CancellationToken token)
         {
-            int terminateChannelsCounter = 0;
+            int forsefullyTerminatedChannels = 0;
             int totalActiveChannels = this._channels.Count;
             
             List<Task> terminationTasks = [];
@@ -159,16 +155,21 @@ namespace RMF_Server.Channels
                 if (!context.Worker.IsCompleted)
                 {
                     context.TokenSource.Cancel();
-                    terminationTasks.Add(context.Worker);
-                    terminateChannelsCounter++;
+                    forsefullyTerminatedChannels++;
                 }
+
+                terminationTasks.Add(context.Worker);
             }
             await Task.WhenAll(terminationTasks);
 
-            this._logger.LogInformation("Successfully closed {ClosedChannels} channels out of {TotalChannels} active", terminateChannelsCounter, totalActiveChannels);
-            this._channels.Clear();
-
-            await base.StopAsync(token);
+            if (forsefullyTerminatedChannels > 0)
+            {
+                this._logger.LogInformation("Successfully closed {Total} channels ({ForcefullyClosed} required forced termination)", totalActiveChannels, forsefullyTerminatedChannels);
+            }
+            else
+            {
+                this._logger.LogInformation("All {Total} channels have been closed gracefully", totalActiveChannels);
+            }
         }
     }
 }

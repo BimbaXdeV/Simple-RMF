@@ -83,7 +83,11 @@ namespace RMF_Server.Logic
         {
             return AppBuilder.Configure<App>()
                              .UsePlatformDetect()
-                             .LogToTrace();
+                             .With(new Win32PlatformOptions() { CompositionMode = [Win32CompositionMode.RedirectionSurface] })
+                             .With(new X11PlatformOptions() { UseDBusMenu = true });
+                           //.With(new MacOSPlatformOptions() ...);
+            // I`d certainly like to write it, but unfortunately I don`t have a MacBook,
+            // so I have no physical way to port this project to macOS. Sorry, Apple users :_)
         }
 
         public async Task ShowWindow()

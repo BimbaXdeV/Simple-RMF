@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal class SessionManager : IServerSessionManager
+    internal class SessionManager : IServerSessionManager, IDisposable
     {
         private readonly IProtocolReader _protocolReader;
         private readonly IPacketSender _packetSender;
@@ -174,6 +174,11 @@ namespace RMF_Server.Logic
             this._connections.Clear();
             this._logger.LogInformation("Cleanup finished, disconnected {Disconnected} / {Total}", disconnectedClientsCount, totalConnectedClients);
             this.ConnectionCountChanged?.Invoke(this.TotalConnections);
+        }
+
+        public void Dispose()
+        {
+            ClearConnections();
         }
     }
 }

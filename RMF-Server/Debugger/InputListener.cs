@@ -261,7 +261,7 @@ namespace RMF_Server.Debugger
             }
         }
 
-        private void HideChars(int count)
+        private static void HideChars(int count)
         {
             for (int i = 0; i < count; i++)
             {

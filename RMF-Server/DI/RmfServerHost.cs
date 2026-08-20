@@ -194,9 +194,14 @@ namespace RMF_Server.DI
                     Dispatcher.UIThread.Post(() =>
                     {
                         desktopLifetime.Shutdown();
+                        this._bootLogger.LogInformation("Avalonia graphics thread has been successfully stopped");
                     });
                 }
             });
+
+            // It`s not that this service is strictly necessary here, but currently nothing uses it as a dependency;
+            // However, without that line, its constructor, which handles the online status binding, simply won`t execute
+            this._host.Services.GetRequiredService<IWindowManager>();
 
             await this._host.StartAsync();
 
@@ -209,7 +214,16 @@ namespace RMF_Server.DI
             finally
             {
                 IConsoleExtensions consoleExtensions = this._host.Services.GetRequiredService<IConsoleExtensions>();
-                await this._host.StopAsync();
+                ConnectionConfig connectionConfig = this._host.Services.GetRequiredService<ConnectionConfig>();
+
+                await this._host.StopAsync().ConfigureAwait(false);
+
+                if (!connectionConfig.EnableForceShutdown)
+                {
+                    consoleExtensions.LogSeparator(this._bootLogger);
+                    this._bootLogger.LogInformation("To finish this process, press any key...");
+                    Console.ReadKey(true);
+                }
             }
         }
     }

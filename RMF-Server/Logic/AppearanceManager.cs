@@ -22,6 +22,7 @@ namespace RMF_Server.Logic
         private readonly ILogger<AppearanceManager> _logger;
         private readonly AppearanceConfig _appearanceConfig;
 
+        private const string _titleStatusHeader = "Online: ";
         private const byte _maxTitleLength = 48;
 
         public AppearanceManager(
@@ -34,25 +35,25 @@ namespace RMF_Server.Logic
             this._logger = logger;
             this._appearanceConfig = appearanceConfig;
 
-            UpdateTitleOnline(this._sessionManager.TotalConnections);
+            UpdateTitleStatus(_titleStatusHeader + this._sessionManager.TotalConnections);
             this._sessionManager.ConnectionCountChanged += OnConnectionCountChanged;
         }
 
         private void OnConnectionCountChanged(int newConnectionCount)
         {
-            UpdateTitleOnline(newConnectionCount);
+            UpdateTitleStatus(_titleStatusHeader + newConnectionCount);
         }
 
-        public void UpdateTitleOnline(int connectionCount)
+        public void UpdateTitleStatus(string newStatus)
         {
             int titleHeaderLength = this._appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
-            if (connectionCount <= 0 || titleHeaderLength + connectionCount.ToString().Length > _maxTitleLength)
+            if (newStatus.Length <= 0 || titleHeaderLength + newStatus.Length > _maxTitleLength)
             {
                 this._logger.LogWarning("Failed to update application title, received too long string (max length: {MaxTitleLength})", _maxTitleLength);
                 return;
             }
 
-            Console.Title = this._appearanceConfig.AppTitle + " | Online: " + connectionCount;
+            Console.Title = this._appearanceConfig.AppTitle + " | " + newStatus;
         }
 
         public void Dispose()
