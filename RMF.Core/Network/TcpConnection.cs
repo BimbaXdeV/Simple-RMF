@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Network
 {
-    public class TcpConnection : INetworkConnection
+    public class TcpConnection : INetworkConnection, IDisposable
     {
         private readonly TcpClient _client;
 

@@ -13,8 +13,10 @@ namespace RMF_Client.Logic
 {
     internal class AppearanceManager : IWindowManager, IToolbarManager, IWindowEffects
     {
+        private readonly AppearanceConfig
+
         // Inilialization things
-        private const byte MaxTitleLength = 48;
+        private const byte _maxTitleLength = 48;
         private const string ClientLogo = @"
 '||''|.   '||    ||' '||''''|      ..|'''.| '||   ||                     .   
  ||   ||   |||  |||   ||  .      .|'     '   ||  ...    ....  .. ...   .||.  
@@ -122,19 +124,16 @@ namespace RMF_Client.Logic
             }
         }
 
-        public void SetTitle(string newTitle)
+        public void UpdateTitleStatus(string newStatus)
         {
-            if (string.IsNullOrEmpty(newTitle))
+            int titleHeaderLength = this._appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
+            if (newStatus.Length <= 0 || titleHeaderLength + newStatus.Length > _maxTitleLength)
             {
+                Console.Title = this._appearanceConfig.AppTitle;
                 return;
             }
 
-            if (newTitle.Length > MaxTitleLength)
-            {
-                return;
-            }
-
-            Console.Title = newTitle;
+            Console.Title = this._appearanceConfig.AppTitle + " | " + newStatus;
         }
 
         public async Task Curtain(float delaySecs)

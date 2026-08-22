@@ -18,12 +18,29 @@ using RMF.Core.Events;
 using RMF.Core.Screen;
 using RMF.Core.Interfaces;
 using RMF_Client.Monitors;
+using RMF.Core.Interfaces.Network;
+using RMF.Core.Interfaces.Logic;
 
 namespace RMF_Client.Network
 {
-    internal static class PacketsProcessor
+    internal class PacketProcessor
     {
-        public static void SwitchHandle(Packet packet)
+        private readonly IClientSessionManager _sessionManager;
+        private readonly IWindowManager _windowManager;
+        private readonly IToolbarManager _toolbarManager;
+
+        public PacketProcessor(
+            IClientSessionManager sessionManager,
+            IWindowManager windowManager,
+            IToolbarManager toolbarManager
+        )
+        {
+            this._sessionManager = sessionManager;
+            this._windowManager = windowManager;
+            this._toolbarManager = toolbarManager;
+        }
+
+        public void SwitchHandle(Packet packet)
         {
             switch (packet)
             {
@@ -57,18 +74,18 @@ namespace RMF_Client.Network
             }
         }
 
-        public static void SearchHandle(Packet packet)
+        public void SearchHandle(Packet packet)
         {
-            var method = typeof(PacketsProcessor).GetMethod("Process" + packet.GetType().Name, BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeof(PacketProcessor).GetMethod("Process" + packet.GetType().Name, BindingFlags.NonPublic | BindingFlags.Static);
             method?.Invoke(null, new object[] { packet });
         }
 
-        private static void ProcessHandshakePacket(HandshakePacket packet)
+        private void ProcessHandshakePacket(HandshakePacket packet)
         {
             IPEndPoint? remoteEndpoint = SessionManager.Connection?.Client.Client.RemoteEndPoint as IPEndPoint;
             int localPort = remoteEndpoint?.Port ?? -1;
 
-            AppearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+            this._toolbarManager.ReplaceToolbarContent(new Dictionary<string, string>
             {
                 { "endpointTime", DateTimeOffset.FromUnixTimeMilliseconds(packet.ConnectionTimestamp).LocalDateTime.ToString("HH:mm:ss") },
                 { "endpointID", packet.SessionID.ToString() },
@@ -78,7 +95,7 @@ namespace RMF_Client.Network
             });
         }
 
-        private static void ProcessClientVersionRequest(ClientVersionRequest packet)
+        private void ProcessClientVersionRequest(ClientVersionRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
             Version? appVersion = Assembly.GetEntryAssembly()?.GetName().Version;
@@ -96,7 +113,7 @@ namespace RMF_Client.Network
             session.SendPacket(versionPacket);
         }
 
-        private static void ProcessClientInfoRequest(ClientInfoRequest packet)
+        private void ProcessClientInfoRequest(ClientInfoRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
             IHardwareMonitor? hardwareMonitor = MonitoringFactory.GetActualMonitor(updateIfNullable: true);
@@ -117,7 +134,7 @@ namespace RMF_Client.Network
             }
         }
 
-        private static void ProcessClientPingRequest(ClientPingRequest packet)
+        private void ProcessClientPingRequest(ClientPingRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
 
@@ -128,7 +145,7 @@ namespace RMF_Client.Network
             session.SendPacket(heartbeatPacket);
         }
 
-        private static void ProcessScreenshotRequest(ScreenshotRequest packet)
+        private void ProcessScreenshotRequest(ScreenshotRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
             IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(updateIfNullable: true);
@@ -154,15 +171,15 @@ namespace RMF_Client.Network
             }
         }
 
-        private static void ProcessStreamingRequest(StreamingRequest packet)
+        private void ProcessStreamingRequest(StreamingRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
 
             // Streaming shutdown logic : if the packet includes "IsActive = false" and streaming event has already running
-            bool isEventActive = session.Events.IsRunning("StreamingEvent");
+            bool isEventActive = session.IsRunning("StreamingEvent");
             if (!packet.IsActive && isEventActive)
             {
-                session.Events.StopEvent("StreamingEvent");
+                session.StopEvent("StreamingEvent");
 
                 EndOfStreamingPacket endOfStreamingPacket = new();
                 session.SendPacket(endOfStreamingPacket);
@@ -178,7 +195,7 @@ namespace RMF_Client.Network
                     return;
                 }
 
-                session.Events.StartEvent(session, "StreamingEvent", new Dictionary<string, object>
+                session.StartEvent("StreamingEvent", new Dictionary<string, object>
                 {
                     { "Provider", screenProvider },
                     { "Format", (ScreenFormats)packet.FormatID },
@@ -189,10 +206,10 @@ namespace RMF_Client.Network
             }
         }
 
-        private static void ProcessEndOfEventsRequest(EndOfEventsRequest packet)
+        private void ProcessEndOfEventsRequest(EndOfEventsRequest packet)
         {
             ConnectionClientSession session = SessionManager.Connection!;
-            session.Events.StopAllRunning();
+            session.StopAllEvents();
 
             long clientUptime = session.ConnectedTime != default ? (long)(DateTime.UtcNow - session.ConnectedTime).TotalSeconds : -1;
             PartingPacket partingPacket = new()

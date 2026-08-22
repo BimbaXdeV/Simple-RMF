@@ -76,7 +76,7 @@ namespace RMF.Core.Bases
                 return;
             }
             this.IsRunning = true;
-            _ = Task.Run(() => OutboundChannelWorker(token));  // Each session has its own packet sender
+            _ = Task.Run(() => OutboundChannelWorker(token), token);  // Each session has its own packet sender
         }
 
         private async Task OutboundChannelWorker(CancellationToken token)
@@ -159,6 +159,16 @@ namespace RMF.Core.Bases
         public void StartEvent(string eventName, Dictionary<string, object> eventSettings)
         {
             this._events.StartEvent(this, eventName, eventSettings);
+        }
+
+        public void StopEvent(string eventName)
+        {
+            this._events.StopEvent(eventName);
+        }
+
+        public void StopAllEvents()
+        {
+            this._events.StopAllRunning();
         }
 
         public void IncrementSendPackets()

@@ -206,7 +206,7 @@ namespace RMF_Server.Commands
             int maxPort = 0;
             int maxRecv = 0;
             int maxSent = 0;
-            foreach (ServerClientSession c in connections)
+            foreach (IServerClientSession c in connections)
             {
                 maxAddr = Math.Max(maxAddr, c.RemoteEndPoint.Address.ToString().Length);
                 maxPort = Math.Max(maxPort, c.RemoteEndPoint.Port.ToString().Length);
