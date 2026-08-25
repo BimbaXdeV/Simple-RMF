@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Client.Storage
+namespace RMF_Client.Appearance
 {
     internal class ToolbarItem
     {
@@ -16,10 +16,10 @@ namespace RMF_Client.Storage
 
         public ToolbarItem(string? link, string? name, string? key, string? defaultValue)
         {
-            this.Link = link ?? "unknownLink";
-            this.Name = name ?? "Unknown";
-            this.Key = string.IsNullOrEmpty(key) ? null : key;
-            this.DefaultValue = string.IsNullOrEmpty(defaultValue) ? "Not found" : defaultValue;
+            Link = link ?? "unknownLink";
+            Name = name ?? "Unknown";
+            Key = string.IsNullOrEmpty(key) ? null : key;
+            DefaultValue = string.IsNullOrEmpty(defaultValue) ? "Not found" : defaultValue;
         }
     }
 }

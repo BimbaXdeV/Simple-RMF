@@ -1,5 +1,6 @@
 ﻿using RMF.Core.Interfaces.Logic;
-using RMF_Client.Storage;
+using RMF_Client.Appearance;
+using RMF_Client.Configurations;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace RMF_Client.Logic
 {
     internal class AppearanceManager : IWindowManager, IToolbarManager, IWindowEffects
     {
-        private readonly AppearanceConfig
+        private readonly AppearanceConfig _appearanceConfig;
 
         // Inilialization things
         private const byte _maxTitleLength = 48;
@@ -28,9 +29,14 @@ namespace RMF_Client.Logic
 
         // Toolbar items will be loaded from "~\RMF-Client\toolbar.xml" file
         // <add key="" link="" name=""/>
-        private readonly string ToolbarPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Storage", "toolbar.xml");
+        private readonly string ToolbarPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "toolbar.xml");
         private string ToolbarTemplate = "Nothing to do...";
         private readonly Dictionary<string, string> ToolbarContent = [];
+
+        public AppearanceManager(AppearanceConfig appearanceConfig)
+        {
+            this._appearanceConfig = appearanceConfig;
+        }
 
         private void InitializeToolbarTemplate(ToolbarItem[] items)
         {

@@ -23,8 +23,6 @@ namespace RMF.Core.Interfaces.Network
 
         void SendPacket(Packet packet);
         void StartEvent(string eventName, Dictionary<string, object> eventSettings);
-        void StopEvent(string eventName);
-        void StopAllEvents();
         void IncrementSendPackets();
         void IncrementReceivedPackets();
         void StopProcessing();

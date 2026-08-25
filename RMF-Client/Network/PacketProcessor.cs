@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO.Pipes;
 using System.Reflection;
-using RMF_Client.Storage;
 using System.Net;
 using RMF_Client.Capture;
 using RMF.Core.Events;
@@ -20,23 +19,27 @@ using RMF.Core.Interfaces;
 using RMF_Client.Monitors;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Interfaces.Logic;
+using RMF_Client.Appearance;
 
 namespace RMF_Client.Network
 {
-    internal class PacketProcessor
+    internal class PacketProcessor : IClientPacketProcessor
     {
         private readonly IClientSessionManager _sessionManager;
-        private readonly IWindowManager _windowManager;
+        private readonly ICaptureFactory _captureFactory;
+        private readonly IMonitoringFactory _monitoringFactory;
         private readonly IToolbarManager _toolbarManager;
 
         public PacketProcessor(
             IClientSessionManager sessionManager,
-            IWindowManager windowManager,
+            ICaptureFactory captureFactory,
+            IMonitoringFactory monitoringFactory,
             IToolbarManager toolbarManager
         )
         {
             this._sessionManager = sessionManager;
-            this._windowManager = windowManager;
+            this._captureFactory = captureFactory;
+            this._monitoringFactory = monitoringFactory;
             this._toolbarManager = toolbarManager;
         }
 
@@ -82,7 +85,7 @@ namespace RMF_Client.Network
 
         private void ProcessHandshakePacket(HandshakePacket packet)
         {
-            IPEndPoint? remoteEndpoint = SessionManager.Connection?.Client.Client.RemoteEndPoint as IPEndPoint;
+            IPEndPoint? remoteEndpoint = this._sessionManager.GetRunningSession()?.RemoteEndPoint;
             int localPort = remoteEndpoint?.Port ?? -1;
 
             this._toolbarManager.ReplaceToolbarContent(new Dictionary<string, string>
@@ -97,7 +100,7 @@ namespace RMF_Client.Network
 
         private void ProcessClientVersionRequest(ClientVersionRequest packet)
         {
-            ConnectionClientSession session = SessionManager.Connection!;
+            IConnectionClientSession? session = this._sessionManager.GetRunningSession();
             Version? appVersion = Assembly.GetEntryAssembly()?.GetName().Version;
             Version? coreVersion = typeof(Packet).Assembly.GetName().Version;
 
@@ -110,13 +113,13 @@ namespace RMF_Client.Network
                 CoreMinorVersion = (short)(coreVersion?.Minor ?? 0),
                 CoreBuildVersion = (short)(coreVersion?.Build ?? 0)
             };
-            session.SendPacket(versionPacket);
+            session?.SendPacket(versionPacket);
         }
 
         private void ProcessClientInfoRequest(ClientInfoRequest packet)
         {
-            ConnectionClientSession session = SessionManager.Connection!;
-            IHardwareMonitor? hardwareMonitor = MonitoringFactory.GetActualMonitor(updateIfNullable: true);
+            IConnectionClientSession? session = this._sessionManager.GetRunningSession();
+            IHardwareMonitor? hardwareMonitor = this._monitoringFactory.GetActualMonitor(updateIfNullable: true);
             if (hardwareMonitor != null)
             {
                 ClientInfoPacket clientInfoPacket = new()
@@ -130,25 +133,25 @@ namespace RMF_Client.Network
                     RAMCapacity = (long)hardwareMonitor.RAMCapacity(),
                     VRAMCapacity = (long)hardwareMonitor.VRAMCapacity()
                 };
-                session.SendPacket(clientInfoPacket);
+                session?.SendPacket(clientInfoPacket);
             }
         }
 
         private void ProcessClientPingRequest(ClientPingRequest packet)
         {
-            ConnectionClientSession session = SessionManager.Connection!;
+            IConnectionClientSession? session = this._sessionManager.GetRunningSession();
 
             HeartbeatPacket heartbeatPacket = new()
             {
                 TurnedTimestamp = packet.SendingTimestamp
             };
-            session.SendPacket(heartbeatPacket);
+            session?.SendPacket(heartbeatPacket);
         }
 
         private void ProcessScreenshotRequest(ScreenshotRequest packet)
         {
-            ConnectionClientSession session = SessionManager.Connection!;
-            IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(updateIfNullable: true);
+            IConnectionClientSession? session = this._sessionManager.GetRunningSession();
+            IScreenProvider? screenProvider = this._captureFactory.GetActualProvider(updateIfNullable: true);
             if (screenProvider == null)
             {
                 return;
@@ -167,16 +170,21 @@ namespace RMF_Client.Network
                     ImageData = frame.Rects[0].Data
                 };
 
-                session.SendPacket(desktopFramePacket);
+                session?.SendPacket(desktopFramePacket);
             }
         }
 
         private void ProcessStreamingRequest(StreamingRequest packet)
         {
-            ConnectionClientSession session = SessionManager.Connection!;
+            IConnectionClientSession? session = this._sessionManager.GetRunningSession();
+            if (session == null)
+            {
+                return;
+            }
 
             // Streaming shutdown logic : if the packet includes "IsActive = false" and streaming event has already running
-            bool isEventActive = session.IsRunning("StreamingEvent");
+            bool isEventActive = session.IsEventRunning("StreamingEvent");
+
             if (!packet.IsActive && isEventActive)
             {
                 session.StopEvent("StreamingEvent");
@@ -189,7 +197,7 @@ namespace RMF_Client.Network
             // Launch streaming loop
             if (packet.IsActive && !isEventActive)
             {
-                IScreenProvider? screenProvider = CaptureFactory.GetActualProvider(updateIfNullable: true);
+                IScreenProvider? screenProvider = this._captureFactory.GetActualProvider(updateIfNullable: true);
                 if (screenProvider == null)
                 {
                     return;
@@ -208,7 +216,12 @@ namespace RMF_Client.Network
 
         private void ProcessEndOfEventsRequest(EndOfEventsRequest packet)
         {
-            ConnectionClientSession session = SessionManager.Connection!;
+            IConnectionClientSession? session = this._sessionManager.GetRunningSession();
+            if (session == null)
+            {
+                return;
+            }
+
             session.StopAllEvents();
 
             long clientUptime = session.ConnectedTime != default ? (long)(DateTime.UtcNow - session.ConnectedTime).TotalSeconds : -1;

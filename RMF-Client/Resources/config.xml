@@ -26,4 +26,4 @@
 	<!-- Capture Settings -->
 	<add key="MaxProcessorCores" value="4"/>
 	<add key="MetricsUpdateRate" value="120"/>
-</Settings>
+</Settings

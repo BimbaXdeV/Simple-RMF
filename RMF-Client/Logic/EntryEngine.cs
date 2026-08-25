@@ -5,9 +5,8 @@ using RMF.Core.Interfaces.Logic;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF.Core.Packets;
+using RMF_Client.Appearance;
 using RMF_Client.Configurations;
-using RMF_Client.Logic;
-using RMF_Client.Storage;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -19,13 +18,13 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Client.Network
+namespace RMF_Client.Logic
 {
     internal class EntryEngine : BackgroundService
     {
         private readonly IClientSessionManager _sessionManager;
         private readonly IPacketFactory _packetFactory;
-        private readonly IProtocolReader _protocolReader;
+        private readonly IClientPacketProcessor _packetProcessor;
         private readonly IWindowManager _windowManager;
         private readonly IToolbarManager _toolBarManager;
         private readonly ConnectionConfig _connectionConfig;
@@ -34,33 +33,33 @@ namespace RMF_Client.Network
         public EntryEngine(
             IClientSessionManager sessionManager,
             IPacketFactory packetFactory,
-            IProtocolReader protocolReader,
+            IClientPacketProcessor packetProcessor,
             IWindowManager windowManager,
             IToolbarManager toolBarManager,
             ConnectionConfig connectionConfig,
             SecurityConfig securityConfig
         )
         {
-            this._sessionManager = sessionManager;
-            this._packetFactory = packetFactory;
-            this._protocolReader = protocolReader;
-            this._windowManager = windowManager;
-            this._toolBarManager = toolBarManager;
-            this._connectionConfig = connectionConfig;
-            this._securityConfig = securityConfig;
+            _sessionManager = sessionManager;
+            _packetFactory = packetFactory;
+            _packetProcessor = packetProcessor;
+            _windowManager = windowManager;
+            _toolBarManager = toolBarManager;
+            _connectionConfig = connectionConfig;
+            _securityConfig = securityConfig;
         }
 
         private async Task PacketListener(CancellationToken token)
         {
-            this._windowManager.UpdateTitleStatus("Connected");
+            _windowManager.UpdateTitleStatus("Connected");
 
-            if (!this._sessionManager.IsConnected)
+            if (!_sessionManager.IsConnected)
             {
                 return;
             }
 
-            IConnectionClientSession session = this._sessionManager.GetRunningSession()!;
-            while (this._sessionManager.IsConnected)
+            IConnectionClientSession session = _sessionManager.GetRunningSession()!;
+            while (_sessionManager.IsConnected)
             {
                 PacketHeader header = await session.ReadHeaderAsync(token);
                 byte[] payload = await session.ReadPayloadAsync(header.Length, token);
@@ -68,7 +67,7 @@ namespace RMF_Client.Network
                 Packet? packet = null;
                 try
                 {
-                    packet = this._packetFactory.CreatePacket(header.Id);
+                    packet = _packetFactory.CreatePacket(header.Id);
                     if (packet == null)
                     {
                         continue;
@@ -80,7 +79,7 @@ namespace RMF_Client.Network
                     SpanReader payloadReader = new(payloadSpan);
 
                     packet.Deserialize(ref payloadReader);
-                    PacketProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
+                    _packetProcessor.SwitchHandle(packet);  // When scaling, a new case needs to be added
                 }
                 catch (Exception)
                 {
@@ -102,14 +101,14 @@ namespace RMF_Client.Network
             int connectionAttempt = 1;
             while (!token.IsCancellationRequested)
             {
-                this._windowManager.UpdateTitleStatus("Waiting for server...");
+                _windowManager.UpdateTitleStatus("Waiting for server...");
 
-                IPAddress ip = this._connectionConfig.IPAddress != "Any"
-                    ? IPAddress.Parse(this._connectionConfig.IPAddress ?? "127.0.0.1")
+                IPAddress ip = _connectionConfig.IPAddress != "Any"
+                    ? IPAddress.Parse(_connectionConfig.IPAddress ?? "127.0.0.1")
                     : IPAddress.Any;
 
-                int port = (this._connectionConfig.Port >= IPEndPoint.MinPort && this._connectionConfig.Port <= IPEndPoint.MaxPort)
-                    ? this._connectionConfig.Port
+                int port = _connectionConfig.Port >= IPEndPoint.MinPort && _connectionConfig.Port <= IPEndPoint.MaxPort
+                    ? _connectionConfig.Port
                     : 8000;  // Default port if the provided port is invalid
 
                 try
@@ -117,7 +116,7 @@ namespace RMF_Client.Network
                     using TcpClient tcpClient = new(ip.ToString(), port);
                     using TcpConnection tcpConnection = new(tcpClient);
 
-                    this._windowManager.UpdateTitleStatus(ConfigurationManager.AppTitle + " | Securing connection...");
+                    _windowManager.UpdateTitleStatus("Securing connection...");
 
                     using SslStream sslStream = new(
                         tcpConnection.GetNetworkStream(),
@@ -132,7 +131,7 @@ namespace RMF_Client.Network
                             // To synchronize the client and server TLS, pull fingerprint from the server using the "/certdata" command,
                             // and then place it in the client configuration (~/Storage/config.xml)
                             string actualFingerprint = certificate.GetCertHashString();
-                            string expectedFingerprint = ConfigurationManager.CertificateFingerprint?.Replace(" ", "").ToUpper() ?? string.Empty;
+                            string expectedFingerprint = this._securityConfig.CertificateFingerprint?.Replace(" ", "").ToUpper() ?? string.Empty;
                             if (actualFingerprint != expectedFingerprint)
                             {
                                 return false;
@@ -142,11 +141,11 @@ namespace RMF_Client.Network
                         })
                     );
 
-                    await sslStream.AuthenticateAsClientAsync(string.Empty).WaitAsync(TimeSpan.FromSeconds(this._securityConfig.TlsHandshakeTimeoutSecs), token);
+                    await sslStream.AuthenticateAsClientAsync(string.Empty).WaitAsync(TimeSpan.FromSeconds(_securityConfig.TlsHandshakeTimeoutSecs), token);
                     SecureConnectionAdapter tlsConnection = new(tcpConnection, sslStream);
-                    this._sessionManager.StartSession(tlsConnection);
+                    _sessionManager.StartSession(tlsConnection);
 
-                    this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    _toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "endpointIP", ip.ToString() },
                         { "endpointPort", port.ToString() }
@@ -157,7 +156,7 @@ namespace RMF_Client.Network
 
                 catch (EndOfStreamException)
                 {
-                    this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    _toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "endpointTime", "Server has closed the connection" }
                     });
@@ -165,8 +164,8 @@ namespace RMF_Client.Network
 
                 catch (OperationCanceledException)
                 {
-                    this._windowManager.UpdateTitleStatus("Cancellation...");
-                    this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    _windowManager.UpdateTitleStatus("Cancellation...");
+                    _toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "endpointTime", "Cancellation requested, cleaning up the process..." }
                     });
@@ -174,7 +173,7 @@ namespace RMF_Client.Network
 
                 catch (SocketException)
                 {
-                    this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    _toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "endpointTime", "Failed to connect to " + ip.ToString() + ":" + port.ToString() }
                     });
@@ -182,8 +181,8 @@ namespace RMF_Client.Network
 
                 catch (AuthenticationException)
                 {
-                    this._windowManager.UpdateTitleStatus("TLS handshake failed");
-                    this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    _windowManager.UpdateTitleStatus("TLS handshake failed");
+                    _toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "endpointTime", "Failed to accept server TLS handshake" }
                     });
@@ -191,33 +190,33 @@ namespace RMF_Client.Network
 
                 catch (Exception ex)
                 {
-                    this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    _toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "endpointTime", "A client error occured: " + ex }
                     });
                 }
                 finally
                 {
-                    this._sessionManager.StopSession();
-                    this._windowManager.UpdateTitleStatus("Finished");
+                    _sessionManager.StopSession();
+                    _windowManager.UpdateTitleStatus("Finished");
                 }
 
-                if (this._connectionConfig.ConnectionRequestIntervalSecs <= 0)
+                if (_connectionConfig.ConnectionRequestIntervalSecs <= 0)
                 {
                     break;
                 }
 
                 connectionAttempt++;
-                this._windowManager.UpdateTitleStatus("Attempting to reconnect... (" + connectionAttempt + ")");
+                _windowManager.UpdateTitleStatus("Attempting to reconnect... (" + connectionAttempt + ")");
 
                 try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(this._connectionConfig.ConnectionRequestIntervalSecs), token);
+                    await Task.Delay(TimeSpan.FromSeconds(_connectionConfig.ConnectionRequestIntervalSecs), token);
                 }
                 catch (OperationCanceledException)
                 {
-                    this._windowManager.UpdateTitleStatus("Cancellation...");
-                    this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    _windowManager.UpdateTitleStatus("Cancellation...");
+                    _toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "endpointTime", "Cancellation requested, cleaning up the process..." }
                     });

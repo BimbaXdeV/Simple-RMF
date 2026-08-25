@@ -22,11 +22,10 @@ namespace RMF.Core.Bases
         protected readonly INetworkConnection Connection;
         protected readonly IProtocolReader Reader;
         protected readonly IPacketSender PacketSender;
-
-        private readonly EventController _events;
+        protected readonly EventController Events;
         protected Channel<Packet> OutboundChannel { get; private set; }
-        public bool IsRunning { get; private set; }
 
+        public bool IsRunning { get; private set; }
         public IPEndPoint RemoteEndPoint => this.Connection.RemoteEndPoint;
         public int SendBufferSize => this.Connection.SendBufferSize;
         public int ReceiveBufferSize => this.Connection.ReceiveBufferSize;
@@ -58,7 +57,7 @@ namespace RMF.Core.Bases
             this.Reader = reader;
             this.PacketSender = packetSender;
 
-            this._events = new EventController(eventFactory);
+            this.Events = new EventController(eventFactory);
             this.OutboundChannel = Channel.CreateBounded<Packet>(
                 new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1000)
                 {
@@ -158,17 +157,7 @@ namespace RMF.Core.Bases
 
         public void StartEvent(string eventName, Dictionary<string, object> eventSettings)
         {
-            this._events.StartEvent(this, eventName, eventSettings);
-        }
-
-        public void StopEvent(string eventName)
-        {
-            this._events.StopEvent(eventName);
-        }
-
-        public void StopAllEvents()
-        {
-            this._events.StopAllRunning();
+            this.Events.StartEvent(this, eventName, eventSettings);
         }
 
         public void IncrementSendPackets()
@@ -193,7 +182,7 @@ namespace RMF.Core.Bases
         {
             this.IsRunning = false;
             this.OutboundChannel.Writer.TryComplete();
-            this._events.StopAllRunning();
+            this.Events.StopAllRunning();
             this.Connection.Close();
         }
     }

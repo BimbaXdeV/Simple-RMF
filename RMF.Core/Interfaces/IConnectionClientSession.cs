@@ -10,5 +10,9 @@ namespace RMF.Core.Interfaces
     public interface IConnectionClientSession : ISession
     {
         DateTime ConnectedTime { get; }
+
+        bool IsEventRunning(string eventName);
+        void StopEvent(string eventName);
+        void StopAllEvents();
     }
 }

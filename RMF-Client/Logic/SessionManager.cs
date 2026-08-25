@@ -3,7 +3,7 @@ using RMF.Core.Interfaces;
 using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF_Client.Configurations;
-using RMF_Client.Storage;
+using RMF_Client.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,11 +25,9 @@ namespace RMF_Client.Logic
         private IConnectionClientSession? _session;
 
         public bool IsConnected => this._session?.IsRunning ?? false;
-        public bool IsProtected => this._session is SecureConnectionAdapter;
 
         public SessionManager(
             IHostApplicationLifetime lifetime,
-            INetworkConnection connection,
             IProtocolReader protocolReader,
             IPacketSender packetSender,
             IEventFactory eventFactory,

@@ -5,7 +5,6 @@ using RMF_Client.DI;
 using RMF_Client.Logic;
 using RMF_Client.Monitors;
 using RMF_Client.Network;
-using RMF_Server.Logic;
 
 namespace RMF_Client
 {

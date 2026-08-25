@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace RMF_Client.Storage
+namespace RMF_Client.Network
 {
     internal class ConnectionClientSession : ClientSession, IConnectionClientSession
     {
@@ -29,6 +29,21 @@ namespace RMF_Client.Storage
         ) : base(connection, reader, packetSender, eventFactory, channelCapacity, collectingStats, token)
         {
             this.ConnectedTime = DateTime.UtcNow;
+        }
+
+        public bool IsEventRunning(string eventName)
+        {
+            return this.Events.IsRunning(eventName);
+        }
+
+        public void StopEvent(string eventName)
+        {
+            this.Events.StopEvent(eventName);
+        }
+
+        public void StopAllEvents()
+        {
+            this.Events.StopAllRunning();
         }
     }
 }
