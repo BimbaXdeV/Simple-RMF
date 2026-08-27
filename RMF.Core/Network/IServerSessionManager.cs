@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Interfaces.Network
+namespace RMF.Core.Network
 {
     public interface IServerSessionManager
     {

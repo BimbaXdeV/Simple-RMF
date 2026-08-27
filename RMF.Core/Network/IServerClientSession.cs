@@ -1,12 +1,11 @@
-﻿using RMF.Core.Interfaces.Network;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Interfaces
+namespace RMF.Core.Network
 {
     public interface IServerClientSession : ISession
     {

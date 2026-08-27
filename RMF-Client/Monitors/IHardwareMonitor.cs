@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Interfaces
+namespace RMF_Client.Monitors
 {
     public interface IHardwareMonitor
     {

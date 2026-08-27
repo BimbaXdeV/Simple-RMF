@@ -1,10 +1,11 @@
-﻿using System;
+﻿using RMF.Core.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Interfaces.Network
+namespace RMF.Core.Network
 {
     public interface IClientSessionManager
     {

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Interfaces
+namespace RMF.Core.Appearance
 {
     public interface IScreenProvider
     {

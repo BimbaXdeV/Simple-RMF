@@ -1,5 +1,4 @@
-﻿using RMF.Core.Interfaces.Logic;
-using RMF_Client.Appearance;
+﻿using RMF.Core.Appearance;
 using RMF_Client.Configurations;
 using System;
 using System.Collections.Concurrent;
@@ -10,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace RMF_Client.Logic
+namespace RMF_Client.Appearance
 {
     internal class AppearanceManager : IWindowManager, IToolbarManager, IWindowEffects
     {
@@ -35,14 +34,14 @@ namespace RMF_Client.Logic
 
         public AppearanceManager(AppearanceConfig appearanceConfig)
         {
-            this._appearanceConfig = appearanceConfig;
+            _appearanceConfig = appearanceConfig;
         }
 
         private void InitializeToolbarTemplate(ToolbarItem[] items)
         {
             if (items.Length == 0)
             {
-                Console.WriteLine($"Failed to load toolbar, file {this.ToolbarPath} has been corrupted");
+                Console.WriteLine($"Failed to load toolbar, file {ToolbarPath} has been corrupted");
                 return;
             }
 
@@ -132,14 +131,14 @@ namespace RMF_Client.Logic
 
         public void UpdateTitleStatus(string newStatus)
         {
-            int titleHeaderLength = this._appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
+            int titleHeaderLength = _appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
             if (newStatus.Length <= 0 || titleHeaderLength + newStatus.Length > _maxTitleLength)
             {
-                Console.Title = this._appearanceConfig.AppTitle;
+                Console.Title = _appearanceConfig.AppTitle;
                 return;
             }
 
-            Console.Title = this._appearanceConfig.AppTitle + " | " + newStatus;
+            Console.Title = _appearanceConfig.AppTitle + " | " + newStatus;
         }
 
         public async Task Curtain(float delaySecs)

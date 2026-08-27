@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF_Server.DI
+namespace RMF.Core.Extensions
 {
-    internal static class ServiceCollectionExtensions
+    public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddSingletonXmlConfig<TConfig>(this IServiceCollection services) where TConfig : class, new()
         {

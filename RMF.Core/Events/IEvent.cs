@@ -1,12 +1,11 @@
-﻿using RMF.Core.Bases;
-using RMF.Core.Interfaces.Network;
+﻿using RMF.Core.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RMF.Core.Interfaces
+namespace RMF.Core.Events
 {
     public interface IEvent
     {

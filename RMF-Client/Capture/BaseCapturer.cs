@@ -1,4 +1,5 @@
-﻿using RMF.Core.Interfaces;
+﻿using RMF.Core.Appearance;
+using RMF.Core.Interfaces;
 using RMF.Core.Screen;
 using RMF_Client.Configurations;
 using RMF_Client.Logic;

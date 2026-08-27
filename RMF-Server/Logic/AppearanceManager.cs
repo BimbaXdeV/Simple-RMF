@@ -1,9 +1,9 @@
 ﻿using Avalonia.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
+using RMF.Core.Appearance;
 using RMF.Core.Interfaces;
-using RMF.Core.Interfaces.Logic;
-using RMF.Core.Interfaces.Network;
+using RMF.Core.Network;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.UI;

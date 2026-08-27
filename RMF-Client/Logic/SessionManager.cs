@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
+using RMF.Core.Events;
 using RMF.Core.Interfaces;
-using RMF.Core.Interfaces.Network;
 using RMF.Core.Network;
 using RMF_Client.Configurations;
 using RMF_Client.Network;

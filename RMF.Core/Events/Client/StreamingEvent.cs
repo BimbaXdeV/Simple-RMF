@@ -1,6 +1,4 @@
-﻿using RMF.Core.Bases;
-using RMF.Core.Interfaces;
-using RMF.Core.Interfaces.Network;
+﻿using RMF.Core.Appearance;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF.Core.Packets.Client;

@@ -1,4 +1,5 @@
-﻿using RMF.Core.Interfaces;
+﻿using RMF.Core.Appearance;
+using RMF_Client.Configurations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,20 +11,27 @@ namespace RMF_Client.Capture
 {
     internal class CaptureFactory : ICaptureFactory
     {
+        private readonly CaptureConfig _captureConfig;
+
         private IScreenProvider? _provider;
+
+        public CaptureFactory(CaptureConfig captureConfig)
+        {
+            this._captureConfig = captureConfig;
+        }
 
         public void CheckForUpdates()
         {
             // The denser the forest... If else, if else :D
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && this._provider?.GetType() != typeof(DXGICapturer))
             {
-                this._provider = new DXGICapturer();
+                this._provider = new DXGICapturer(this._captureConfig);
                 return;
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && this._provider?.GetType() != typeof(X11Capturer))
             {
-                this._provider = new X11Capturer();
+                this._provider = new X11Capturer(this._captureConfig);
                 return;
             }
         }

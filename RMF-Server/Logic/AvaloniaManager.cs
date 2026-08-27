@@ -6,8 +6,6 @@ using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using ReactiveUI.Avalonia;
 using RMF.Core.Interfaces;
-using RMF.Core.Interfaces.Logic;
-using RMF.Core.Interfaces.Network;
 using RMF.Core.Packets;
 using RMF.Core.Screen;
 using RMF_Server.Configurations;

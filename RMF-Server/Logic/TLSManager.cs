@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RMF.Core.Interfaces;
-using RMF.Core.Interfaces.Network;
+using RMF.Core.Security;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using System;

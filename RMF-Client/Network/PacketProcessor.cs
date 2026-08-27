@@ -17,9 +17,9 @@ using RMF.Core.Events;
 using RMF.Core.Screen;
 using RMF.Core.Interfaces;
 using RMF_Client.Monitors;
-using RMF.Core.Interfaces.Network;
-using RMF.Core.Interfaces.Logic;
 using RMF_Client.Appearance;
+using RMF.Core.Network;
+using RMF.Core.Appearance;
 
 namespace RMF_Client.Network
 {
