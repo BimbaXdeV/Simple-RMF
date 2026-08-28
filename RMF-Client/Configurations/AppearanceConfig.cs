@@ -9,6 +9,6 @@ namespace RMF_Client.Configurations
     internal class AppearanceConfig
     {
         public string AppTitle = "Client";
-        public string ToolbarTemplatePath = string.Empty;
+        public int CurtainStepDelayMsecs = 10;
     }
 }

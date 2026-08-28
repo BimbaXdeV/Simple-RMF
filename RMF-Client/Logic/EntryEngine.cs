@@ -109,6 +109,7 @@ namespace RMF_Client.Logic
 
                 try
                 {
+                    await Task.Delay(500, token);
                     using INetworkConnection rawConnection = this._connectionFactory.CreateConnection();
 
                     this._windowManager.UpdateTitleStatus("Securing connection...");
@@ -136,7 +137,7 @@ namespace RMF_Client.Logic
                         })
                     );
 
-                    await sslStream.AuthenticateAsClientAsync(string.Empty).WaitAsync(TimeSpan.FromSeconds(_securityConfig.TlsHandshakeTimeoutSecs), token);
+                    await sslStream.AuthenticateAsClientAsync(string.Empty).WaitAsync(TimeSpan.FromSeconds(this._securityConfig.TlsHandshakeTimeoutSecs), token);
                     SecureConnectionAdapter tlsConnection = new(rawConnection, sslStream);
                     this._sessionManager.StartSession(tlsConnection);
 
@@ -177,10 +178,10 @@ namespace RMF_Client.Logic
 
                 catch (AuthenticationException)
                 {
-                    this._windowManager.UpdateTitleStatus("TLS handshake failed");
+                    this._windowManager.UpdateTitleStatus("TLS failure");
                     this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
-                        { "endpointTime", "Failed to accept server TLS handshake" }
+                        { "endpointTime", "Failed to accept server TLS handshake with server at " + this._connectionConfig.IPAddress + ":" + this._connectionConfig.Port }
                     });
                 }
 
@@ -188,13 +189,12 @@ namespace RMF_Client.Logic
                 {
                     this._toolBarManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
-                        { "endpointTime", "A client error occured: " + ex }
+                        { "endpointTime", "A client error occured: " + ex.Message }
                     });
                 }
                 finally
                 {
                     this._sessionManager.StopSession();
-                    this._windowManager.UpdateTitleStatus("Finished");
                 }
 
                 if (this._connectionConfig.ConnectionRequestIntervalSecs <= 0)
@@ -202,12 +202,12 @@ namespace RMF_Client.Logic
                     break;
                 }
 
-                connectionAttempt++;
-                this._windowManager.UpdateTitleStatus("Attempting to reconnect... (" + connectionAttempt + ")");
-
                 try
                 {
                     await Task.Delay(TimeSpan.FromSeconds(this._connectionConfig.ConnectionRequestIntervalSecs), token);
+
+                    connectionAttempt++;
+                    this._windowManager.UpdateTitleStatus("(" + connectionAttempt + ") Reconnecting...");
                 }
                 catch (OperationCanceledException)
                 {

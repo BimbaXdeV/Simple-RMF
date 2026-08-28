@@ -9,6 +9,6 @@ namespace RMF_Client.Appearance
     internal interface IWindowEffects
     {
         void DisplayLogo();
-        Task Curtain(float delaySecs);
+        Task Curtain();
     }
 }

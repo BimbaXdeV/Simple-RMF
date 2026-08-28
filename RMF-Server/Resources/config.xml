@@ -17,8 +17,7 @@
 	<!-- Firewall Settings -->
 	<add key="MaxConnections" value="400"/>
 	<add key="MaxConnectionsPerIP" value="400"/>
-	<add key="MinPacketLengthKB" value="6"/>
-	<add key="MaxPacketLengthKB" value="768"/>
+	<add key="MaxPacketBufferKB" value="768"/>
 	<add key="MaxPacketRate" value="100"/>
 	<add key="EnableBlacklistSaving" value="true"/>
 	<add key="BlacklistFilePath" value="Resources/"/>

@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Toolbar>
 	<add key="" link="endpointTime" name="Connected at" default="00:00:00"/>
-	<add key="" link="endpointID" name="Session ID" default="Undefined"/>
+	<add key="" link="endpointID" name="Session ID" default="-1"/>
 	
 	<add key="" link="endpointIP" name="Connection IP" default="Undefined"/>
 	<add key="" link="endpointPort" name="Connection port" default="Undefined"/>

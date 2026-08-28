@@ -8,7 +8,6 @@ namespace RMF_Client.Appearance
 {
     internal interface IToolbarManager
     {
-        void LoadToolbar();
         void ReplaceToolbarContent(Dictionary<string, string> content, bool autoUpdate = true);
         void DisplayToolbar();
     }

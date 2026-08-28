@@ -135,7 +135,7 @@ namespace RMF_Server.DI
                 services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>
                 {
                     FirewallConfig firewallConfig = provider.GetRequiredService<FirewallConfig>();
-                    return new ProtocolReader(firewallConfig.MinPacketLengthKB, firewallConfig.MaxPacketLengthKB);
+                    return new ProtocolReader(firewallConfig.MaxPacketBufferKB * 1024);
                 });
                 services.AddSingleton<IPacketSender, StreamManager>();
                 services.AddSingleton<IEventFactory>(eventFactory);

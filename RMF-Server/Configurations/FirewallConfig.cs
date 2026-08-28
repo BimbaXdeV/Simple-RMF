@@ -10,8 +10,7 @@ namespace RMF_Server.Configurations
     {
         public int MaxConnections = int.MaxValue;
         public int MaxConnectionsPerIP = int.MaxValue;
-        public int MinPacketLengthKB = 0;
-        public int MaxPacketLengthKB = int.MaxValue;
+        public int MaxPacketBufferKB = int.MaxValue;
         public int MaxPacketRate = int.MaxValue;
         public bool EnableBlacklistSaving = false;
         public string BlacklistFilePath = string.Empty;

@@ -17,80 +17,63 @@ namespace RMF_Client.Appearance
 
         // Inilialization things
         private const byte _maxTitleLength = 48;
-        private const string ClientLogo = @"
+        private const string _clientLogo = @"
 '||''|.   '||    ||' '||''''|      ..|'''.| '||   ||                     .   
  ||   ||   |||  |||   ||  .      .|'     '   ||  ...    ....  .. ...   .||.  
  ||''|'    |'|..'||   ||''|      ||          ||   ||  .|...||  ||  ||   ||   
  ||   |.   | '|' ||   ||         '|.      .  ||   ||  ||       ||  ||   ||   
 .||.  '|' .|. | .||. .||.         ''|....'  .||. .||.  '|...' .||. ||.  '|.' 
 ";
-        private readonly int ClientLogoHeight = ClientLogo.Count(c => c == '\n') + 1;
+        private readonly int _clientLogoHeight = _clientLogo.Count(c => c == '\n') + 1;
 
         // Toolbar items will be loaded from "~\RMF-Client\toolbar.xml" file
         // <add key="" link="" name=""/>
-        private readonly string ToolbarPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "toolbar.xml");
-        private string ToolbarTemplate = "Nothing to do...";
-        private readonly Dictionary<string, string> ToolbarContent = [];
+        private readonly string _toolbarPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "toolbar.xml");
+        private string _toolbarTemplate = "Nothing to do...";
+        private readonly Dictionary<string, string> _toolbarContent = [];
 
         public AppearanceManager(AppearanceConfig appearanceConfig)
         {
-            _appearanceConfig = appearanceConfig;
+            this._appearanceConfig = appearanceConfig;
         }
 
         private void InitializeToolbarTemplate(ToolbarItem[] items)
         {
             if (items.Length == 0)
             {
-                Console.WriteLine($"Failed to load toolbar, file {ToolbarPath} has been corrupted");
+                Console.WriteLine($"Failed to load toolbar, file {_toolbarPath} has been corrupted");
                 return;
             }
 
             int maxNameLength = items.Max(x => x.Name.Length);
-            ToolbarTemplate = string.Join(Environment.NewLine, items.Select(x => $"[{x.Key ?? " "}] {string.Format($"{{0,-{maxNameLength}}}", x.Name)} : {{{x.Link}}}"));
+            this._toolbarTemplate = string.Join(Environment.NewLine, items.Select(x => $"[{x.Key ?? " "}] {string.Format($"{{0,-{maxNameLength}}}", x.Name)} : {{{x.Link}}}"));
         }
 
         private void InitializeToolbarContent(ToolbarItem[] items)
         {
-            if (ToolbarContent.Count > 0)
+            if (this._toolbarContent.Count > 0)
             {
-                ToolbarContent.Clear();
+                this._toolbarContent.Clear();
             }
 
             foreach (ToolbarItem i in items)
             {
-                ToolbarContent[i.Link] = i.DefaultValue;
+                this._toolbarContent[i.Link] = i.DefaultValue;
             }
-        }
-
-        public ToolbarItem[] GetToolbarItems()
-        {
-            if (!File.Exists(ToolbarPath))
-            {
-                Console.WriteLine($"Failed to load toolbar, file not found: {ToolbarPath}");
-                return [];
-            }
-
-            XDocument toolbarDoc = XDocument.Load(ToolbarPath);
-            ToolbarItem[]? toolbarItems = toolbarDoc.Element("Toolbar")?
-                .Elements("add")
-                .Select(x => new ToolbarItem(x.Attribute("link")?.Value, x.Attribute("name")?.Value, x.Attribute("key")?.Value, x.Attribute("default")?.Value))
-                .ToArray() ?? [];
-            return toolbarItems;
         }
 
         private string FillToolbarBody()
         {
-            StringBuilder toolbarBody = new(ToolbarTemplate);
-            foreach (var (key, value) in ToolbarContent)
+            StringBuilder toolbarBody = new(this._toolbarTemplate);
+            foreach (var (key, value) in this._toolbarContent)
             {
                 toolbarBody.Replace("{" + key + "}", value);
             }
             return toolbarBody.ToString();
         }
 
-        public void LoadToolbar()
+        public void LoadToolbar(ToolbarItem[] toolbarItems)
         {
-            ToolbarItem[] toolbarItems = GetToolbarItems();
             InitializeToolbarTemplate(toolbarItems);
             InitializeToolbarContent(toolbarItems);
         }
@@ -100,9 +83,9 @@ namespace RMF_Client.Appearance
             bool isReplaced = false;
             foreach (var (key, value) in content)
             {
-                if (ToolbarContent.ContainsKey(key))
+                if (this._toolbarContent.ContainsKey(key))
                 {
-                    ToolbarContent[key] = value;
+                    this._toolbarContent[key] = value;
                     isReplaced |= true;
                 }
             }
@@ -112,17 +95,12 @@ namespace RMF_Client.Appearance
             }
         }
 
-        public void DisplayLogo()
-        {
-            Console.WriteLine(ClientLogo);
-        }
-
         public void DisplayToolbar()
         {
             string toolbarBody = FillToolbarBody();
             string[] toolbarLines = toolbarBody.Split(Environment.NewLine);
 
-            Console.SetCursorPosition(0, ClientLogoHeight);
+            Console.SetCursorPosition(0, this._clientLogoHeight);
             foreach (string l in toolbarLines)
             {
                 Console.WriteLine(l.PadRight(Console.WindowWidth));
@@ -131,21 +109,26 @@ namespace RMF_Client.Appearance
 
         public void UpdateTitleStatus(string newStatus)
         {
-            int titleHeaderLength = _appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
+            int titleHeaderLength = this._appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
             if (newStatus.Length <= 0 || titleHeaderLength + newStatus.Length > _maxTitleLength)
             {
-                Console.Title = _appearanceConfig.AppTitle;
+                Console.Title = this._appearanceConfig.AppTitle;
                 return;
             }
 
-            Console.Title = _appearanceConfig.AppTitle + " | " + newStatus;
+            Console.Title = this._appearanceConfig.AppTitle + " | " + newStatus;
         }
 
-        public async Task Curtain(float delaySecs)
+        public void DisplayLogo()
+        {
+            Console.WriteLine(_clientLogo);
+        }
+
+        public async Task Curtain()
         {
             for (int i = Console.GetCursorPosition().Top; i >= 0; i--)
             {
-                await Task.Delay((int)(delaySecs * 1000));
+                await Task.Delay(this._appearanceConfig.CurtainStepDelayMsecs);
                 Console.SetCursorPosition(0, i);
                 Console.WriteLine(new string(' ', Console.WindowWidth - 1));
             }

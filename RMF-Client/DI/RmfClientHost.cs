@@ -37,6 +37,13 @@ namespace RMF_Client.DI
             }
             XmlConfigProvider configProvider = new(configLoadResult.Data!);
 
+            // Toolbar content
+            LoadResult<ToolbarItem[]> toolbarLoadResult = XmlToolbarLoader.Load(Path.Combine("Resources", "toolbar.xml"));
+            if (!toolbarLoadResult.IsSuccess)
+            {
+                throw new FileLoadException(toolbarLoadResult.ExceptionMessage);
+            }
+
             // Network packets
             LoadResult<Dictionary<short, Type>> packetLoadResult = ReflectionPacketLoader.Load();
             if (!packetLoadResult.IsSuccess)
@@ -52,8 +59,6 @@ namespace RMF_Client.DI
                 throw new TypeLoadException(eventLoadResult.ExceptionMessage);
             }
             EventFactory eventFactory = new(eventLoadResult.Data!);
-
-            
 
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
             builder.ConfigureLogging(logging =>
@@ -75,15 +80,31 @@ namespace RMF_Client.DI
                 services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>
                 {
                     SecurityConfig securityConfig = provider.GetRequiredService<SecurityConfig>();
-                    return new ProtocolReader(securityConfig.MinPacketBufferKB, securityConfig.MaxPacketBufferKB);
+                    return new ProtocolReader(securityConfig.MaxPacketBufferKB * 1024);
                 });
                 services.AddSingleton<IPacketSender, StreamManager>();
                 services.AddSingleton<IEventFactory>(eventFactory);
                 services.AddSingleton<IClientSessionManager, SessionManager>();
 
                 // UI
-                services.AddSingleton<IWindowManager, AppearanceManager>();
-                services.AddSingleton<IToolbarManager, AppearanceManager>();
+                services.AddSingleton(provider =>
+                {
+                    AppearanceConfig appearanceConfig = provider.GetRequiredService<AppearanceConfig>();
+
+                    AppearanceManager appearanceManager = new(appearanceConfig);
+                    appearanceManager.LoadToolbar(toolbarLoadResult.Data!);
+
+                    appearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
+                    {
+                        { "configsLoaded", configLoadResult.Loaded + " / " + configLoadResult.Total },
+                        { "packetsLoaded", packetLoadResult.Loaded + " / " + packetLoadResult.Total },
+                        { "eventsLoaded", eventLoadResult.Loaded + " / " + eventLoadResult.Total }
+                    }, autoUpdate: false); // Your time hasn`t come yet, bro; ClientBootstrapper ​​will sort everything out himself
+                    return appearanceManager;
+                });
+                services.AddSingleton<IWindowManager, AppearanceManager>(provider => provider.GetRequiredService<AppearanceManager>());
+                services.AddSingleton<IToolbarManager, AppearanceManager>(provider => provider.GetRequiredService<AppearanceManager>());
+                services.AddSingleton<IWindowEffects, AppearanceManager>(provider => provider.GetRequiredService<AppearanceManager>());
 
                 // Capture
                 services.AddSingleton<ICaptureFactory, CaptureFactory>();
@@ -97,6 +118,7 @@ namespace RMF_Client.DI
 
                 // Client connection
                 services.AddSingleton<IConnectionFactory, TcpConnectionFactory>();
+                services.AddHostedService<ClientBootstrapper>();
                 services.AddHostedService<EntryEngine>();
             });
 

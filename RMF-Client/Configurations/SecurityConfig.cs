@@ -10,7 +10,6 @@ namespace RMF_Client.Configurations
     {
         public string CertificateFingerprint = string.Empty;
         public int TlsHandshakeTimeoutSecs = 1;
-        public int MinPacketBufferKB = 0;
         public int MaxPacketBufferKB = int.MaxValue;
     }
 }
