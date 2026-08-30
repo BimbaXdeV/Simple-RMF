@@ -170,7 +170,8 @@ namespace RMF_Server.Logic
             string savePath = Path.GetFullPath(PathResolver.GetResolvedPath(
                 this._streamingConfig.ScreenshotsFilePath,
                 fileName: "%endPoint%_%datetime%",
-                fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower() ?? string.Empty
+                fileFormat: Enum.GetName(typeof(ScreenFormats), packet.FormatID)?.ToLower() ?? string.Empty,
+                endPoint: endPoint.Address.ToString()
             ));
 
             string? directory = Path.GetDirectoryName(savePath);

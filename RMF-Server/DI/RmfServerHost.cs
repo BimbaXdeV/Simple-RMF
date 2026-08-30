@@ -97,6 +97,7 @@ namespace RMF_Server.DI
             consoleAppearance.LogInitialization(this._bootLogger, "Network packets", packetLoadResult.Loaded, packetLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Server events", eventLoadResult.Loaded, eventLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Admin commands", commandLoadResult.Loaded, commandLoadResult.Total);
+            
             consoleAppearance.LogSeparator(this._bootLogger);
             this._bootLogger.LogInformation("Preparing to launch the server:");
 
@@ -214,14 +215,31 @@ namespace RMF_Server.DI
             }
             finally
             {
+                // Disposable dependencies
+                IFirewall firewall = this._host.Services.GetRequiredService<IFirewall>();
+                ILoggerProvider loggerProvider = this._host.Services.GetRequiredService<ILoggerProvider>();
+
+                // Shutdown dependencies
                 IConsoleExtensions consoleExtensions = this._host.Services.GetRequiredService<IConsoleExtensions>();
                 ConnectionConfig connectionConfig = this._host.Services.GetRequiredService<ConnectionConfig>();
 
                 await this._host.StopAsync().ConfigureAwait(false);
 
+                // If your firewall is capable of offloading data from RAM to disk, for example
+                if (firewall is IDisposable disposableFirewall)
+                {
+                    disposableFirewall.Dispose();
+                }
+
+                // [!] I strongly recommend providing the provider with disk-based logging functionality
+                // that is invoked via the resource cleanup method
+                if (loggerProvider is IDisposable disposableLogger)
+                {
+                    disposableLogger.Dispose();
+                }
+
                 if (!connectionConfig.EnableForceShutdown)
                 {
-                    consoleExtensions.LogSeparator(this._bootLogger);
                     this._bootLogger.LogInformation("To finish this process, press any key...");
                     Console.ReadKey(true);
                 }

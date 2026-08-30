@@ -107,7 +107,6 @@ namespace RMF_Server.Channels
                     }
                     finally
                     {
-                        // To avoid allocating unnecessary memory, we allocate a free byte[] from the async pool, which must be returned after use
                         ArrayPool<byte>.Shared.Return(context.Payload);
                         if (packet is IReleasable releasable)
                         {

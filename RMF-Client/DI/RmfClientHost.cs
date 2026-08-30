@@ -53,7 +53,7 @@ namespace RMF_Client.DI
             PacketFactory packetFactory = new(packetLoadResult.Data!);
 
             // Server events
-            LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Server");
+            LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Client");
             if (!eventLoadResult.IsSuccess)
             {
                 throw new TypeLoadException(eventLoadResult.ExceptionMessage);
@@ -127,7 +127,22 @@ namespace RMF_Client.DI
 
         public async Task RunAsync()
         {
+            IToolbarManager toolbarManager = this._host.Services.GetRequiredService<IToolbarManager>();
+            IWindowEffects windowEffects = this._host.Services.GetRequiredService<IWindowEffects>();
+            ConnectionConfig connectionConfig = this._host.Services.GetRequiredService<ConnectionConfig>();
+
             await this._host.RunAsync();
+
+            if (!connectionConfig.EnableForceShutdown)
+            {
+                toolbarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                {
+                    { "endpointTime", "To finish this process, press any key..." }
+                });
+                Console.ReadKey(true);
+            }
+
+            await windowEffects.Curtain();
         }
     }
 }

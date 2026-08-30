@@ -4,7 +4,7 @@
 
 	<!-- Appearance Settings -->
 	<add key="AppTitle" value="RMF-Client"/>
-	<add key="CurtainStepDelayMsecs" value="750"/>
+	<add key="CurtainStepDelayMsecs" value="80"/>
 
 	<!-- Connection Settings -->
 	<add key="IPAddress" value="127.0.0.1"/>

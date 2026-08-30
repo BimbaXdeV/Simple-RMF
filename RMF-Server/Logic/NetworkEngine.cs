@@ -182,7 +182,7 @@ namespace RMF_Server.Logic
 
         private async Task ClientHandler(IServerClientSession session, CancellationToken token)
         {
-            CancellationTokenSource cts = new();
+            using CancellationTokenSource cts = new();
 
             try
             {

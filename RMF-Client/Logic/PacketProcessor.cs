@@ -21,7 +21,7 @@ using RMF_Client.Appearance;
 using RMF.Core.Network;
 using RMF.Core.Appearance;
 
-namespace RMF_Client.Network
+namespace RMF_Client.Logic
 {
     internal class PacketProcessor : IClientPacketProcessor
     {

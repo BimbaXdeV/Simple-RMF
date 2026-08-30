@@ -20,6 +20,8 @@ namespace RMF_Server.Debugger
 
         private readonly ConcurrentQueue<string> _logQueue;
         private readonly string[] _history;
+        private bool _isFirstLogSaving;
+
         private bool _isExecutorRunning;
 
         private readonly Regex _ansiRegex;
@@ -36,6 +38,8 @@ namespace RMF_Server.Debugger
 
             this._logQueue = new ConcurrentQueue<string>();
             this._history = new string[this._loggingConfig.LoggingHistoryLength];
+            this._isFirstLogSaving = true;
+            
             this._isExecutorRunning = false;
 
             this._ansiRegex = new(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
@@ -59,6 +63,7 @@ namespace RMF_Server.Debugger
                 return;
             }
 
+            int historyIndex = 0;
             this._isExecutorRunning = true;
             this._consoleSync.IsLoggingRunning = true;
             try
@@ -72,6 +77,19 @@ namespace RMF_Server.Debugger
                     {
                         // Just a standard logger output. Ya, completely standard...
                         Console.WriteLine(log);
+
+                        if (this._loggingConfig.EnableLogSaving)
+                        {
+                            string cleanLog = this._ansiRegex.Replace(log, string.Empty);
+                            this._history[historyIndex++] = cleanLog;
+                            
+                            if (historyIndex >= this._loggingConfig.LoggingHistoryLength)
+                            {
+                                await SaveBackupAsync(token);
+                                Array.Clear(this._history, 0, this._history.Length);
+                                historyIndex = 0;
+                            }
+                        }
                     }
                     else
                     {
@@ -90,11 +108,27 @@ namespace RMF_Server.Debugger
                 this._isExecutorRunning = false;
                 this._consoleSync.IsLoggingRunning = false;
 
+                if (this._loggingConfig.EnableLogSaving)
+                {
+                    using CancellationTokenSource cts = new(TimeSpan.FromSeconds(this._loggingConfig.MaxLogSavingDurationSecs));
+                    try
+                    {
+                        await SaveBackupAsync(CancellationToken.None).WaitAsync(cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch (TimeoutException)
+                    {
+                        Console.WriteLine("Log backup timed out during shutdown");
+                    }
+                }
+
                 Console.WriteLine("Logging output executor has been stopped, subsequent logs will be output out of order");
             }
         }
 
-        private void SaveBackup()
+        private async Task SaveBackupAsync(CancellationToken token)
         {
             if (this._history == null || this._history.Length == 0)
             {
@@ -104,9 +138,8 @@ namespace RMF_Server.Debugger
 
             try
             {
-                string[] validLines = this._history.Where(l => l != null)
-                                             .Select(l => this._ansiRegex.Replace(l, string.Empty))
-                                             .ToArray();
+                string[] validLines = this._history.Where(l => l != null).ToArray();
+                int totalValidLinesCount = validLines.Length;
 
                 if (validLines.Length == 0)
                 {
@@ -126,22 +159,37 @@ namespace RMF_Server.Debugger
                     Directory.CreateDirectory(directoryPath);
                 }
 
-                string backupTitle = $"* Backup from {DateTime.Now:yyyy-MM-dd HH:mm:ss} [{validLines.Length} / {this._history.Length} lines]:";
-                string contentToWrite = backupTitle + Environment.NewLine + string.Join(Environment.NewLine, validLines);
+                string contentToWrite = string.Join(Environment.NewLine, validLines);
+                if (this._isFirstLogSaving)
+                {
+                    string backupTitle = $"* Backup from {DateTime.Now:yyyy-MM-dd HH:mm:ss} [history buffer: {this._loggingConfig.LoggingHistoryLength} lines]:";
+                    contentToWrite = backupTitle + Environment.NewLine + contentToWrite;
+                    totalValidLinesCount++;
+                    this._isFirstLogSaving = false;
+                }
                 bool isNewFile = !File.Exists(path);
 
-                if (!isNewFile && this._loggingConfig.EnableMultipleBackup)
+                try
                 {
-                    File.AppendAllText(path, Environment.NewLine + Environment.NewLine + contentToWrite);
+                    if (!isNewFile && this._loggingConfig.EnableMultipleBackup)
+                    {
+                        await File.AppendAllTextAsync(path, Environment.NewLine + Environment.NewLine + contentToWrite, token);
+                    }
+                    else
+                    {
+                        await File.WriteAllTextAsync(path, contentToWrite, token);
+                    }
+                    Console.WriteLine($"Successfully saved {totalValidLinesCount} log messages to \"{path}\"");
                 }
-                else
+                catch (OperationCanceledException)
                 {
-                    File.WriteAllText(path, contentToWrite);
+                    // Without this little thing, you`ll see that hellish white text about the task being cancelled.
+                    // Trust me, you don`t want that :D
                 }
 
                 // Log rotation if the file exceeds the maximum allowed size after writing the backup
                 long currentFileSize = new FileInfo(path).Length;
-                long maxAllowedSize = (this._loggingConfig?.MaxLogFileCapacityMB ?? 1) * 1024 * 1024;
+                long maxAllowedSize = this._loggingConfig.MaxLogFileCapacityKB * 1024;
 
                 if (currentFileSize >= maxAllowedSize)
                 {
@@ -158,15 +206,6 @@ namespace RMF_Server.Debugger
             {
                 Console.WriteLine($"Failed to write log history to file: {ex}");
             }
-        }
-
-        public override void Dispose()
-        {
-            if (this._loggingConfig.EnableLogSaving)
-            {
-                SaveBackup();
-            }
-            base.Dispose();
         }
     }
 }

@@ -292,14 +292,14 @@ namespace RMF_Server.Commands
         private void Screen(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
-            if (this._sessionManager.GetClientSession(targetEndPoint, out IServerClientSession? session) && session != null)
+            if (this._sessionManager.GetClientSession(targetEndPoint, out IServerClientSession? session))
             {
                 ScreenshotRequest screenshotRequest = new()
                 {
                     FormatID = (byte)this._streamingConfig.ScreenshotFrameFormat,
                     QualityPercent = (byte)this._streamingConfig.ScreenshotQualityPercentage
                 };
-                session.SendPacket(screenshotRequest);
+                session!.SendPacket(screenshotRequest);
                 this._logger.LogInformation("Successfully sent to {EndPoint}, waiting for remote screenshot...", targetEndPoint);
             }
             else
@@ -311,7 +311,7 @@ namespace RMF_Server.Commands
         private async Task Stream(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
-            if (this._sessionManager.GetClientSession(targetEndPoint, out IServerClientSession? session) && session != null)
+            if (this._sessionManager.GetClientSession(targetEndPoint, out IServerClientSession? session))
             {
                 StreamingRequest streamingRequest = new()
                 {
@@ -321,11 +321,11 @@ namespace RMF_Server.Commands
                     FrameUpdateRate = this._streamingConfig.StreamingFrameUpdateRate,
                     TargetFPS = (short)this._streamingConfig.StreamingTargetFPS
                 };
-                session.SendPacket(streamingRequest);
+                session!.SendPacket(streamingRequest);
 
                 this._avaloniaManager.StreamingClientEndPoint = session.RemoteEndPoint;
                 await this._avaloniaManager.ShowWindow();
-                this._avaloniaManager.SetWindowTitle(this._appearanceConfig?.WindowTitle + " | " + targetEndPoint);
+                this._avaloniaManager.SetWindowTitle(this._appearanceConfig.WindowTitle + " | " + targetEndPoint);
                 this._logger.LogInformation("Streaming session started with {EndPoint}", session.RemoteEndPoint);
             }
             else

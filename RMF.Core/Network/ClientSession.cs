@@ -51,46 +51,46 @@ namespace RMF.Core.Network
             CancellationToken token = default
         )
         {
-            Connection = connection;
-            Reader = reader;
-            PacketSender = packetSender;
+            this.Connection = connection;
+            this.Reader = reader;
+            this.PacketSender = packetSender;
 
-            Events = new EventController(eventFactory);
-            OutboundChannel = Channel.CreateBounded<Packet>(
+            this.Events = new EventController(eventFactory);
+            this.OutboundChannel = Channel.CreateBounded<Packet>(
                 new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1000)
                 {
                     FullMode = BoundedChannelFullMode.Wait
                 }
             );
-            CollectingStats = collectingStats;
+            this.CollectingStats = collectingStats;
             RunProcessing(token);
         }
 
         public void RunProcessing(CancellationToken token)
         {
-            if (IsRunning)
+            if (this.IsRunning)
             {
                 return;
             }
-            IsRunning = true;
+            this.IsRunning = true;
             _ = Task.Run(() => OutboundChannelWorker(token), token);  // Each session has its own packet sender
         }
 
         private async Task OutboundChannelWorker(CancellationToken token)
         {
-            if (!IsRunning)
+            if (!this.IsRunning)
             {
                 return;
             }
 
             try
             {
-                await foreach (Packet packet in OutboundChannel.Reader.ReadAllAsync(token))
+                await foreach (Packet packet in this.OutboundChannel.Reader.ReadAllAsync(token))
                 {
-                    await _streamLocker.WaitAsync(token);
+                    await this._streamLocker.WaitAsync(token);
                     try
                     {
-                        await PacketSender.SendPacketAsync(Connection.GetNetworkStream(), packet, token);
+                        await this.PacketSender.SendPacketAsync(this.Connection.GetNetworkStream(), packet, token);
                         IncrementSendPackets();
                     }
                     finally
@@ -99,13 +99,13 @@ namespace RMF.Core.Network
                         {
                             releasable.Release();
                         }
-                        _streamLocker.Release();
+                        this._streamLocker.Release();
                     }
                 }
             }
             finally
             {
-                while (OutboundChannel.Reader.TryRead(out Packet? packet))
+                while (this.OutboundChannel.Reader.TryRead(out Packet? packet))
                 {
                     if (packet is IReleasable releasable)
                     {
@@ -117,17 +117,17 @@ namespace RMF.Core.Network
 
         public Task<PacketHeader> ReadHeaderAsync(CancellationToken token)
         {
-            return Reader.ReadHeaderAsync(Connection.GetNetworkStream(), token);
+            return this.Reader.ReadHeaderAsync(this.Connection.GetNetworkStream(), token);
         }
 
         public Task<byte[]> ReadPayloadAsync(int length, CancellationToken token)
         {
-            return Reader.ReadPayloadAsync(Connection.GetNetworkStream(), length, token);
+            return this.Reader.ReadPayloadAsync(this.Connection.GetNetworkStream(), length, token);
         }
 
         public void SendPacket(Packet packet)
         {
-            if (!IsRunning)
+            if (!this.IsRunning)
             {
                 if (packet is IReleasable releasable)
                 {
@@ -136,18 +136,18 @@ namespace RMF.Core.Network
                 return;
             }
 
-            if (OutboundChannel.Writer.TryWrite(packet))
+            if (this.OutboundChannel.Writer.TryWrite(packet))
             {
                 return;
             }
 
-            OutboundChannel.Reader.TryRead(out Packet? oldestPacket);
+            this.OutboundChannel.Reader.TryRead(out Packet? oldestPacket);
             if (oldestPacket != null && oldestPacket is IReleasable releasableOldest)
             {
                 releasableOldest.Release();
             }
 
-            if (!OutboundChannel.Writer.TryWrite(packet) && packet is IReleasable releasableDuplication)
+            if (!this.OutboundChannel.Writer.TryWrite(packet) && packet is IReleasable releasableDuplication)
             {
                 releasableDuplication.Release();
             }
@@ -155,12 +155,12 @@ namespace RMF.Core.Network
 
         public void StartEvent(string eventName, Dictionary<string, object> eventSettings)
         {
-            Events.StartEvent(this, eventName, eventSettings);
+            this.Events.StartEvent(this, eventName, eventSettings);
         }
 
         public void IncrementSendPackets()
         {
-            if (CollectingStats)
+            if (this.CollectingStats)
             {
                 Interlocked.Increment(ref _totalPacketsSent);
                 Interlocked.Exchange(ref _lastTransferTimeTicks, DateTime.UtcNow.Ticks);
@@ -169,7 +169,7 @@ namespace RMF.Core.Network
 
         public void IncrementReceivedPackets()
         {
-            if (CollectingStats)
+            if (this.CollectingStats)
             {
                 Interlocked.Increment(ref _totalPacketsReceived);
                 Interlocked.Exchange(ref _lastTransferTimeTicks, DateTime.UtcNow.Ticks);
@@ -178,10 +178,10 @@ namespace RMF.Core.Network
 
         public void StopProcessing()
         {
-            IsRunning = false;
-            OutboundChannel.Writer.TryComplete();
-            Events.StopAllRunning();
-            Connection.Close();
+            this.IsRunning = false;
+            this.OutboundChannel.Writer.TryComplete();
+            this.Events.StopAllRunning();
+            this.Connection.Close();
         }
     }
 }
