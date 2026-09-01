@@ -29,6 +29,13 @@ namespace RMF_Client.DI
 
         public RmfClientHost(string[] args)
         {
+            // ---- Part of the client component initialization ----
+            // All necessary components must be initialized before the DI container is built,
+            // which should save resources during client startup;
+
+            // [!] Ultimately, the decision was made to completely abandon partial resource loading
+            // and instead throw an exception immediately if external files or parsing systems failed
+
             // Configurations
             LoadResult<Dictionary<Type, object>> configLoadResult = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
             if (!configLoadResult.IsSuccess)
@@ -60,6 +67,7 @@ namespace RMF_Client.DI
             }
             EventFactory eventFactory = new(eventLoadResult.Data!);
 
+            // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
             builder.ConfigureLogging(logging =>
             {
