@@ -1,7 +1,8 @@
-﻿using RMF.Core.Interfaces;
+﻿using RMF.Core.Appearance;
+using RMF.Core.Interfaces;
 using RMF.Core.Screen;
+using RMF_Client.Configurations;
 using RMF_Client.Logic;
-using RMF_Client.Storage;
 using Silk.NET.Maths;
 using SkiaSharp;
 using System;
@@ -17,6 +18,8 @@ namespace RMF_Client.Capture
 {
     internal abstract class BaseCapturer : IScreenProvider
     {
+        private readonly CaptureConfig _captureConfig;
+
         public short ScreenWidth;
         public short ScreenHeight;
         protected SKBitmap? ScreenBitmap;
@@ -26,11 +29,13 @@ namespace RMF_Client.Capture
 
         private ParallelOptions? Options;
 
-        private int MetricsUpdateStep;
-        private int FrameUpdateStep;
+        private int _metricsUpdateStep;
+        private int _frameUpdateStep;
 
-        public BaseCapturer()
+        public BaseCapturer(CaptureConfig captureConfig)
         {
+            this._captureConfig = captureConfig;
+
             PrepareParallelOptions();
             UpdateBitmapMetrics();
             PrepareBitmap();
@@ -50,7 +55,7 @@ namespace RMF_Client.Capture
         // - The function must overwrite the standard fields of the abstract class "ScreenWidth" and "ScreenHeight" with the current metrics of
         //   the client screen.
         // - It be called when the monitor resolution is suddenly updated, as well as periodically after a certain number of frames
-        //   (see MetricsUpdateRate in ConfigurationManager) to check for any changes in the screen metrics.
+        //   (see MetricsUpdateRate in CaptureConfigh) to check for any changes in the screen metrics.
         protected abstract void UpdateBitmapMetrics();
 
 
@@ -77,8 +82,9 @@ namespace RMF_Client.Capture
         private void PrepareParallelOptions()
         {
             // It is recommended to use half of all processor cores
-            int maxCores = ConfigurationManager.MaxProcessorCores > 0 && ConfigurationManager.MaxProcessorCores <= Environment.ProcessorCount
-                           ? ConfigurationManager.MaxProcessorCores : Environment.ProcessorCount / 2;
+            int maxCores = this._captureConfig.MaxProcessorCores > 0 && this._captureConfig.MaxProcessorCores <= Environment.ProcessorCount
+                ? this._captureConfig.MaxProcessorCores
+                : Environment.ProcessorCount / 2;
 
             this.Options = new ParallelOptions
             {
@@ -99,13 +105,13 @@ namespace RMF_Client.Capture
 
         public CapturedFrame? Capture(ScreenFormats format, byte quality, int frameUpdateRate = 0)
         {
-            if (this.ScreenWidth <= 0 || this.ScreenHeight <= 0 || this.MetricsUpdateStep++ % ConfigurationManager.MetricsUpdateRate == 0)
+            if (this.ScreenWidth <= 0 || this.ScreenHeight <= 0 || this._metricsUpdateStep++ % this._captureConfig.MetricsUpdateRate == 0)
             {
                 UpdateBitmapMetrics();
-                this.MetricsUpdateStep = 0;
+                this._metricsUpdateStep = 0;
             }
 
-            bool isFullFrame = frameUpdateRate <= 0 || this.FrameUpdateStep++ % frameUpdateRate == 0;
+            bool isFullFrame = frameUpdateRate <= 0 || this._frameUpdateStep++ % frameUpdateRate == 0;
 
             lock (this.CaptureProcessorLock)
             {

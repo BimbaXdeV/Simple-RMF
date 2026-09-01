@@ -1,5 +1,4 @@
-﻿using RMF.Core.Bases;
-using RMF.Core.Interfaces;
+﻿using RMF.Core.Appearance;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF.Core.Packets.Client;
@@ -24,7 +23,7 @@ namespace RMF.Core.Events.Client
         public int FrameUpdateRate { get; set; }
         public int TargetFPS { get; set; }
 
-        private void SendActualFrame(ClientSession session)
+        private void SendActualFrame(ISession session)
         {
             CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent, this.FrameUpdateRate);
             if (frame.HasValue && frame.Value is CapturedFrame f)
@@ -41,7 +40,7 @@ namespace RMF.Core.Events.Client
             }
         }
 
-        protected override async Task HandleLogic(ClientSession session, CancellationToken token)
+        protected override async Task HandleLogic(ISession session, CancellationToken token)
         {
             double targetFrameRateTick = 1000.0 / this.TargetFPS;
             Stopwatch sw = new();

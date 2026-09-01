@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Screen;
+using RMF_Client.Configurations;
 using Silk.NET.Maths;
 using SkiaSharp;
 using System;
@@ -13,6 +14,10 @@ namespace RMF_Client.Capture
     [SupportedOSPlatform("linux")]
     internal class X11Capturer : BaseCapturer
     {
+        public X11Capturer(CaptureConfig captureConfig) : base(captureConfig)
+        {
+        }
+
         protected override void Initialize()
         {
             throw new NotImplementedException();

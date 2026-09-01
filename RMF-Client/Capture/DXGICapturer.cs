@@ -1,11 +1,10 @@
 ﻿using RMF.Core.Screen;
+using RMF_Client.Configurations;
 using Silk.NET.Core.Contexts;
 using Silk.NET.Core.Native;
 using Silk.NET.Direct3D11;
 using Silk.NET.DXGI;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL;
-using Silk.NET.Vulkan;
 using SkiaSharp;
 using System;
 using System.Buffers;
@@ -37,6 +36,10 @@ namespace RMF_Client.Capture
         private ComPtr<ID3D11Texture2D> Texture;
         
         private uint AcquireTimeoutCode = 0x887A0027;
+
+        public DXGICapturer(CaptureConfig captureConfig) : base(captureConfig)
+        {
+        }
 
         protected override unsafe void Initialize()
         {

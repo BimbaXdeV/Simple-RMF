@@ -1,33 +1,64 @@
-﻿using Avalonia.Threading;
+﻿using Avalonia.Platform;
+using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
+using RMF.Core.Appearance;
+using RMF.Core.Interfaces;
+using RMF.Core.Network;
+using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal static class AppearanceManager
+    internal class AppearanceManager : IWindowManager, IDisposable
     {
-        public static readonly int MaxTitleLength = 48;
+        private readonly IServerSessionManager _sessionManager;
+        private readonly ILogger<AppearanceManager> _logger;
+        private readonly AppearanceConfig _appearanceConfig;
 
-        public static void SetTitle(string newTitle)
+        private const string _titleStatusHeader = "Online: ";
+        private const byte _maxTitleLength = 48;
+
+        public AppearanceManager(
+            IServerSessionManager sessionManager,
+            ILogger<AppearanceManager> logger,
+            AppearanceConfig appearanceConfig
+        )
         {
-            if (string.IsNullOrEmpty(newTitle))
+            this._sessionManager = sessionManager;
+            this._logger = logger;
+            this._appearanceConfig = appearanceConfig;
+
+            UpdateTitleStatus(_titleStatusHeader + this._sessionManager.TotalConnections);
+            this._sessionManager.ConnectionCountChanged += OnConnectionCountChanged;
+        }
+
+        private void OnConnectionCountChanged(int newConnectionCount)
+        {
+            UpdateTitleStatus(_titleStatusHeader + newConnectionCount);
+        }
+
+        public void UpdateTitleStatus(string newStatus)
+        {
+            int titleHeaderLength = this._appearanceConfig.AppTitle.Length + 11;  // "<Title> | Online: "
+            if (newStatus.Length <= 0 || titleHeaderLength + newStatus.Length > _maxTitleLength)
             {
-                Logging.Warning("Failed to update application title, received an empty string");
+                this._logger.LogWarning("Failed to update application title, received too long string (max length: {MaxTitleLength})", _maxTitleLength);
                 return;
             }
 
-            if (newTitle.Length > MaxTitleLength)
-            {
-                Logging.Warning($"Failed to update application title, received too long string (max length: {MaxTitleLength})");
-                return;
-            }
+            Console.Title = this._appearanceConfig.AppTitle + " | " + newStatus;
+        }
 
-            Console.Title = newTitle;
+        public void Dispose()
+        {
+            this._sessionManager.ConnectionCountChanged -= OnConnectionCountChanged;
         }
     }
 }

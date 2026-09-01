@@ -10,8 +10,8 @@ namespace RMF_Client.Logic
 {
     internal static class ScreenEncoder
     {
-        private const int MinCompressionQuality = 5;
-        private const int MaxCompressionQuality = 100;
+        private const int _minCompressionQuality = 5;
+        private const int _maxCompressionQuality = 100;
 
         public static SKData? CompressImage(SKImage image, ScreenFormats format, byte quality)
         {
@@ -20,7 +20,7 @@ namespace RMF_Client.Logic
                 return null;
             }
 
-            int encodedQuality = (int)(quality > MinCompressionQuality && quality <= MaxCompressionQuality ? quality : 100);
+            int encodedQuality = (int)(quality > _minCompressionQuality && quality <= _maxCompressionQuality ? quality : 100);
             SKEncodedImageFormat encodedFormat = format switch
             {
                 ScreenFormats.Png => SKEncodedImageFormat.Png,

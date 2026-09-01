@@ -1,10 +1,13 @@
 ﻿using Avalonia.Media;
-using RMF.Core.Bases;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using RMF.Core.Network;
 using RMF.Core.Packets.Server;
 using RMF.Core.Screen;
+using RMF.Core.Security;
+using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
-using RMF_Server.Storage;
 using System;
 using System.Collections.Generic;
 using System.IO.Pipes;
@@ -18,13 +21,52 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Commands
 {
-    internal class CommandHandler
+    internal class CommandHandler : ICommandHandler
     {
-        private static bool Validator(string[] commandStructure, CommandParameter[]? parameters)
+        private readonly IHostApplicationLifetime _lifetime;
+        private readonly ICommandManager _commandManager;
+        private readonly IAvaloniaManager _avaloniaManager;
+        private readonly IServerSessionManager _sessionManager;
+        private readonly ITlsManager _tlsManager;
+        private readonly IFirewall _firewall;
+        private readonly IThemeManager _themeManager;
+        private readonly IConsoleExtensions _consoleExtensions;
+        private readonly ILogger<CommandHandler> _logger;
+        private readonly AppearanceConfig _appearanceConfig;
+        private readonly StreamingConfig _streamingConfig;
+
+        public CommandHandler(
+            IHostApplicationLifetime lifetime,
+            ICommandManager commandManager,
+            IAvaloniaManager avaloniaManager,
+            IServerSessionManager sessionManager,
+            ITlsManager tlsManager,
+            IFirewall firewall,
+            IThemeManager themeManager,
+            IConsoleExtensions consoleExtensions,
+            ILogger<CommandHandler> logger,
+            AppearanceConfig appearanceConfig,
+            StreamingConfig streamingConfig
+        )
+        {
+            this._lifetime = lifetime;
+            this._commandManager = commandManager;
+            this._avaloniaManager = avaloniaManager;
+            this._sessionManager = sessionManager;
+            this._tlsManager = tlsManager;
+            this._firewall = firewall;
+            this._themeManager = themeManager;
+            this._consoleExtensions = consoleExtensions;
+            this._logger = logger;
+            this._appearanceConfig = appearanceConfig;
+            this._streamingConfig = streamingConfig;
+        }
+
+        private bool Validator(string[] commandStructure, CommandParameter[]? parameters)
         {
             if (commandStructure.Length - 1 != parameters!.Length)
             {
-                Logging.Warning($"The command parameter count mismatch. Expected: {parameters.Length}, but received: {commandStructure.Length - 1}");
+                this._logger.LogError("The command parameter count mismatch. Expected: {ExpectedParameters}, but received: {ReceivedParameters}", parameters.Length, commandStructure.Length - 1);
                 return false;
             }
 
@@ -42,7 +84,7 @@ namespace RMF_Server.Commands
                     case "int":
                         if (!int.TryParse(inputParam, out _))
                         {
-                            Logging.Warning($"The parameter \"{param.Name}\" expects an integer value, but received: \"{inputParam}\"");
+                            this._logger.LogWarning("The parameter \"{ParameterName}\" expects an integer value, but received: \"{ReceivedParameter}\"", param.Name, inputParam);
                             return false;
                         }
                         break;
@@ -50,7 +92,7 @@ namespace RMF_Server.Commands
                     case "float":
                         if (!float.TryParse(inputParam, out _))
                         {
-                            Logging.Warning($"The parameter \"{param.Name}\" expects a float value, but received: \"{inputParam}\"");
+                            this._logger.LogWarning("The parameter \"{ParameterName}\" expects a float value, but received: \"{ReceivedParameter}\"", param.Name, inputParam);
                             return false;
                         }
                         break;
@@ -58,13 +100,13 @@ namespace RMF_Server.Commands
                     case "bool":
                         if (!bool.TryParse(inputParam, out _))
                         {
-                            Logging.Warning($"The parameter \"{param.Name}\" expects a boolean value (true/false), but received: \"{inputParam}\"");
+                            this._logger.LogWarning("The parameter \"{ParameterName}\" expects a boolean value (true/false), but received: \"{ReceivedParameter}\"", param.Name, inputParam);
                             return false;
                         }
                         break;
 
                     default:
-                        Logging.Warning($"Unknown parameter type for \"{param.Name}\"");
+                        this._logger.LogWarning("Unknown parameter type for \"{ParameterName}\"", param.Name);
                         return false;
                 }
             }
@@ -72,18 +114,18 @@ namespace RMF_Server.Commands
             return true;
         }
 
-        public static void SwitchHandle(string command)
+        public void SwitchHandle(string command)
         {
             // Here will be the command handling logic
         }
 
-        public static async void SearchHandle(string input, Command command, CancellationTokenSource cts)
+        public async Task SearchHandle(string input, Command command, CancellationToken token)
         {
             string[] inputCommandStructure = input.Split(' ');
             string commandName = inputCommandStructure[0];
             if (commandName != command.Name)
             {
-                Logging.Warning($"Command name mismatch. Expected: \"{command.Name}\", but received: \"{commandName}\"");
+                this._logger.LogError("Command name mismatch. Expected: \"{ExpectedCommandName}\", but received: \"{ReceivedCommandName}\"", command.Name, commandName);
                 return;
             }
 
@@ -95,10 +137,10 @@ namespace RMF_Server.Commands
 
             string processMethodName = char.ToUpper(commandName[0]) + commandName.Substring(1);
             Type type = typeof(CommandHandler);
-            MethodInfo? processMethod = type.GetMethod(processMethodName, BindingFlags.NonPublic | BindingFlags.Static);
+            MethodInfo? processMethod = type.GetMethod(processMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
             if (processMethod == null)
             {
-                Logging.Warning($"No processor found for command \"{commandName}\"", toHistory: false);
+                this._logger.LogError("No processor found for command \"{CommandName}\"", commandName);
                 return;
             }
 
@@ -111,13 +153,13 @@ namespace RMF_Server.Commands
                 {
                     assembledParams[p.Position] = input;
                 }
-                else if (p.ParameterType == typeof(CancellationTokenSource))
+                else if (p.ParameterType == typeof(CancellationToken))
                 {
-                    assembledParams[p.Position] = cts;
+                    assembledParams[p.Position] = token;
                 }
             }
 
-            object? processResult = processMethod.Invoke(null, assembledParams);
+            object? processResult = processMethod.Invoke(this, assembledParams);
             if (processResult is Task taskResult)
             {
                 await taskResult;
@@ -125,32 +167,37 @@ namespace RMF_Server.Commands
         }
 
         // All command processors
-        private static void Cmlst()
+        private void Cmlst()
         {
-            Logging.Message("* Available inline commands:");
-            if (CommandManager.GetAllCommands().Count == 0)
+            this._logger.LogInformation("Available inline commands:");
+            if (this._commandManager.GetAllCommands().Count == 0)
             {
-                Logging.Message("No commands have been loaded...");
+                this._logger.LogInformation("No commands have been loaded...");
                 return;
             }
 
-            foreach (Command cm in CommandManager.GetAllCommands())
+            foreach (Command cm in this._commandManager.GetAllCommands())
             {
-                byte[] paramColor = ThemeManager.ParameterName;
-                string parametersNamesPerformance = cm.Parameters != null ? Colorist.ColoredFilterRGB(paramColor[0], paramColor[1], paramColor[2]) + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + Colorist.ResetColor() : "";
+                ThemeColor paramColor = this._themeManager.GetColor("ParameterName");
+                string parametersNamesPerformance = cm.Parameters != null
+                    ? " " + paramColor + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\"")) + ThemeColor.AnsiReset
+                    : "";
                 string descriptionPerformance = cm.Description ?? "Description is empty...";
                 
-                byte[] commandColor = ThemeManager.CommandName;
-                Logging.Message($"{Colorist.ColoredFilterRGB(commandColor[0], commandColor[1], commandColor[2])}- {cm.Name}{Colorist.ResetColor()} {parametersNamesPerformance} - {descriptionPerformance}");
+                ThemeColor commandColor = this._themeManager.GetColor("CommandName");
+                this._logger.LogInformation(
+                    "{StartCommandColor}- {CommandName}{EndCommandColor}{Parameters} : {Description}",
+                    commandColor, cm.Name, ThemeColor.AnsiReset, parametersNamesPerformance, descriptionPerformance
+                );
             }
         }
 
-        private static void Conlst()
+        private void Conlst()
         {
-            ServerClientSession[] connections = SessionManager.GetActiveConnections();
-            if (!SessionManager.ConnectionsExist)
+            IServerClientSession[] connections = this._sessionManager.GetActiveConnections();
+            if (!this._sessionManager.ConnectionsExist)
             {
-                Logging.Message("No active connections...", toHistory: false);
+                this._logger.LogInformation("No active connections...");
                 return;
             }
 
@@ -158,65 +205,68 @@ namespace RMF_Server.Commands
             int maxPort = 0;
             int maxRecv = 0;
             int maxSent = 0;
-            foreach (ServerClientSession c in connections)
+            foreach (IServerClientSession c in connections)
             {
-                maxAddr = Math.Max(maxAddr, c.EndPoint?.Address.ToString().Length ?? 0);
-                maxPort = Math.Max(maxPort, c.EndPoint?.Port.ToString().Length ?? 0);
+                maxAddr = Math.Max(maxAddr, c.RemoteEndPoint.Address.ToString().Length);
+                maxPort = Math.Max(maxPort, c.RemoteEndPoint.Port.ToString().Length);
                 maxRecv = Math.Max(maxRecv, c.TotalPacketsReceived.ToString().Length);
                 maxSent = Math.Max(maxSent, c.TotalPacketsSent.ToString().Length);
             }
             int maxCount = connections.Length.ToString().Length;
 
-            Logging.Message("* Active connections list:");
+            this._logger.LogInformation("Active connections list:");
             for (int i = 0; i < connections.Length; i++)
             {
-                ServerClientSession c = connections[i];
+                IServerClientSession c = connections[i];
 
                 string index = (i + 1).ToString().PadLeft(maxCount);
-                string ipAddress = c.EndPoint?.Address.ToString().PadLeft(maxAddr) ?? string.Empty;
-                string port = c.EndPoint?.Port.ToString().PadRight(maxPort) ?? string.Empty;
+                string ipAddress = c.RemoteEndPoint.Address.ToString().PadLeft(maxAddr) ?? string.Empty;
+                string port = c.RemoteEndPoint.Port.ToString().PadRight(maxPort) ?? string.Empty;
                 string receivedPackets = c.TotalPacketsReceived.ToString().PadRight(maxRecv);
                 string sentPackets = c.TotalPacketsSent.ToString().PadRight(maxSent);
 
-                Logging.Message($"{index}. {ipAddress}:{port} | Recv: {receivedPackets} | Sent: {sentPackets} | Last act: {c.LastTransferTime.ToLocalTime():HH:mm:ss}");
+                this._logger.LogInformation(
+                    "{Index}. {IpAddress}:{Port} | Recv: {ReceivedPackets} | Sent: {SentPackets} | Last act: {LastTransferTime}",
+                    index, ipAddress, port, receivedPackets, sentPackets, c.LastTransferTime.ToLocalTime().ToString("HH:mm:ss")
+                );
             }
         }
 
-        private static void Banlst()
+        private void Banlst()
         {
-            string[] bannedIPs = Firewall.GetBannedIPs();
+            string[] bannedIPs = this._firewall.GetBannedIPs();
             if (bannedIPs.Length == 0)
             {
-                Logging.Message("No banned IPs...", toHistory: false);
+                this._logger.LogInformation("No banned IPs...");
                 return;
             }
 
-            Logging.Message("* Banned IPs list:");
+            this._logger.LogInformation("Banned IPs list:");
             int maxCounterLength = bannedIPs.Length.ToString().Length;
             int counter = 1;
             foreach (string ip in bannedIPs)
             {
-                Logging.Message($"{string.Format($"{{0,{maxCounterLength}}}", counter.ToString())}. {ip}");
+                this._logger.LogInformation("{Index}. {IpAddress}", counter.ToString().PadLeft(maxCounterLength), ip);
                 counter++;
             }
         }
 
-        private static void Clear()
+        private void Clear()
         {
-            Logging.ClearConsole();
+            this._consoleExtensions.ClearConsole(this._logger);
         }
 
-        private static void Shutdown(string input, CancellationTokenSource cts)
+        private void Shutdown(string input)
         {
-            Logging.Output($"The \"{input}\" command received. Initiating shutdown process...");
-            cts.Cancel();
+            this._logger.LogInformation("The \"{CommandName}\" command received. Initiating shutdown process...", input);
+            this._lifetime.StopApplication();
         }
 
-        private static void Certdata()
+        private void Certdata()
         {
-            X509Certificate2 certificate = TLSManager.GetOrCreateCertificate();
-            Logging.Message(
-                "* Server TLS Certificate:" + Environment.NewLine +
+            X509Certificate2 certificate = this._tlsManager.GetOrCreateCertificate();
+            this._logger.LogInformation(
+                "Server TLS Certificate:" + Environment.NewLine +
                 "- Subject    : " + certificate.Subject + Environment.NewLine +
                 "- Issuer     : " + certificate.Issuer + Environment.NewLine +
                 "- Expiration : " + certificate.NotAfter + Environment.NewLine +
@@ -224,96 +274,96 @@ namespace RMF_Server.Commands
             );
         }
 
-        private static void Ver()
+        private void Ver()
         {
-            string? serverVersion = RMFVersion.App?.ToString(3);
-            string? coreVersion = RMFVersion.Core?.ToString(3);
+            string? serverVersion = RmfVersion.App?.ToString(3);
+            string? coreVersion = RmfVersion.Core?.ToString(3);
 
             if (serverVersion != null && coreVersion != null)
             {
-                Logging.Message($"* Assembly versions{Environment.NewLine}{ConfigurationManager.AppTitle}: {serverVersion}{Environment.NewLine}Core: {coreVersion}");
+                this._logger.LogInformation("Assembly versions\n{ServerName}: {ServerVersion}\nCore: {CoreVersion}", this._appearanceConfig.AppTitle, serverVersion, coreVersion);
             }
             else
             {
-                Logging.Message("Version information is not available now");
+                this._logger.LogWarning("Version information is not available now");
             }
         }
 
-        private static void Screen(string input)
+        private void Screen(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
-            if (SessionManager.GetClientSession(targetEndPoint, out ServerClientSession? session) && session != null)
+            if (this._sessionManager.GetClientSession(targetEndPoint, out IServerClientSession? session))
             {
                 ScreenshotRequest screenshotRequest = new()
                 {
-                    FormatID = (byte)ConfigurationManager.ScreenshotFrameFormat,
-                    QualityPercent = (byte)ConfigurationManager.ScreenshotQualityPercentage
+                    FormatID = (byte)this._streamingConfig.ScreenshotFrameFormat,
+                    QualityPercent = (byte)this._streamingConfig.ScreenshotQualityPercentage
                 };
-                session.SendPacket(screenshotRequest);
-                Logging.Message($"Successfully sent to {targetEndPoint}, waiting for remote screenshot...");
+                session!.SendPacket(screenshotRequest);
+                this._logger.LogInformation("Successfully sent to {EndPoint}, waiting for remote screenshot...", targetEndPoint);
             }
             else
             {
-                Logging.Message($"No connection found named \"{targetEndPoint}\"", toHistory: false);
+                this._logger.LogError("No connection found named \"{EndPoint}\"", targetEndPoint);
             }
         }
 
-        private static async Task Stream(string input)
+        private async Task Stream(string input)
         {
             string targetEndPoint = input.Split(' ')[1];
-            if (SessionManager.GetClientSession(targetEndPoint, out ServerClientSession? session) && session != null)
+            if (this._sessionManager.GetClientSession(targetEndPoint, out IServerClientSession? session))
             {
                 StreamingRequest streamingRequest = new()
                 {
                     IsActive = true,
-                    FormatID = (byte)ConfigurationManager.StreamingFrameFormat,
-                    Quality = (byte)ConfigurationManager.StreamingQualityPercentage,
-                    FrameUpdateRate = ConfigurationManager.StreamingFrameUpdateRate,
-                    TargetFPS = (short)ConfigurationManager.StreamingTargetFPS
+                    FormatID = (byte)this._streamingConfig.StreamingFrameFormat,
+                    Quality = (byte)this._streamingConfig.StreamingQualityPercentage,
+                    FrameUpdateRate = this._streamingConfig.StreamingFrameUpdateRate,
+                    TargetFPS = (short)this._streamingConfig.StreamingTargetFPS
                 };
-                session.SendPacket(streamingRequest);
+                session!.SendPacket(streamingRequest);
 
-                WindowManager.StreamingClientEndPoint = session.EndPoint;
-                await WindowManager.ShowWindow();
-                WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle + " | " + targetEndPoint);
-                Logging.Output($"Streaming session started with {session.EndPoint}");
+                this._avaloniaManager.StreamingClientEndPoint = session.RemoteEndPoint;
+                await this._avaloniaManager.ShowWindow();
+                this._avaloniaManager.SetWindowTitle(this._appearanceConfig.WindowTitle + " | " + targetEndPoint);
+                this._logger.LogInformation("Streaming session started with {EndPoint}", session.RemoteEndPoint);
             }
             else
             {
-                Logging.Message($"No connection found named \"{targetEndPoint}\"", toHistory: false);
+                this._logger.LogError("No connection found named \"{EndPoint}\"", targetEndPoint);
             }
         }
 
-        private static async Task Dstream()
+        private async Task Dstream()
         {
             try
             {   
-                IPEndPoint? ipEndPoint = WindowManager.StreamingClientEndPoint;
+                IPEndPoint? ipEndPoint = this._avaloniaManager.StreamingClientEndPoint;
                 if (ipEndPoint == null)
                 {
-                    Logging.Message("No active stream to stop...", toHistory: false);
+                    this._logger.LogInformation("No active stream to stop...");
                     return;
                 }
                 
                 string endPoint = ipEndPoint.ToString();
-                if (SessionManager.GetClientSession(endPoint, out ServerClientSession? session) && session != null)
+                if (this._sessionManager.GetClientSession(endPoint, out IServerClientSession? session) && session != null)
                 {
                     StreamingRequest streamingRequest = new()
                     {
                         IsActive = false
                     };
                     session.SendPacket(streamingRequest);
-                    Logging.Message($"* Successfully sent to {endPoint}, waiting for stopping stream...");
+                    this._logger.LogInformation("Successfully sent to {EndPoint}, waiting for stopping stream...", endPoint);
                 }
                 else
                 {
-                    Logging.Message($"No connection found named \"{endPoint}\"", toHistory: false);
+                    this._logger.LogError("No connection found named \"{EndPoint}\"", endPoint);
                 }
             }
             finally
             {
-                WindowManager.SetWindowTitle(ConfigurationManager.WindowTitle ?? "Disabled");
-                await WindowManager.HideWindow();
+                this._avaloniaManager.SetWindowTitle(this._appearanceConfig.WindowTitle);
+                await this._avaloniaManager.HideWindow();
             }
         }
     }

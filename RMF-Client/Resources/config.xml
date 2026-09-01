@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Settings>
+	<!-- This file contains all the settings for the RMF-Client. It is read at startup and can be modified to change the behavior of the client -->
+
+	<!-- Appearance Settings -->
+	<add key="AppTitle" value="RMF-Client"/>
+	<add key="CurtainStepDelayMsecs" value="80"/>
+
+	<!-- Connection Settings -->
+	<add key="IPAddress" value="127.0.0.1"/>
+	<add key="Port" value="8000"/>
+	<add key="ConnectionRequestIntervalSecs" value="10"/>
+	<add key="EnableForceShutdown" value="false"/>
+
+	<!-- Security Settings -->
+	<add key="CertificateFingerprint" value="64A66642D2EC2D1730940BF85808228FC0033E8C"/>
+	<add key="TlsHandshakeTimeoutSecs" value="5"/>
+	<add key="MaxPacketBufferKB" value="16"/>
+
+	<!-- Controller Settings -->
+	<add key="EnableCollectingSessionStats" value="true"/>
+
+	<!-- Channel Settings -->
+	<add key="ChannelPacketsCapacity" value="5"/>
+
+	<!-- Capture Settings -->
+	<add key="MaxProcessorCores" value="4"/>
+	<add key="MetricsUpdateRate" value="120"/>
+</Settings>

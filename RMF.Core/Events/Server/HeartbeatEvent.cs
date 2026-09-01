@@ -1,5 +1,4 @@
-﻿using RMF.Core.Bases;
-using RMF.Core.Network;
+﻿using RMF.Core.Network;
 using RMF.Core.Packets.Client;
 using RMF.Core.Packets.Server;
 using System;
@@ -14,10 +13,15 @@ namespace RMF.Core.Events.Server
 {
     public class HeartbeatEvent : BackgroundEvent
     {
-        public int IntervalSecs { get; set; } = 1;
+        public int IntervalSecs { get; set; } = 0;
 
-        protected override async Task HandleLogic(ClientSession session, CancellationToken token)
+        protected override async Task HandleLogic(ISession session, CancellationToken token)
         {
+            if (this.IntervalSecs <= 0)
+            {
+                return;
+            }
+
             ClientPingRequest pingRequest = new ClientPingRequest();
             while (!token.IsCancellationRequested)
             {

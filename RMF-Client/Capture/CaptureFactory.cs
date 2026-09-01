@@ -1,4 +1,5 @@
-﻿using RMF.Core.Interfaces;
+﻿using RMF.Core.Appearance;
+using RMF_Client.Configurations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,33 +9,40 @@ using System.Threading.Tasks;
 
 namespace RMF_Client.Capture
 {
-    internal static class CaptureFactory
+    internal class CaptureFactory : ICaptureFactory
     {
-        private static IScreenProvider? Provider;
+        private readonly CaptureConfig _captureConfig;
 
-        public static void CheckForUpdates()
+        private IScreenProvider? _provider;
+
+        public CaptureFactory(CaptureConfig captureConfig)
+        {
+            this._captureConfig = captureConfig;
+        }
+
+        public void CheckForUpdates()
         {
             // The denser the forest... If else, if else :D
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Provider?.GetType() != typeof(DXGICapturer))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && this._provider?.GetType() != typeof(DXGICapturer))
             {
-                Provider = new DXGICapturer();
+                this._provider = new DXGICapturer(this._captureConfig);
                 return;
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Provider?.GetType() != typeof(X11Capturer))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && this._provider?.GetType() != typeof(X11Capturer))
             {
-                Provider = new X11Capturer();
+                this._provider = new X11Capturer(this._captureConfig);
                 return;
             }
         }
 
-        public static IScreenProvider? GetActualProvider(bool updateIfNullable = false)
+        public IScreenProvider? GetActualProvider(bool updateIfNullable = false)
         {
-            if (updateIfNullable && Provider == null)
+            if (updateIfNullable && this._provider == null)
             {
                 CheckForUpdates();  // If you are writing a looping periodic checker, you do not need this call
             }
-            return Provider;
+            return this._provider;
         }
     }
 }

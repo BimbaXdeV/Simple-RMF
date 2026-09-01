@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal static class RMFVersion
+    internal static class RmfVersion
     {
         public static Version? App => Assembly.GetEntryAssembly()?.GetName().Version;
         public static Version? Core => typeof(Packet).Assembly.GetName().Version;
