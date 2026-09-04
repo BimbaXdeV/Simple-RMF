@@ -32,10 +32,5 @@ namespace RMF_Client.Capture
         {
             throw new NotImplementedException();
         }
-
-        protected override RectsMetadata? AcquireUpdates()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

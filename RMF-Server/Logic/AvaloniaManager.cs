@@ -175,7 +175,7 @@ namespace RMF_Server.Logic
                     }
                     else
                     {
-                        this._viewModel.UpdatePatches(patches, patchCount, updateOverlay: this._streamingConfig.EnableStreamingStatsOverlay);
+                        this._viewModel.UpdatePatches(patches.AsSpan(0, patchCount), updateOverlay: this._streamingConfig.EnableStreamingStatsOverlay);
                     }
                 }
                 catch (Exception ex)

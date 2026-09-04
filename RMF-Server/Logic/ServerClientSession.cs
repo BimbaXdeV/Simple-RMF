@@ -26,23 +26,23 @@ namespace RMF_Server.Logic
             CancellationToken token = default
         ) : base(connection, reader, packetSender, eventFactory, channelCapacity, collectingStats, token)
         {
-            _lastResetTicks = DateTime.UtcNow.Ticks;
+            this._lastResetTicks = DateTime.UtcNow.Ticks;
         }
 
         public bool IsRateLimitExceed(int maxRate)
         {
             long currentTicks = DateTime.UtcNow.Ticks;
-            long lastReset = Interlocked.Read(ref _lastResetTicks);
+            long lastReset = Interlocked.Read(ref this._lastResetTicks);
 
             if (currentTicks - lastReset >= TimeSpan.TicksPerSecond)
             {
-                if (Interlocked.CompareExchange(ref _lastResetTicks, currentTicks, lastReset) == lastReset)
+                if (Interlocked.CompareExchange(ref this._lastResetTicks, currentTicks, lastReset) == lastReset)
                 {
-                    Interlocked.Exchange(ref _rateLimitCounter, 0);
+                    Interlocked.Exchange(ref this._rateLimitCounter, 0);
                 }
             }
 
-            int currentRate = Interlocked.Increment(ref _rateLimitCounter);
+            int currentRate = Interlocked.Increment(ref this._rateLimitCounter);
             return currentRate > maxRate;
         }
     }

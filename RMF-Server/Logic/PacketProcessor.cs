@@ -147,8 +147,8 @@ namespace RMF_Server.Logic
                     finally
                     {
                         this._avaloniaManager.StreamingClientEndPoint = null;
-                        string breakReason = !string.IsNullOrEmpty(packet.Reason) ? "Reason: " + packet.Reason : string.Empty;
-                        this._logger.LogInformation("Streaming session ended with {EndPoint}. {Reason}", endPoint, breakReason);
+                        string breakReason = !string.IsNullOrEmpty(packet.Reason) ? ". Reason: " + packet.Reason : string.Empty;
+                        this._logger.LogInformation("Streaming session ended with {EndPoint}{Reason}", endPoint, breakReason);
                     }
                 }
                 else
@@ -209,6 +209,9 @@ namespace RMF_Server.Logic
                     return;
                 }
                 this._avaloniaManager.UpdateBitmap(packet.Patches, packet.PatchesCount, packet.IsFullFrame);
+
+                packet.Patches = null;
+                packet.PatchesCount = 0;
             }
         }
 

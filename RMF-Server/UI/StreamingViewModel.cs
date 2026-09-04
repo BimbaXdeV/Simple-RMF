@@ -102,7 +102,7 @@ namespace RMF_Server.UI
             this.FrameTimeMsecs = (float)(DateTime.Now - lastUpdatedTime).TotalMilliseconds;
         }
 
-        private string TranslateCodecExceptionMessage(SKCodecResult result)
+        private static string TranslateCodecExceptionMessage(SKCodecResult result)
         {
             // Yes, it looks like "Borsch borsch = new Borsh().GetBorsch()", but it isa rather important analysis tool,
             // albeit a crutch. To be honest, I haven`t yet had time to test which error is triggered by which situation,
@@ -189,7 +189,7 @@ namespace RMF_Server.UI
             }
         }
 
-        public unsafe void UpdatePatches(ReadOnlySpan<ScreenPatch> patches, int patchCount, bool updateOverlay = false)
+        public unsafe void UpdatePatches(ReadOnlySpan<ScreenPatch> patches, bool updateOverlay = false)
         {
             DateTime currentTime = UpdateStats(updateOverlay);
 
@@ -198,7 +198,8 @@ namespace RMF_Server.UI
                 int screenRowLength = buffer.RowBytes;
                 byte* displayPtr = (byte*)buffer.Address;
 
-                for (int i = 0; i < patchCount; i++)
+                //Console.WriteLine($"Patches processing ({patches.Length}):");
+                for (int i = 0; i < patches.Length; i++)
                 {
                     ScreenPatch patch = patches[i];
                     if (patch.Length <= 0 || patch.Data == null)
@@ -207,6 +208,7 @@ namespace RMF_Server.UI
                         continue;
                     }
 
+                    //Console.WriteLine(i + ". " + string.Join(' ', patches[..4].ToArray()) + ", L: " + patch.Length);
                     using MemoryStream ms = new(patch.Data, 0, patch.Length);
                     using SKCodec codec = SKCodec.Create(ms, out SKCodecResult result);
                     if (codec == null)

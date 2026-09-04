@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace RMF_Client.Capture
 {
     [SupportedOSPlatform("windows")]
-    internal class DXGICapturer : BaseCapturer
+    internal class DXGICapturer : BaseCapturer, IDirtyRectsCapturer
     {
         [DllImport("user32.dll")]
         private static extern bool SetProcessDPIAware();
@@ -35,7 +35,7 @@ namespace RMF_Client.Capture
         private ComPtr<IDXGIOutputDuplication> Duplication;
         private ComPtr<ID3D11Texture2D> Texture;
         
-        private uint AcquireTimeoutCode = 0x887A0027;
+        private readonly uint AcquireTimeoutCode = 0x887A0027;
 
         public DXGICapturer(CaptureConfig captureConfig) : base(captureConfig)
         {
@@ -232,7 +232,7 @@ namespace RMF_Client.Capture
             }
         }
 
-        protected override unsafe RectsMetadata? AcquireUpdates()
+        public unsafe RectsMetadata? AcquireUpdates()
         {
             if (!TryAcquireNextFrame(out OutduplFrameInfo frameInfo))
             {

@@ -157,7 +157,7 @@ namespace RMF_Client.Logic
                 return;
             }
 
-            CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent, 0);
+            CapturedFrame? screenshot = screenProvider.Capture((ScreenFormats)packet.FormatID, packet.QualityPercent);
             if (screenshot.HasValue)
             {
                 CapturedFrame frame = screenshot.Value;

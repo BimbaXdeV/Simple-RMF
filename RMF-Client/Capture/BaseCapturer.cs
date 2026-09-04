@@ -69,16 +69,6 @@ namespace RMF_Client.Capture
         // NOTICE: There is no need to think about returning the screen to the pool, this is already provided by the capture engine.
         protected abstract ScreenPatch AcquireFrame();
 
-
-        // "AcquireUpdates()" is required to capture only the updated areas of the client screen.
-        // -------------------------------------------------------------------------------------
-        // - The method should not return any pixel data. The X structure stores only the metrics of the changed screen areas, which are then
-        //   used by the engine to obtain raw bytes.
-        // -------------------------------------------------------------------------------------
-        // WARNING: Use the above array leases to store areas to avoid GC (Garbage Collector) load issues.
-        // NOTICE: There is no need to return the array back, the engine already knows how to do this.
-        protected abstract RectsMetadata? AcquireUpdates();
-
         private void PrepareParallelOptions()
         {
             // It is recommended to use half of all processor cores
@@ -111,69 +101,23 @@ namespace RMF_Client.Capture
                 this._metricsUpdateStep = 0;
             }
 
+            // If the frame update rate is set to 0 or less, it means that every frame should be captured.
+            // Otherwise, only every Nth frame will be captured based on the specified frame update rate
             bool isFullFrame = frameUpdateRate <= 0 || this._frameUpdateStep++ % frameUpdateRate == 0;
 
             lock (this.CaptureProcessorLock)
             {
-                if (isFullFrame)
+                // For capturers capable of working with dirty rectangles
+                if (!isFullFrame && this is IDirtyRectsCapturer dirtyRectsCapturer)
                 {
-                    ScreenPatch frame = AcquireFrame();
-
-                    unsafe
+                    RectsMetadata? updatedPatches = dirtyRectsCapturer.AcquireUpdates();
+                    if (!updatedPatches.HasValue || updatedPatches.Value.Count == 0)
                     {
-                        try
-                        {
-                            fixed (byte* srcPtr = frame.Data)
-                            {
-                                using SKImage image = SKImage.FromPixels(
-                                    new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
-                                    (IntPtr)srcPtr,
-                                    this.ScreenWidth * 4
-                                );
-
-                                using SKData? compressedData = ScreenEncoder.CompressImage(image, format, quality);
-                                if (compressedData == null)
-                                {
-                                    return null;
-                                }
-
-                                int compressedSize = (int)compressedData!.Size;
-                                byte[] frameBuffer = ArrayPool<byte>.Shared.Rent(compressedSize);
-                                compressedData.AsSpan().CopyTo(frameBuffer);
-
-                                // Screen patch array rental is used only for full image transfer, so you must return this array back
-                                ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(1);
-                                patches[0] = new ScreenPatch(frameBuffer, compressedSize, 0, 0, this.ScreenWidth, this.ScreenHeight);
-
-                                return new CapturedFrame(
-                                    patches,
-                                    1,
-                                    format,
-                                    true
-                                );
-                            }
-                        }
-                        finally
-                        {
-                            if (frame is IReleasable releasable)
-                            {
-                                releasable.Release();
-                            }
-                        }
+                        return null;
                     }
-                }
 
-                // Partial frame with updates only
-                else
-                {
-                    RectsMetadata? updatedPatches = AcquireUpdates();
                     try
                     {
-                        if (!updatedPatches.HasValue || updatedPatches.Value.Count == 0)
-                        {
-                            return null;
-                        }
-
                         ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(updatedPatches.Value.Count);
                         short writtenCount = 0;
                         try
@@ -192,7 +136,7 @@ namespace RMF_Client.Capture
 
                                 int patchWidth = patch.Max.X - patch.Min.X;
                                 int patchHeight = patch.Max.Y - patch.Min.Y;
-                                            
+
                                 if (patchWidth <= 0 || patchHeight <= 0)
                                 {
                                     return;
@@ -258,6 +202,59 @@ namespace RMF_Client.Capture
                         if (updatedPatches is IReleasable releasable)
                         {
                             releasable.Release();
+                        }
+                    }
+                }
+
+                // If the frame is a full frame or the capturer does not support dirty rects, capture the entire screen
+                else
+                {
+                    ScreenPatch frame = AcquireFrame();
+                    if (frame.Data == null || frame.Length <= 0)
+                    {
+                        return null;
+                    }
+
+                    unsafe
+                    {
+                        try
+                        {
+                            fixed (byte* srcPtr = frame.Data)
+                            {
+                                using SKImage image = SKImage.FromPixels(
+                                    new SKImageInfo(this.ScreenWidth, this.ScreenHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
+                                    (IntPtr)srcPtr,
+                                    this.ScreenWidth * 4
+                                );
+
+                                using SKData? compressedData = ScreenEncoder.CompressImage(image, format, quality);
+                                if (compressedData == null)
+                                {
+                                    return null;
+                                }
+
+                                int compressedSize = (int)compressedData!.Size;
+                                byte[] frameBuffer = ArrayPool<byte>.Shared.Rent(compressedSize);
+                                compressedData.AsSpan().CopyTo(frameBuffer);
+
+                                // Screen patch array rental is used only for full image transfer, so you must return this array back
+                                ScreenPatch[] patches = ArrayPool<ScreenPatch>.Shared.Rent(1);
+                                patches[0] = new ScreenPatch(frameBuffer, compressedSize, 0, 0, this.ScreenWidth, this.ScreenHeight);
+
+                                return new CapturedFrame(
+                                    patches,
+                                    1,
+                                    format,
+                                    true
+                                );
+                            }
+                        }
+                        finally
+                        {
+                            if (frame is IReleasable releasable)
+                            {
+                                releasable.Release();
+                            }
                         }
                     }
                 }
