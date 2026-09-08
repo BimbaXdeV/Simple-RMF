@@ -18,5 +18,10 @@ namespace RMF_Server.Logic
                           ''''                                                   
 ";
         public const string InitComponentLogTemplate = "{Indent}{Label, -16}: {StartColor}{Loaded} / {Total}{EndColor}";
+
+        public const string DateTimeFormatYmdHms = @"yyyy\.MM\.dd HH\:mm\:ss";
+        public const string TimeSpanFormatDhms = @"dd\.hh\:mm\:ss";
+        public const string TimeSpanFormatDhm = @"dd\.hh\:mm";
+        public const string TimeSpanFormatHms = @"hh\:mm\:ss";
     }
 }

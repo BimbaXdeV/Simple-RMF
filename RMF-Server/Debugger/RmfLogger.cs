@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using RMF_Server.Logic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -43,7 +44,7 @@ namespace RMF_Server.Debugger
 
         private string Format(string message, LogLevel logLevel)
         {
-            string datetimeStr = $"[ {DateTime.Now:HH:mm:ss} ]";
+            string datetimeStr = $"[ {DateTime.Now.ToString(RmfConstants.TimeSpanFormatHms)} ]";
             string logLevelStr = "(" + logLevel.ToString().First() + ")";
             string categoryStr = _categoryName.PadRight(MaxCategoryNameLength);
 

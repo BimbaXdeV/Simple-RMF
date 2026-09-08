@@ -38,8 +38,8 @@ namespace RMF_Server.Commands
                         continue;
                     }
 
-                    // It doesn't matter whether a command has a description. The main thing is the name
-                    string cmDesc = el.Attribute("description")?.Value ?? "";
+                    string cmCtg = el.Attribute("ctg")?.Value ?? "uncategorized";
+                    string cmDesc = el.Attribute("description")?.Value ?? string.Empty;
 
                     string[] pNameIndexes = el.Attributes()
                         .Where(a => a.Name.LocalName.StartsWith("paramname"))
@@ -74,13 +74,13 @@ namespace RMF_Server.Commands
                             });
                         }
 
-                        Command cm = new()
+                        commands.Add(new Command()
                         {
+                            Category = cmCtg,
                             Name = cmName,
                             Description = cmDesc,
                             Parameters = parameters.ToArray()
-                        };
-                        commands.Add(cm);
+                        });
                     }
                     catch
                     {

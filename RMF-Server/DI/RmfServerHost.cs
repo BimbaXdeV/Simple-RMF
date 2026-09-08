@@ -17,6 +17,7 @@ using RMF_Server.Commands;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
+using RMF_Server.Metrics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -145,6 +146,9 @@ namespace RMF_Server.DI
                 // UI
                 services.AddSingleton<IAvaloniaManager, AvaloniaManager>();
                 services.AddSingleton<IWindowManager, AppearanceManager>();
+
+                // Metrics onitoring
+                services.AddSingleton<IServerMetricsMonitor, RmfServerMetrics>();
 
                 // Commands
                 services.AddSingleton<ICommandManager>(commandManager);
