@@ -43,7 +43,7 @@ namespace RMF_Server.Channels
 
         protected override Task ExecuteAsync(CancellationToken token)
         {
-            HashSet<int> channelKeys = this._packetFactory.GetClientPacketsIDs().Select(x => x / 100).ToHashSet();
+            HashSet<int> channelKeys = this._packetFactory.GetClientPacketIDs().Select(x => x / 100).ToHashSet();
             if (channelKeys.Count == 0)
             {
                 this._logger.LogError("Failed to get IDs of existing packages. Make sure you have already loaded all packages into RMF.Core.Packets.PacketFactory before calling");

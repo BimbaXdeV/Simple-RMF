@@ -8,17 +8,19 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Network
 {
-    public class TcpConnection : INetworkConnection, IDisposable
+    public sealed class TcpConnection : INetworkConnection, IDisposable
     {
         private readonly TcpClient _client;
-
-        public IPEndPoint RemoteEndPoint => (IPEndPoint)this._client.Client.RemoteEndPoint!;
-        public int SendBufferSize => this._client.SendBufferSize;
-        public int ReceiveBufferSize => this._client.ReceiveBufferSize;
+        public IPEndPoint RemoteEndPoint { get; }
+        public int SendBufferSize { get; }
+        public int ReceiveBufferSize { get; }
 
         public TcpConnection(TcpClient client)
         {
             this._client = client;
+            this.RemoteEndPoint = (IPEndPoint)this._client.Client.RemoteEndPoint!;
+            this.SendBufferSize = this._client.SendBufferSize;
+            this.ReceiveBufferSize = this._client.ReceiveBufferSize;
         }
 
         public Stream GetNetworkStream()

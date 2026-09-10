@@ -8,30 +8,30 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Network
 {
-    public class TcpListenerAdapter : IConnectionListener
+    public sealed class TcpListenerAdapter : IConnectionListener
     {
         private readonly TcpListener _listener;
 
-        public IPEndPoint ListenedEndPoint => (IPEndPoint)_listener.LocalEndpoint;
+        public IPEndPoint ListenedEndPoint => (IPEndPoint)this._listener.LocalEndpoint;
 
         public TcpListenerAdapter(TcpListener listener)
         {
-            _listener = listener;
+            this._listener = listener;
         }
 
         public void Start()
         {
-            _listener.Start();
+            this._listener.Start();
         }
 
         public void Stop()
         {
-            _listener.Stop();
+            this._listener.Stop();
         }
 
         public async Task<INetworkConnection> AcceptConnectionAsync(CancellationToken token)
         {
-            TcpClient tcpClient = await _listener.AcceptTcpClientAsync(token);
+            TcpClient tcpClient = await this._listener.AcceptTcpClientAsync(token);
             return new TcpConnection(tcpClient);
         }
     }

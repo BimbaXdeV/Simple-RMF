@@ -8,7 +8,7 @@ namespace RMF_Server.Configurations
 {
     internal class CommandConfig
     {
-        public string InlineCommandDefautSign = string.Empty;
+        public char InlineCommandDefautSign = char.MinValue;
         public bool InlineSuggestionsEnabled = false;
         public int InlineSuggestionsMinChars = 1;
     }

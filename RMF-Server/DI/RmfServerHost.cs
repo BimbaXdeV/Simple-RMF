@@ -76,7 +76,7 @@ namespace RMF_Server.DI
             EventFactory eventFactory = new(eventLoadResult.Data!);
 
             // Admin commands
-            LoadResult<List<Command>> commandLoadResult = XmlCommandLoader.Load(Path.Combine("Resources", "commands.xml"));
+            LoadResult<List<InlineCommand>> commandLoadResult = XmlCommandLoader.Load(Path.Combine("Resources", "commands.xml"));
             if (!commandLoadResult.IsSuccess)
             {
                 throw new FileLoadException(commandLoadResult.ExceptionMessage);
@@ -150,13 +150,13 @@ namespace RMF_Server.DI
                 // Metrics onitoring
                 services.AddSingleton<IServerMetricsMonitor, RmfServerMetrics>();
 
-                // Commands
-                services.AddSingleton<ICommandManager>(commandManager);
-                services.AddSingleton<ICommandHandler, CommandHandler>();
-
                 // Packets
                 services.AddSingleton<IPacketFactory>(packetFactory);
                 services.AddSingleton<IServerPacketProcessor, PacketProcessor>();
+
+                // Commands
+                services.AddSingleton<ICommandManager>(commandManager);
+                services.AddSingleton<ICommandHandler, CommandHandler>();
 
                 // Channels
                 services.AddSingleton<IChannelDispatcher, ChannelDispatcher>();

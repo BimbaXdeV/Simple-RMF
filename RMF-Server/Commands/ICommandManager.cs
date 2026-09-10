@@ -8,8 +8,8 @@ namespace RMF_Server.Commands
 {
     internal interface ICommandManager
     {
-        Command? GetCommand(string name);
-        List<Command> GetAllCommands();
-        Command? GetSimilarityCommand(string name);
+        InlineCommand? GetCommand(string name);
+        List<InlineCommand> GetAllCommands();
+        InlineCommand? GetSimilarityCommand(string name);
     }
 }

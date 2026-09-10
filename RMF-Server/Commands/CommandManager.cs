@@ -12,24 +12,24 @@ namespace RMF_Server.Commands
 {
     internal class CommandManager : ICommandManager
     {
-        private readonly List<Command> _commands;
+        private readonly List<InlineCommand> _commands;
 
-        public CommandManager(List<Command>? commands)
+        public CommandManager(List<InlineCommand>? commands)
         {
             this._commands = commands ?? [];
         }
 
-        public Command? GetCommand(string name)
+        public InlineCommand? GetCommand(string name)
         {
             return this._commands.FirstOrDefault(c => c.Name?.Equals(name, StringComparison.OrdinalIgnoreCase) == true);
         }
 
-        public List<Command> GetAllCommands()
+        public List<InlineCommand> GetAllCommands()
         {
             return this._commands;
         }
 
-        public Command? GetSimilarityCommand(string name)
+        public InlineCommand? GetSimilarityCommand(string name)
         {
             return this._commands.FirstOrDefault(c => c.Name != null && c.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase));
         }

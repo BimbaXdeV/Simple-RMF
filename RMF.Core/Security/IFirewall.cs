@@ -13,6 +13,6 @@ namespace RMF.Core.Security
         bool IsBanned(string ipAddress);
         string[] GetBannedIPs(int limit = -1);
         int GetBannedIPsCount();
-        void Ban(string? ipAddress);
+        void Ban(string? input);
     }
 }

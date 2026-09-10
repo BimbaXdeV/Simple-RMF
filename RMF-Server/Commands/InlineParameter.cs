@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Commands
 {
-    internal class CommandParameter
+    internal class InlineParameter
     {
         public string? Name { get; set; }
         public string? Type { get; set; }

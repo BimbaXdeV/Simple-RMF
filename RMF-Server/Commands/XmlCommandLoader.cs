@@ -12,11 +12,11 @@ namespace RMF_Server.Commands
 {
     internal static class XmlCommandLoader
     {
-        public static LoadResult<List<Command>> Load(string path)
+        public static LoadResult<List<InlineCommand>> Load(string path)
         {
             if (!File.Exists(path))
             {
-                return LoadResult<List<Command>>.Failure($"Unable to load commands on path: {path}");
+                return LoadResult<List<InlineCommand>>.Failure($"Unable to load commands on path: {path}");
             }
 
             try
@@ -26,10 +26,10 @@ namespace RMF_Server.Commands
 
                 if (commandsDict == null)
                 {
-                    return LoadResult<List<Command>>.Failure($"The commands file has been corrupted. Please check its integrity");
+                    return LoadResult<List<InlineCommand>>.Failure($"The commands file has been corrupted. Please check its integrity");
                 }
 
-                List<Command> commands = [];
+                List<InlineCommand> commands = [];
                 foreach (XElement el in commandsDict)
                 {
                     string? cmName = el.Attribute("name")?.Value;
@@ -56,7 +56,7 @@ namespace RMF_Server.Commands
                         continue;
                     }
 
-                    List<CommandParameter> parameters = [];
+                    List<InlineParameter> parameters = [];
                     try
                     {
                         foreach (string i in pNameIndexes)
@@ -67,14 +67,14 @@ namespace RMF_Server.Commands
                             {
                                 continue;
                             }
-                            parameters.Add(new CommandParameter
+                            parameters.Add(new InlineParameter
                             {
                                 Name = paramNameAttr.Value,
                                 Type = el.Attribute($"paramtype{i}")?.Value ?? "string"
                             });
                         }
 
-                        commands.Add(new Command()
+                        commands.Add(new InlineCommand()
                         {
                             Category = cmCtg,
                             Name = cmName,
@@ -89,11 +89,11 @@ namespace RMF_Server.Commands
                     }
                 }
 
-                return LoadResult<List<Command>>.Success(commands, commands.Count, commandsDict.Count());
+                return LoadResult<List<InlineCommand>>.Success(commands, commands.Count, commandsDict.Count());
             }
             catch (Exception ex)
             {
-                return LoadResult<List<Command>>.Failure(ex.Message);
+                return LoadResult<List<InlineCommand>>.Failure(ex.Message);
             }
         }
     }

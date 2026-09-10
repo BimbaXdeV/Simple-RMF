@@ -89,7 +89,7 @@ namespace RMF_Server.Debugger
                                 Console.WriteLine();
 
                                 string commandName = command.Split(' ')[0];
-                                Command? cm = this._commandManager.GetCommand(commandName);
+                                InlineCommand? cm = this._commandManager.GetCommand(commandName);
                                 if (cm == null)
                                 {
                                     this._logger.LogError("Unknown command: \"{CommandName}\". Type \"{CommandSign}cmlst\" to see all available inline commands", commandName, this._commandConfig.InlineCommandDefautSign);
@@ -189,7 +189,7 @@ namespace RMF_Server.Debugger
                                     this._inputBuffer.Length >= this._commandConfig.InlineSuggestionsMinChars)
                                 {
                                     string currentInput = this._inputBuffer.ToString();
-                                    Command? predictedCommand = this._commandManager.GetSimilarityCommand(currentInput);
+                                    InlineCommand? predictedCommand = this._commandManager.GetSimilarityCommand(currentInput);
                                     if (predictedCommand != null && predictedCommand.Name!.StartsWith(currentInput, StringComparison.OrdinalIgnoreCase))
                                     {
                                         string suggestionPart = predictedCommand.Name.Substring(currentInput.Length);

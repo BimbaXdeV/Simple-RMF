@@ -111,7 +111,7 @@ namespace RMF_Server.Logic
                 }
 
                 string[] writtenIPs = File.ReadAllLines(path);
-                string[] actualIPs = _bannedIPs.Keys.OrderBy(ip => ip).ToArray();
+                string[] actualIPs = this._bannedIPs.Keys.OrderBy(ip => ip).ToArray();
 
                 bool isEqual = writtenIPs.OrderBy(ip => ip).SequenceEqual(actualIPs, StringComparer.OrdinalIgnoreCase);
                 if (!isEqual)
@@ -150,23 +150,37 @@ namespace RMF_Server.Logic
             return this._bannedIPs.Count;
         }
 
-        public void Ban(string? ipAddress)
+        public void Ban(string? input)
         {
-            if (!string.IsNullOrEmpty(ipAddress) && this._ipExtractor.IsMatch(ipAddress))
+            if (string.IsNullOrEmpty(input))
             {
-                if (this._bannedIPs.TryAdd(ipAddress, 0))
-                {
-                    this._isChanged = true;
-                    this._logger.LogInformation("The suspicious IP \"{IpAddress}\" has been banned", ipAddress);
-                }
-                else
-                {
-                    this._logger.LogWarning($"The suspicious IP is already on the blacklist");
-                }
+                this._logger.LogError("Failed to ban the IP, received an empty input");
+                return;
+            }
+
+            string targetIp;
+            if (IPEndPoint.TryParse(input, out IPEndPoint? endpoint))  // For 0.0.0.0:0000 endpoint format
+            {
+                targetIp = endpoint.Address.ToString();
+            }
+            else if (IPAddress.TryParse(input, out IPAddress? ip))     // For 0.0.0.0      just IP format
+            {
+                targetIp = ip.ToString();
             }
             else
             {
-                this._logger.LogError("Failed to ban the IP, received an invalid structure");
+                this._logger.LogError("Failed to ban the IP, received an invalid structure: {Input}", input);
+                return;
+            }
+
+            if (this._bannedIPs.TryAdd(targetIp, 0))
+            {
+                this._isChanged = true;
+                this._logger.LogInformation("The suspicious IP \"{IpAddress}\" has been banned", targetIp);
+            }
+            else
+            {
+                this._logger.LogWarning($"The suspicious IP is already on the blacklist");
             }
         }
 
