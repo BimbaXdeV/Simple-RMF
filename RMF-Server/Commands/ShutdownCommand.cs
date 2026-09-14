@@ -20,17 +20,18 @@ namespace RMF_Server.Commands
 
         public ShutdownCommand(
             IHostApplicationLifetime lifetime,
-            ILogger<CommandHandler> cmLogger,
+            ILogger<CommandDispatcher> cmLogger,
             CommandConfig commandConfig
         ) : base(cmLogger, commandConfig)
         {
             _lifetime = lifetime;
         }
 
-        public override void Execute(string[] args)
+        public override Task ExecuteAsync(string[] args, CancellationToken token)
         {
             CmLogger.LogInformation("The shutdown command received. Initiating cancellation process...");
             _lifetime.StopApplication();
+            return Task.CompletedTask;
         }
     }
 }

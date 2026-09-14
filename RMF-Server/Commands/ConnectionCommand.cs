@@ -21,20 +21,20 @@ namespace RMF_Server.Commands
 
         public ConnectionCommand(
             IServerSessionManager sessionManager,
-            ILogger<CommandHandler> cmLogger,
+            ILogger<CommandDispatcher> cmLogger,
             CommandConfig commandConfig
         ) : base(cmLogger, commandConfig)
         {
             _sessionManager = sessionManager;
         }
 
-        public override void Execute(string[] args)
+        public override Task ExecuteAsync(string[] args, CancellationToken token)
         {
             IServerClientSession[] connections = _sessionManager.GetActiveConnections();
             if (!_sessionManager.ConnectionsExist)
             {
                 CmLogger.LogInformation("No active connections...");
-                return;
+                return Task.CompletedTask;
             }
 
             int maxAddr = 0;
@@ -66,6 +66,7 @@ namespace RMF_Server.Commands
                     index, ipAddress, port, receivedPackets, sentPackets, c.LastTransferTime.ToLocalTime().ToString(RmfConstants.DateTimeFormatHms)
                 );
             }
+            return Task.CompletedTask;
         }
     }
 }

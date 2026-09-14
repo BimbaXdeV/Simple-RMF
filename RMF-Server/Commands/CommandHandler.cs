@@ -265,7 +265,7 @@ namespace RMF_Server.Commands
                 {
                     string visibleParams = cm.Parameters?.Length > 0
                         ? " " + string.Join(" ", cm.Parameters.Select(p => $"\"{p.Name}\""))
-                : string.Empty;
+                        : string.Empty;
                     string visibleSyntax = $" {categoryIndex}.{commandIndex}. /{cm.Name}{visibleParams}";
 
                     string coloredParams = cm.Parameters?.Length > 0

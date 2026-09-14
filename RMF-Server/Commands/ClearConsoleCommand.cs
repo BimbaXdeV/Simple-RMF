@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Commands
 {
-    internal sealed class ClearCommand : InlineCommand
+    internal sealed class ClearConsoleCommand : InlineCommand
     {
         private readonly IConsoleExtensions _consoleExtensions;
 
@@ -18,18 +18,19 @@ namespace RMF_Server.Commands
         public override string Description => "Clears the text displayed in the console";
         public override string[]? Parameters => null;
 
-        public ClearCommand(
+        public ClearConsoleCommand(
             IConsoleExtensions consoleExtensions,
-            ILogger<CommandHandler> cmLogger,
+            ILogger<CommandDispatcher> cmLogger,
             CommandConfig commandConfig
         ) : base(cmLogger, commandConfig)
         {
             _consoleExtensions = consoleExtensions;
         }
 
-        public override void Execute(string[] args)
+        public override Task ExecuteAsync(string[] args, CancellationToken token)
         {
             _consoleExtensions.ClearConsole(CmLogger);
+            return Task.CompletedTask;
         }
     }
 }

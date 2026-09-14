@@ -10,7 +10,7 @@ namespace RMF_Server.Commands
 {
     internal abstract class InlineCommand : IExecutableCommand
     {
-        protected readonly ILogger<CommandHandler> CmLogger;
+        protected readonly ILogger<CommandDispatcher> CmLogger;
         protected readonly CommandConfig CommandConfig;
 
         public abstract string Category { get; }
@@ -18,13 +18,13 @@ namespace RMF_Server.Commands
         public abstract string Description { get; }
         public abstract string[]? Parameters { get; }
 
-        protected InlineCommand(ILogger<CommandHandler> linkedLogger, CommandConfig commandConfig)
+        protected InlineCommand(ILogger<CommandDispatcher> linkedLogger, CommandConfig commandConfig)
         {
             CmLogger = linkedLogger;
             CommandConfig = commandConfig;
         }
 
-        public abstract void Execute(string[] args);
+        public abstract Task ExecuteAsync(string[] args, CancellationToken token);
 
         public override string ToString()
         {

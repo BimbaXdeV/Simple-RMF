@@ -13,6 +13,6 @@ namespace RMF_Server.Commands
         string Description { get; }
         string[]? Parameters { get; }
 
-        void Execute(string[] args);
+        Task ExecuteAsync(string[] args, CancellationToken token);
     }
 }

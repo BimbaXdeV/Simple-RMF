@@ -13,8 +13,9 @@ namespace RMF_Server.Debugger
 {
     internal class InputListener : BackgroundService
     {
-        private readonly ICommandHandler _commandHandler;
-        private readonly ICommandManager _commandManager;
+        private readonly IHostApplicationLifetime _lifetime;
+        private readonly ICommandRouter _commandRouter;
+        private readonly ICommandViewer _commandViewer;
         private readonly IThemeManager _themeManager;
         private readonly ILogger<InputListener> _logger;
         private readonly IConsoleSynchronizer _consoleSync;
@@ -27,8 +28,9 @@ namespace RMF_Server.Debugger
         private readonly string _commandSign;
 
         public InputListener(
-            ICommandHandler commandHandler,
-            ICommandManager commandManager,
+            IHostApplicationLifetime lifetime,
+            ICommandRouter commandRouter,
+            ICommandViewer commandViewer,
             IThemeManager themeManager,
             ILogger<InputListener> logger,
             IConsoleSynchronizer consoleSync,
@@ -36,30 +38,31 @@ namespace RMF_Server.Debugger
             ListenerConfig listenerConfig
         )
         {
-            this._commandHandler = commandHandler;
-            this._commandManager = commandManager;
-            this._themeManager = themeManager;
-            this._logger = logger;
-            this._consoleSync = consoleSync;
-            this._commandConfig = commandConfig;
-            this._listenerConfig = listenerConfig;
+            _lifetime = lifetime;
+            _commandRouter = commandRouter;
+            _commandViewer = commandViewer;
+            _themeManager = themeManager;
+            _logger = logger;
+            _consoleSync = consoleSync;
+            _commandConfig = commandConfig;
+            _listenerConfig = listenerConfig;
 
-            this._inputBuffer = new StringBuilder();
-            this._suggestionBuffer = new StringBuilder();
-            this._isListening = false;
-            this._commandSign = "> " + this._commandConfig.InlineCommandDefautSign;
+            _inputBuffer = new StringBuilder();
+            _suggestionBuffer = new StringBuilder();
+            _isListening = false;
+            _commandSign = "> " + _commandConfig.InlineCommandDefautSign;
         }
 
         protected override async Task ExecuteAsync(CancellationToken token)
         {
-            if (this._isListening)
+            if (_isListening)
             {
-                this._logger.LogError("The input listener has already been launched previously, a duplicate cannot be started");
+                _logger.LogError("The input listener has already been launched previously, a duplicate cannot be started");
                 return;
             }
 
-            this._isListening = true;
-            this._logger.LogInformation("Input listener successfully started waiting admin\'s command");
+            _isListening = true;
+            _logger.LogInformation("Input listener successfully started waiting admin\'s command");
             try
             {
                 await Task.Yield();
@@ -72,92 +75,98 @@ namespace RMF_Server.Debugger
                         switch (key.Key)
                         {
                             case ConsoleKey.Enter:
-                                if (this._inputBuffer.Length == 0)
+                                if (_inputBuffer.Length == 0)
                                 {
                                     continue;
                                 }
 
-                                if (this._suggestionBuffer.Length > 0)
+                                if (_suggestionBuffer.Length > 0)
                                 {
-                                    Console.SetCursorPosition(Console.CursorLeft + this._suggestionBuffer.Length, Console.CursorTop);
-                                    HideChars(this._suggestionBuffer.Length);
-                                    this._suggestionBuffer.Clear();
+                                    Console.SetCursorPosition(Console.CursorLeft + _suggestionBuffer.Length, Console.CursorTop);
+                                    HideChars(_suggestionBuffer.Length);
+                                    _suggestionBuffer.Clear();
                                 }
 
-                                string command = this._inputBuffer.ToString().Trim().ToLower();
-                                this._inputBuffer.Clear();
+                                string command = _inputBuffer.ToString().Trim().ToLower();
+                                _inputBuffer.Clear();
                                 Console.WriteLine();
 
-                                string commandName = command.Split(' ')[0];
-                                InlineCommand? cm = this._commandManager.GetCommand(commandName);
-                                if (cm == null)
-                                {
-                                    this._logger.LogError("Unknown command: \"{CommandName}\". Type \"{CommandSign}cmlst\" to see all available inline commands", commandName, this._commandConfig.InlineCommandDefautSign);
-                                    this._consoleSync.IsAdminTyping = false;
-                                    continue;
-                                }
+                                string[] parts = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                string commandHeader = parts[0];
+                                string[] commandArgs = parts.Length >= 1 ? parts[1..] : [];
 
-                                await this._commandHandler.SearchHandle(command, cm, token);
-                                this._consoleSync.IsAdminTyping = false;
+                                await _commandRouter.RouteCommandAsync(commandHeader, commandArgs, token);
+                                _consoleSync.IsAdminTyping = false;
+
+                                //InlineCommand? cm = _commandManager.GetCommand(commandName);
+                                //if (cm == null)
+                                //{
+                                //    _logger.LogError("Unknown command: \"{CommandName}\". Type \"{CommandSign}cmlst\" to see all available inline commands", commandName, _commandConfig.InlineCommandDefautSign);
+                                //    _consoleSync.IsAdminTyping = false;
+                                //    continue;
+                                //}
+
+                                //await _commandHandler.SearchHandle(command, cm, token);
+                                //_consoleSync.IsAdminTyping = false;
                                 break;
 
                             case ConsoleKey.Escape:
-                                if (this._suggestionBuffer.Length > 0)
+                                if (_suggestionBuffer.Length > 0)
                                 {
-                                    Console.SetCursorPosition(Console.CursorLeft + this._suggestionBuffer.Length, Console.CursorTop);
-                                    HideChars(this._suggestionBuffer.Length);
-                                    this._suggestionBuffer.Clear();
+                                    Console.SetCursorPosition(Console.CursorLeft + _suggestionBuffer.Length, Console.CursorTop);
+                                    HideChars(_suggestionBuffer.Length);
+                                    _suggestionBuffer.Clear();
                                 }
 
-                                if (this._inputBuffer.Length > 0)
+                                if (_inputBuffer.Length > 0)
                                 {
-                                    this._inputBuffer.Clear();
+                                    _inputBuffer.Clear();
                                     HideChars(Console.CursorLeft);
-                                    this._consoleSync.IsAdminTyping = false;
+                                    _consoleSync.IsAdminTyping = false;
                                 }
                                 break;
 
                             case ConsoleKey.Backspace:
-                                if (this._suggestionBuffer.Length > 0)
+                                if (_suggestionBuffer.Length > 0)
                                 {
-                                    Console.SetCursorPosition(Console.CursorLeft + this._suggestionBuffer.Length, Console.CursorTop);
-                                    HideChars(this._suggestionBuffer.Length);
-                                    this._suggestionBuffer.Clear();
+                                    Console.SetCursorPosition(Console.CursorLeft + _suggestionBuffer.Length, Console.CursorTop);
+                                    HideChars(_suggestionBuffer.Length);
+                                    _suggestionBuffer.Clear();
                                 }
 
-                                if (this._inputBuffer.Length > 0)
+                                if (_inputBuffer.Length > 0)
                                 {
                                     RemovePreviousChar();
                                 }
 
-                                if (this._inputBuffer.Length == 0)
+                                if (_inputBuffer.Length == 0)
                                 {
-                                    HideChars(this._commandSign.Length);
-                                    this._consoleSync.IsAdminTyping = false;
+                                    HideChars(_commandSign.Length);
+                                    _consoleSync.IsAdminTyping = false;
                                 }
                                 break;
 
                             case ConsoleKey.Tab:
-                                if (this._suggestionBuffer.Length > 0)
+                                if (_suggestionBuffer.Length > 0)
                                 {
-                                    string suggestion = this._suggestionBuffer.ToString();
+                                    string suggestion = _suggestionBuffer.ToString();
                                     // The cursor must return to its last position if it was previously moved to the left using the arrow keys
-                                    Console.CursorLeft = this._commandSign.Length + this._inputBuffer.Length;
-                                    this._inputBuffer.Append(suggestion);
+                                    Console.CursorLeft = _commandSign.Length + _inputBuffer.Length;
+                                    _inputBuffer.Append(suggestion);
                                     Console.Write(suggestion);
-                                    this._suggestionBuffer.Clear();
+                                    _suggestionBuffer.Clear();
                                 }
                                 break;
 
                             case ConsoleKey.RightArrow:
-                                if (this._inputBuffer.Length > 0 && Console.CursorLeft < this._commandSign.Length + this._inputBuffer.Length)
+                                if (_inputBuffer.Length > 0 && Console.CursorLeft < _commandSign.Length + _inputBuffer.Length)
                                 {
                                     Console.CursorLeft++;
                                 }
                                 break;
 
                             case ConsoleKey.LeftArrow:
-                                if (this._inputBuffer.Length > 0 && Console.CursorLeft > this._commandSign.Length)
+                                if (_inputBuffer.Length > 0 && Console.CursorLeft > _commandSign.Length)
                                 {
                                     Console.CursorLeft--;
                                 }
@@ -170,33 +179,33 @@ namespace RMF_Server.Debugger
                                     continue;
                                 }
 
-                                if (this._suggestionBuffer.Length > 0)
+                                if (_suggestionBuffer.Length > 0)
                                 {
-                                    Console.SetCursorPosition(Console.CursorLeft + this._suggestionBuffer.Length, Console.CursorTop);
-                                    HideChars(this._suggestionBuffer.Length);
-                                    this._suggestionBuffer.Clear();
+                                    Console.SetCursorPosition(Console.CursorLeft + _suggestionBuffer.Length, Console.CursorTop);
+                                    HideChars(_suggestionBuffer.Length);
+                                    _suggestionBuffer.Clear();
                                 }
 
                                 // The "IsAdminTyping" flag blocks the logger from writing to the console until an administrator command is sent or cancelled
-                                if (!this._consoleSync.IsAdminTyping)
+                                if (!_consoleSync.IsAdminTyping)
                                 {
-                                    Console.Write(this._commandSign);
-                                    this._consoleSync.IsAdminTyping = true;
+                                    Console.Write(_commandSign);
+                                    _consoleSync.IsAdminTyping = true;
                                 }
                                 AddChar(key.KeyChar);
 
-                                if (this._commandConfig.InlineSuggestionsEnabled &&
-                                    this._inputBuffer.Length >= this._commandConfig.InlineSuggestionsMinChars)
+                                if (_commandConfig.InlineSuggestionsEnabled &&
+                                    _inputBuffer.Length >= _commandConfig.InlineSuggestionsMinChars)
                                 {
-                                    string currentInput = this._inputBuffer.ToString();
-                                    InlineCommand? predictedCommand = this._commandManager.GetSimilarityCommand(currentInput);
-                                    if (predictedCommand != null && predictedCommand.Name!.StartsWith(currentInput, StringComparison.OrdinalIgnoreCase))
+                                    string currentInput = _inputBuffer.ToString();
+                                    IExecutableCommand? predictedCommand = _commandViewer.FindSimilarCommand(currentInput);
+                                    if (predictedCommand != null)
                                     {
                                         string suggestionPart = predictedCommand.Name.Substring(currentInput.Length);
                                         if (!string.IsNullOrEmpty(suggestionPart))
                                         {
-                                            this._suggestionBuffer.Append(suggestionPart);
-                                            ThemeColor suggestionColor = this._themeManager.GetColor("AdminSuggestion");
+                                            _suggestionBuffer.Append(suggestionPart);
+                                            ThemeColor suggestionColor = _themeManager.GetColor("AdminSuggestion");
                                             Console.Write($"{suggestionColor}{suggestionPart}{ThemeColor.AnsiReset}");
                                             Console.CursorLeft -= suggestionPart.Length;
 
@@ -207,7 +216,7 @@ namespace RMF_Server.Debugger
                         };
                     }
 
-                    await Task.Delay(this._listenerConfig.ListenerDelayMsecs, token);
+                    await Task.Delay(_listenerConfig.ListenerDelayMsecs, token);
                 }
             }
             catch (OperationCanceledException)
@@ -215,28 +224,28 @@ namespace RMF_Server.Debugger
             }
             finally
             {
-                this._inputBuffer.Clear();
-                this._suggestionBuffer.Clear();
-                this._isListening = false;
+                _inputBuffer.Clear();
+                _suggestionBuffer.Clear();
+                _isListening = false;
 
-                this._logger.LogInformation("The input listener has stopped, the use of admin commands is restricted");
+                _logger.LogInformation("The input listener has stopped, the use of admin commands is restricted");
             }
         }
 
         private void AddChar(char c)
         {
             int currentLeftPos = Console.CursorLeft;
-            int insertIndex = currentLeftPos - this._commandSign.Length;
+            int insertIndex = currentLeftPos - _commandSign.Length;
 
-            if (insertIndex == this._inputBuffer.Length)
+            if (insertIndex == _inputBuffer.Length)
             {
-                this._inputBuffer.Append(c);
+                _inputBuffer.Append(c);
                 Console.Write(c);
             }
             else
             {
-                this._inputBuffer.Insert(insertIndex, c);
-                string tail = this._inputBuffer.ToString().Substring(insertIndex);
+                _inputBuffer.Insert(insertIndex, c);
+                string tail = _inputBuffer.ToString().Substring(insertIndex);
                 Console.Write(tail);
                 Console.CursorLeft = currentLeftPos + 1;
             }
@@ -245,17 +254,17 @@ namespace RMF_Server.Debugger
         private void RemovePreviousChar()
         {
             int currentLeftPos = Console.CursorLeft;
-            int removeIndex = currentLeftPos - this._commandSign.Length;
+            int removeIndex = currentLeftPos - _commandSign.Length;
 
-            if (removeIndex == this._inputBuffer.Length)
+            if (removeIndex == _inputBuffer.Length)
             {
-                this._inputBuffer.Remove(this._inputBuffer.Length - 1, 1);
+                _inputBuffer.Remove(_inputBuffer.Length - 1, 1);
                 Console.Write("\b \b");
             }
             else
             {
-                this._inputBuffer.Remove(removeIndex, 1);
-                string tail = this._inputBuffer.ToString().Substring(removeIndex);
+                _inputBuffer.Remove(removeIndex, 1);
+                string tail = _inputBuffer.ToString().Substring(removeIndex);
                 Console.Write("\b \b" + tail);
                 Console.CursorLeft = currentLeftPos - 1;
             }

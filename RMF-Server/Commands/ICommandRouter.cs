@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Commands
 {
-    internal class InlineParameter
+    internal interface ICommandRouter
     {
-        public string? Name { get; set; }
-        public string? Type { get; set; }
+        Task RouteCommandAsync(string commandHeader, string[] commandArgs, CancellationToken token);
     }
 }

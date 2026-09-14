@@ -75,14 +75,6 @@ namespace RMF_Server.DI
             }
             EventFactory eventFactory = new(eventLoadResult.Data!);
 
-            // Admin commands
-            LoadResult<List<InlineCommand>> commandLoadResult = XmlCommandLoader.Load(Path.Combine("Resources", "commands.xml"));
-            if (!commandLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(commandLoadResult.ExceptionMessage);
-            }
-            CommandManager commandManager = new(commandLoadResult.Data);
-
             // ---- Registering the logger provider and initial console output ----
             ConsoleSynchronizer consoleSynchronizer = new();
             RmfLoggerProvider loggerProvider = new(themeManager, consoleSynchronizer, loggingConfig);
@@ -97,7 +89,6 @@ namespace RMF_Server.DI
             consoleAppearance.LogInitialization(this._bootLogger, "Theme colors", themeLoadResult.Loaded, themeLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Network packets", packetLoadResult.Loaded, packetLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Server events", eventLoadResult.Loaded, eventLoadResult.Total);
-            consoleAppearance.LogInitialization(this._bootLogger, "Admin commands", commandLoadResult.Loaded, commandLoadResult.Total);
             
             consoleAppearance.LogSeparator(this._bootLogger);
             this._bootLogger.LogInformation("Preparing to launch the server:");
@@ -123,15 +114,7 @@ namespace RMF_Server.DI
 
                 // Configurations
                 services.AddSingleton(configProvider);
-                services.AddSingletonXmlConfig<AppearanceConfig>();
-                services.AddSingletonXmlConfig<ConnectionConfig>();
-                services.AddSingletonXmlConfig<FirewallConfig>();
-                services.AddSingletonXmlConfig<TlsConfig>();
-                services.AddSingletonXmlConfig<ControllerConfig>();
-                services.AddSingletonXmlConfig<ChannelConfig>();
-                services.AddSingletonXmlConfig<StreamingConfig>();
-                services.AddSingletonXmlConfig<CommandConfig>();
-                services.AddSingletonXmlConfig<ListenerConfig>();
+                services.AddSingletonConfigurations();
 
                 // Sessions & Network
                 services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>
@@ -155,8 +138,9 @@ namespace RMF_Server.DI
                 services.AddSingleton<IServerPacketProcessor, PacketProcessor>();
 
                 // Commands
-                services.AddSingleton<ICommandManager>(commandManager);
-                services.AddSingleton<ICommandHandler, CommandHandler>();
+                services.AddSingletonInlineCommands();
+                services.AddSingleton<ICommandRouter, CommandDispatcher>();
+                //services.AddSingleton<ICommandHandler, CommandHandler>();
 
                 // Channels
                 services.AddSingleton<IChannelDispatcher, ChannelDispatcher>();

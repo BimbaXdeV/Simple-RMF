@@ -20,20 +20,20 @@ namespace RMF_Server.Commands
 
         public BlacklistCommand(
             IFirewall firewall,
-            ILogger<CommandHandler> cmLogger,
+            ILogger<CommandDispatcher> cmLogger,
             CommandConfig commandConfig
         ) : base(cmLogger, commandConfig)
         {
             _firewall = firewall;
         }
 
-        public override void Execute(string[] args)
+        public override Task ExecuteAsync(string[] args, CancellationToken token)
         {
             string[] bannedIPs = _firewall.GetBannedIPs();
             if (bannedIPs.Length == 0)
             {
                 CmLogger.LogInformation("No banned IPs...");
-                return;
+                return Task.CompletedTask;
             }
 
             CmLogger.LogInformation("Server blacklist:");
@@ -44,6 +44,7 @@ namespace RMF_Server.Commands
                 CmLogger.LogInformation("{Index}. {IpAddress}", counter.ToString().PadLeft(maxCounterLength), ip);
                 counter++;
             }
+            return Task.CompletedTask;
         }
     }
 }
