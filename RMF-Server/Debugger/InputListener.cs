@@ -92,10 +92,10 @@ namespace RMF_Server.Debugger
                                 Console.WriteLine();
 
                                 string[] parts = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                                string commandHeader = parts[0];
+                                string commandName = parts[0];
                                 string[] commandArgs = parts.Length >= 1 ? parts[1..] : [];
 
-                                await _commandRouter.RouteCommandAsync(commandHeader, commandArgs, token);
+                                await _commandRouter.RouteCommandAsync(command, commandArgs, token);
                                 _consoleSync.IsAdminTyping = false;
 
                                 //InlineCommand? cm = _commandManager.GetCommand(commandName);

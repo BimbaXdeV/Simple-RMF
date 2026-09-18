@@ -128,7 +128,9 @@ namespace RMF_Server.DI
 
                 // UI
                 services.AddSingleton<IAvaloniaManager, AvaloniaManager>();
-                services.AddSingleton<IWindowManager, AppearanceManager>();
+                services.AddSingleton<AppearanceManager>();
+                services.AddSingleton<IWindowManager>(provider => provider.GetRequiredService<AppearanceManager>());
+                services.AddHostedService(provider => provider.GetRequiredService<AppearanceManager>());
 
                 // Metrics onitoring
                 services.AddSingleton<IServerMetricsMonitor, RmfServerMetrics>();
@@ -137,14 +139,15 @@ namespace RMF_Server.DI
                 services.AddSingleton<IPacketFactory>(packetFactory);
                 services.AddSingleton<IServerPacketProcessor, PacketProcessor>();
 
-                // Commands
-                services.AddSingletonInlineCommands();
-                services.AddSingleton<ICommandRouter, CommandDispatcher>();
-                //services.AddSingleton<ICommandHandler, CommandHandler>();
-
                 // Channels
                 services.AddSingleton<IChannelDispatcher, ChannelDispatcher>();
                 services.AddHostedService(provider => (ChannelDispatcher)provider.GetRequiredService<IChannelDispatcher>());
+
+                // Commands
+                services.AddSingletonInlineCommands();
+                services.AddSingleton<CommandDispatcher>();
+                services.AddSingleton<ICommandRouter, CommandDispatcher>(provider => provider.GetRequiredService<CommandDispatcher>());
+                services.AddSingleton<ICommandViewer, CommandDispatcher>(provider => provider.GetRequiredService<CommandDispatcher>());
 
                 // Server
                 services.AddSingleton<IConnectionListener, TcpListenerAdapter>(provider =>
@@ -188,10 +191,6 @@ namespace RMF_Server.DI
                     });
                 }
             });
-
-            // It`s not that this service is strictly necessary here, but currently nothing uses it as a dependency;
-            // However, without that line, its constructor, which handles the online status binding, simply won`t execute
-            this._host.Services.GetRequiredService<IWindowManager>();
 
             await this._host.StartAsync();
 

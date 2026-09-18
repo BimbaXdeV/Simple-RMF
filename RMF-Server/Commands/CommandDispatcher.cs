@@ -22,32 +22,27 @@ namespace RMF_Server.Commands
         {
             _commandConfig = commandConfig;
             _commands = commands.ToDictionary(
-                c => CommandNameToHeader(c.Name),
+                c => c.Name,
                 c => c
             );
             _logger = logger;
         }
 
-        private string CommandNameToHeader(string commandName)
+        public async Task RouteCommandAsync(string commandName, string[] commandArgs, CancellationToken token)
         {
-            return _commandConfig.InlineCommandDefautSign + commandName;
-        }
-
-        public async Task RouteCommandAsync(string commandHeader, string[] commandArgs, CancellationToken token)
-        {
-            if (_commands.TryGetValue(commandHeader, out IExecutableCommand? command))
+            Console.WriteLine($"Routing command: {commandName} with args: {string.Join(", ", commandArgs)}");
+            if (_commands.TryGetValue(commandName, out IExecutableCommand? command))
             {
                 await command.ExecuteAsync(commandArgs, token);
             }
             else
             {
                 _logger.LogError(
-                    "Unknown command: \"{CommandName}\". Type \"{CommandSign}cmlst\" to see all available inline commands",
-                    commandHeader,
+                    "Unknown command: \"{CommandName}\". Type \"{CommandSign}help\" to see all available inline commands",
+                    commandName,
                     _commandConfig.InlineCommandDefautSign
                 );
             }
-
         }
 
         public IExecutableCommand[] GetLoadedCommands()
@@ -63,7 +58,7 @@ namespace RMF_Server.Commands
         public IExecutableCommand? FindSimilarCommand(string commandHeaderPart)
         {
             return _commands.Values.FirstOrDefault(
-                c => CommandNameToHeader(c.Name).StartsWith(commandHeaderPart, StringComparison.OrdinalIgnoreCase)
+                c => c.Name.StartsWith(commandHeaderPart, StringComparison.OrdinalIgnoreCase)
             );
         }
     }

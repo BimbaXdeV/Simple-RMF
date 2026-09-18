@@ -12,7 +12,7 @@ namespace RMF_Server.Commands
         public static IServiceCollection AddSingletonInlineCommands(this IServiceCollection services)
         {
             // Performance Commands
-            services.AddSingleton<IExecutableCommand, HelpCommand>();
+            //services.AddSingleton<IExecutableCommand, HelpCommand>();
             services.AddSingleton<IExecutableCommand, ConnectionCommand>();
             services.AddSingleton<IExecutableCommand, BlacklistCommand>();
             services.AddSingleton<IExecutableCommand, ServerStatusCommand>();
@@ -22,7 +22,11 @@ namespace RMF_Server.Commands
             services.AddSingleton<IExecutableCommand, ShutdownCommand>();
 
             // Management Commands
-            // In process...
+            services.AddSingleton<IExecutableCommand, KickClientCommand>();
+            services.AddSingleton<IExecutableCommand, BanClientCommand>();
+            services.AddSingleton<IExecutableCommand, TakeScreenshotCommand>();
+            services.AddSingleton<IExecutableCommand, StreamRequestCommand>();
+            services.AddSingleton<IExecutableCommand, TurnOffStreamCommand>();
             return services;
         }
     }

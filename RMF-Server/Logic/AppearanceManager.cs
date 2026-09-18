@@ -1,5 +1,6 @@
 ﻿using Avalonia.Platform;
 using Avalonia.Threading;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RMF.Core.Appearance;
 using RMF.Core.Interfaces;
@@ -16,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace RMF_Server.Logic
 {
-    internal class AppearanceManager : IWindowManager, IDisposable
+    internal class AppearanceManager : BackgroundService, IWindowManager, IDisposable
     {
         private readonly IServerSessionManager _sessionManager;
         private readonly ILogger<AppearanceManager> _logger;
@@ -34,9 +35,13 @@ namespace RMF_Server.Logic
             this._sessionManager = sessionManager;
             this._logger = logger;
             this._appearanceConfig = appearanceConfig;
+        }
 
+        protected override Task ExecuteAsync(CancellationToken token)
+        {
             UpdateTitleStatus(_titleStatusHeader + this._sessionManager.TotalConnections);
             this._sessionManager.ConnectionCountChanged += OnConnectionCountChanged;
+            return Task.CompletedTask;
         }
 
         private void OnConnectionCountChanged(int newConnectionCount)
@@ -56,9 +61,10 @@ namespace RMF_Server.Logic
             Console.Title = this._appearanceConfig.AppTitle + " | " + newStatus;
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             this._sessionManager.ConnectionCountChanged -= OnConnectionCountChanged;
+            base.Dispose();
         }
     }
 }
