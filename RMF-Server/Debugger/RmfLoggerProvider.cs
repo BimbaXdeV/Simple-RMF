@@ -51,13 +51,14 @@ namespace RMF_Server.Debugger
                 categoryName,
                 this._logQueue,
                 this._themeManager,
-                this._consoleSync
+                _consoleSync,
+                wordWrapIndent: _loggingConfig.EnableWordWrapIndent
             );
         }
 
         protected override async Task ExecuteAsync(CancellationToken token)
         {
-            if (this._isExecutorRunning)
+            if (_isExecutorRunning)
             {
                 Console.WriteLine("The logging executor has already been launched previously, a duplicate cannot be started");
                 return;
@@ -162,7 +163,7 @@ namespace RMF_Server.Debugger
                 string contentToWrite = string.Join(Environment.NewLine, validLines);
                 if (this._isFirstLogSaving)
                 {
-                    string backupTitle = $"* Backup from {DateTime.Now:yyyy-MM-dd HH:mm:ss} [history buffer: {this._loggingConfig.LoggingHistoryLength} lines]:";
+                    string backupTitle = $"* Backup from {DateTime.Now.ToString(RmfConstants.DateTimeFormatYmdHms)} [history buffer: {this._loggingConfig.LoggingHistoryLength} lines]:";
                     contentToWrite = backupTitle + Environment.NewLine + contentToWrite;
                     totalValidLinesCount++;
                     this._isFirstLogSaving = false;

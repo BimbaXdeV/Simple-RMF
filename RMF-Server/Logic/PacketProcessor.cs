@@ -218,7 +218,7 @@ namespace RMF_Server.Logic
         private void ProcessPartingPacket(PartingPacket packet, IPEndPoint endPoint)
         {
             this._logger.LogInformation("Received a parting packet from {EndPoint} with status code {StatusCode} ({StatusName})", endPoint, packet.StatusCode, Enum.GetName(typeof(PartingStatusCodes), packet.StatusCode));
-            this._logger.LogInformation("Total {EndPoint} uptime: {Uptime} | received: {ReceivedPackets} | sent: {SentPackets}", endPoint, TimeSpan.FromSeconds(packet.UptimeSecs).ToString(@"dd\.hh\:mm\:ss"), packet.ReceivedPackets, packet.SentPackets);
+            this._logger.LogInformation("Total {EndPoint} uptime: {Uptime} | received: {ReceivedPackets} | sent: {SentPackets}", endPoint, TimeSpan.FromSeconds(packet.UptimeSecs).ToString(RmfConstants.TimeSpanFormatDhms), packet.ReceivedPackets, packet.SentPackets);
             this._sessionManager.Disconnect(endPoint.ToString());
         }
     }

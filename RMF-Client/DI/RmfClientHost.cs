@@ -77,12 +77,7 @@ namespace RMF_Client.DI
             {
                 // Configurations
                 services.AddSingleton(configProvider);
-                services.AddSingletonXmlConfig<AppearanceConfig>();
-                services.AddSingletonXmlConfig<CaptureConfig>();
-                services.AddSingletonXmlConfig<ChannelConfig>();
-                services.AddSingletonXmlConfig<ConnectionConfig>();
-                services.AddSingletonXmlConfig<ControllerConfig>();
-                services.AddSingletonXmlConfig<SecurityConfig>();
+                services.AddSingletonConfigurations();
 
                 // Sessions & Network
                 services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>

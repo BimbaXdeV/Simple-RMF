@@ -23,7 +23,12 @@ namespace RMF.Core.Packets
                                                 .ToArray();
         }
 
-        public short[] GetClientPacketsIDs()
+        public Type[] GetRegisteredTypes()
+        {
+            return this._packetTypes.Values.ToArray();
+        }
+
+        public short[] GetClientPacketIDs()
         {
             return this._clientPacketIds;
         }

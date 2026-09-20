@@ -1,19 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Commands>
 	<!-- Performance Commands -->
-	<add name="cmlst" description="View full command list"/>
-	<add name="conlst" description="Check client connections"/>
-	<add name="banlst" description="View all blocked IPs"/>
-	<add name="clear" description="Clear the console from written logs"/>
-	<add name="shutdown" description="Stop the server"/>
-	<add name="status" description="Check actual server status"/>
-	<add name="certdata" description="View actual server TLS certificate"/>
-	<add name="ver" description="Check current server version"/>
+	<add ctg="performance" name="cmlst" description="View full command list"/>
+	<add ctg="performance" name="conlst" description="Check client connections"/>
+	<add ctg="performance" name="banlst" description="View all blocked IPs"/>
+	<add ctg="performance" name="clear" description="Clear the console from written logs"/>
+	<add ctg="performance" name="shutdown" description="Stop the server"/>
+	<add ctg="performance" name="status" description="Check actual server status"/>
+	<add ctg="performance" name="certdata" description="View actual server TLS certificate"/>
+	<add ctg="performance" name="ver" description="Check current server version"/>
 
 	<!-- Client Management Commands -->
-	<add name="kick" description="Kick a client from the server" paramname1="ip:port" paramtype1="string"/>
-	<add name="ban" description="Block an IP from connecting to the server" paramname1="ip:port" paramtype1="string"/>
-	<add name="screen" description="Get actual screenshot from client desktop" paramname1="ip:port" paramtype1="string"/>
-	<add name="stream" description="Remotely connect to client desktop" paramname1="ip:port" paramtype1="string"/>
-	<add name="dstream" description="Stop the client streaming event"/>
+	<add ctg="management" name="kick" description="Kick a client from the server" paramname1="ip:port" paramtype1="string"/>
+	<add ctg="management" name="ban" description="Block an IP from connecting to the server" paramname1="ip:port" paramtype1="string"/>
+	<add ctg="management" name="screen" description="Get actual screenshot from client desktop" paramname1="ip:port" paramtype1="string"/>
+	<add ctg="management" name="stream" description="Remotely connect to client desktop" paramname1="ip:port" paramtype1="string"/>
+	<add ctg="management" name="dstream" description="Stop the client streaming event"/>
 </Commands>

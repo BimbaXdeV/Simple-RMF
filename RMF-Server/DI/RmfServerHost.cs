@@ -17,6 +17,7 @@ using RMF_Server.Commands;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using RMF_Server.Logic;
+using RMF_Server.Metrics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,14 +75,6 @@ namespace RMF_Server.DI
             }
             EventFactory eventFactory = new(eventLoadResult.Data!);
 
-            // Admin commands
-            LoadResult<List<Command>> commandLoadResult = XmlCommandLoader.Load(Path.Combine("Resources", "commands.xml"));
-            if (!commandLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(commandLoadResult.ExceptionMessage);
-            }
-            CommandManager commandManager = new(commandLoadResult.Data);
-
             // ---- Registering the logger provider and initial console output ----
             ConsoleSynchronizer consoleSynchronizer = new();
             RmfLoggerProvider loggerProvider = new(themeManager, consoleSynchronizer, loggingConfig);
@@ -96,7 +89,6 @@ namespace RMF_Server.DI
             consoleAppearance.LogInitialization(this._bootLogger, "Theme colors", themeLoadResult.Loaded, themeLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Network packets", packetLoadResult.Loaded, packetLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Server events", eventLoadResult.Loaded, eventLoadResult.Total);
-            consoleAppearance.LogInitialization(this._bootLogger, "Admin commands", commandLoadResult.Loaded, commandLoadResult.Total);
             
             consoleAppearance.LogSeparator(this._bootLogger);
             this._bootLogger.LogInformation("Preparing to launch the server:");
@@ -122,15 +114,7 @@ namespace RMF_Server.DI
 
                 // Configurations
                 services.AddSingleton(configProvider);
-                services.AddSingletonXmlConfig<AppearanceConfig>();
-                services.AddSingletonXmlConfig<ConnectionConfig>();
-                services.AddSingletonXmlConfig<FirewallConfig>();
-                services.AddSingletonXmlConfig<TlsConfig>();
-                services.AddSingletonXmlConfig<ControllerConfig>();
-                services.AddSingletonXmlConfig<ChannelConfig>();
-                services.AddSingletonXmlConfig<StreamingConfig>();
-                services.AddSingletonXmlConfig<CommandConfig>();
-                services.AddSingletonXmlConfig<ListenerConfig>();
+                services.AddSingletonConfigurations();
 
                 // Sessions & Network
                 services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>
@@ -144,11 +128,12 @@ namespace RMF_Server.DI
 
                 // UI
                 services.AddSingleton<IAvaloniaManager, AvaloniaManager>();
-                services.AddSingleton<IWindowManager, AppearanceManager>();
+                services.AddSingleton<AppearanceManager>();
+                services.AddSingleton<IWindowManager>(provider => provider.GetRequiredService<AppearanceManager>());
+                services.AddHostedService(provider => provider.GetRequiredService<AppearanceManager>());
 
-                // Commands
-                services.AddSingleton<ICommandManager>(commandManager);
-                services.AddSingleton<ICommandHandler, CommandHandler>();
+                // Metrics onitoring
+                services.AddSingleton<IServerMetricsMonitor, RmfServerMetrics>();
 
                 // Packets
                 services.AddSingleton<IPacketFactory>(packetFactory);
@@ -157,6 +142,12 @@ namespace RMF_Server.DI
                 // Channels
                 services.AddSingleton<IChannelDispatcher, ChannelDispatcher>();
                 services.AddHostedService(provider => (ChannelDispatcher)provider.GetRequiredService<IChannelDispatcher>());
+
+                // Commands
+                services.AddSingletonInlineCommands();
+                services.AddSingleton<CommandDispatcher>();
+                services.AddSingleton<ICommandRouter, CommandDispatcher>(provider => provider.GetRequiredService<CommandDispatcher>());
+                services.AddSingleton<ICommandViewer, CommandDispatcher>(provider => provider.GetRequiredService<CommandDispatcher>());
 
                 // Server
                 services.AddSingleton<IConnectionListener, TcpListenerAdapter>(provider =>
@@ -200,10 +191,6 @@ namespace RMF_Server.DI
                     });
                 }
             });
-
-            // It`s not that this service is strictly necessary here, but currently nothing uses it as a dependency;
-            // However, without that line, its constructor, which handles the online status binding, simply won`t execute
-            this._host.Services.GetRequiredService<IWindowManager>();
 
             await this._host.StartAsync();
 
