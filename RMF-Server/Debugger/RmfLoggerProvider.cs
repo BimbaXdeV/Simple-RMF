@@ -51,13 +51,14 @@ namespace RMF_Server.Debugger
                 categoryName,
                 this._logQueue,
                 this._themeManager,
-                this._consoleSync
+                _consoleSync,
+                wordWrapIndent: _loggingConfig.EnableWordWrapIndent
             );
         }
 
         protected override async Task ExecuteAsync(CancellationToken token)
         {
-            if (this._isExecutorRunning)
+            if (_isExecutorRunning)
             {
                 Console.WriteLine("The logging executor has already been launched previously, a duplicate cannot be started");
                 return;

@@ -8,6 +8,7 @@ namespace RMF_Server.Configurations
 {
     internal class LoggingConfig
     {
+        public bool EnableWordWrapIndent = false;
         public bool EnableLogSaving = false;
         public int MaxLogSavingDurationSecs = int.MaxValue;
         public string LoggingFilePath = string.Empty;

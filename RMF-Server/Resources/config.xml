@@ -61,6 +61,7 @@
 	<add key="ListenerDelayMsecs" value="10"/>
 	
 	<!-- Logging Settings -->
+	<add key="EnableWordWrapIndent" value="true"/>
 	<add key="EnableLogSaving" value="true"/>
 	<add key="MaxLogSavingDurationSecs" value="5"/>
 	<add key="LoggingFilePath" value="Debugger/"/>

@@ -12,7 +12,7 @@ namespace RMF_Server.Commands
         public static IServiceCollection AddSingletonInlineCommands(this IServiceCollection services)
         {
             // Performance Commands
-            //services.AddSingleton<IExecutableCommand, HelpCommand>();
+            services.AddSingleton<IExecutableCommand, HelpCommand>();
             services.AddSingleton<IExecutableCommand, ConnectionCommand>();
             services.AddSingleton<IExecutableCommand, BlacklistCommand>();
             services.AddSingleton<IExecutableCommand, ServerStatusCommand>();

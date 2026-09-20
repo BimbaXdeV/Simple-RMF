@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RMF_Server.Configurations;
 using RMF_Server.Debugger;
 using System;
@@ -11,8 +12,7 @@ namespace RMF_Server.Commands
 {
     internal sealed class HelpCommand : InlineCommand
     {
-        private readonly ICommandViewer _commandViewer;
-        private readonly IThemeManager _themeManager;
+        private readonly IServiceProvider _provider;
 
         private const byte CommandSyntaxMaxLength = 28;
 
@@ -22,31 +22,32 @@ namespace RMF_Server.Commands
         public override string[]? Parameters => null;
 
         public HelpCommand(
-            ICommandViewer commandViewer,
-            IThemeManager themeManager,
+            IServiceProvider provider,
             ILogger<CommandDispatcher> cmLogger,
             CommandConfig commandConfig
         ) : base(cmLogger, commandConfig)
         {
-            _commandViewer = commandViewer;
-            _themeManager = themeManager;
+            _provider = provider;
         }
 
         public override Task ExecuteAsync(string[] args, CancellationToken token)
         {
+            ICommandViewer commandViewer = _provider.GetRequiredService<ICommandViewer>();
+            IThemeManager themeManager = _provider.GetRequiredService<IThemeManager>();
+
             CmLogger.LogInformation("Available inline commands:");
-            if (_commandViewer.GetLoadedCommandsCount() <= 0)
+            if (commandViewer.GetLoadedCommandsCount() <= 0)
             {
                 CmLogger.LogInformation("No commands have been loaded...");
                 return Task.CompletedTask;
             }
 
-            IExecutableCommand[] commands = _commandViewer.GetLoadedCommands();
+            IExecutableCommand[] commands = commandViewer.GetLoadedCommands();
             byte categoryIndex = 1;
 
-            ThemeColor categoryIndexColor = _themeManager.GetColor("CategoryIndex");
-            ThemeColor commandColor = _themeManager.GetColor("CommandName");
-            ThemeColor paramColor = _themeManager.GetColor("ParameterName");
+            ThemeColor categoryIndexColor = themeManager.GetColor("CategoryIndex");
+            ThemeColor commandColor = themeManager.GetColor("CommandName");
+            ThemeColor paramColor = themeManager.GetColor("ParameterName");
 
             IEnumerable<IGrouping<string, IExecutableCommand>> groupedCommands = commands.GroupBy(c => c.Category);
             foreach (IGrouping<string, IExecutableCommand> group in groupedCommands)
@@ -83,7 +84,7 @@ namespace RMF_Server.Commands
                     string description = cm.Description ?? "Description is empty...";
 
                     CmLogger.LogInformation(
-                        "{CommandSyntax}{Padding} : {Description}",
+                        "{CommandSyntax}{Padding}: {Description}",
                         coloredSyntax, padding, description
                     );
                     commandIndex++;

@@ -30,7 +30,6 @@ namespace RMF_Server.Commands
 
         public async Task RouteCommandAsync(string commandName, string[] commandArgs, CancellationToken token)
         {
-            Console.WriteLine($"Routing command: {commandName} with args: {string.Join(", ", commandArgs)}");
             if (_commands.TryGetValue(commandName, out IExecutableCommand? command))
             {
                 await command.ExecuteAsync(commandArgs, token);
