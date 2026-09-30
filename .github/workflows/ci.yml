@@ -21,6 +21,9 @@ jobs:
       with:
         dotnet-version: "9.0.x"
 
+    - name: Lock SDK for CI
+      run: dotnet new globaljson --sdk-version 9.0.100 --roll-forward latestFeature
+
     - name: Restore NuGet packages
       run: dotnet restore
 
