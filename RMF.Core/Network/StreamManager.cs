@@ -20,7 +20,7 @@ namespace RMF.Core.Network
             return CachedMemoryStream;
         }
 
-        public async Task SendPacketAsync(Stream stream, Packet packet, CancellationToken token)
+        public async Task SendPacketAsync(Stream stream, IPacket packet, CancellationToken token)
         {
             MemoryStream ms = GetCachedStream();
             using BinaryWriter writer = new(ms, Encoding.UTF8, leaveOpen: true);

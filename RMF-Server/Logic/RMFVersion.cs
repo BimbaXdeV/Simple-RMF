@@ -11,6 +11,6 @@ namespace RMF_Server.Logic
     internal static class RmfVersion
     {
         public static Version? App => Assembly.GetEntryAssembly()?.GetName().Version;
-        public static Version? Core => typeof(Packet).Assembly.GetName().Version;
+        public static Version? Core => typeof(IPacket).Assembly.GetName().Version;
     }
 }

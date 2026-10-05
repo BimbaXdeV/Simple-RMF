@@ -15,7 +15,7 @@ namespace RMF.Tests
     {
         private const long _defaultTimestamp = 1954600;
 
-        public static readonly Dictionary<Type, Action<Packet, Packet>> SpecialDeserializeAsserters = new()
+        public static readonly Dictionary<Type, Action<IPacket, IPacket>> SpecialDeserializeAsserters = new()
         {
             {
                 typeof(DesktopFramePacket),
@@ -92,9 +92,9 @@ namespace RMF.Tests
             return ms.ToArray();
         }
 
-        public static TheoryData<Type, byte[], Packet> GetDeserializationDataset()
+        public static TheoryData<Type, byte[], IPacket> GetDeserializationDataset()
         {
-            TheoryData<Type, byte[], Packet> data = [];
+            TheoryData<Type, byte[], IPacket> data = [];
 
             // Tiny/medium sized packets
             data.Add(
@@ -355,9 +355,9 @@ namespace RMF.Tests
             return data;
         }
 
-        public static TheoryData<Packet, byte[]> GetSerializationDataset()
+        public static TheoryData<IPacket, byte[]> GetSerializationDataset()
         {
-            TheoryData<Packet, byte[]> data = new();
+            TheoryData<IPacket, byte[]> data = new();
 
             data.Add(
                 new HeartbeatPacket()

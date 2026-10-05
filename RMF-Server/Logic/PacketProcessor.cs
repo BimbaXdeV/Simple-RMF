@@ -41,7 +41,7 @@ namespace RMF_Server.Logic
         }
 
         // Manual method, but lightning fast to execute
-        public async Task SwitchHandle(Packet packet, IPEndPoint endPoint)
+        public async Task SwitchHandle(IPacket packet, IPEndPoint endPoint)
         {
             switch (packet)
             {
@@ -76,7 +76,7 @@ namespace RMF_Server.Logic
         }
 
         // This handle method is too slow for streaming production, but it's here if you need it for scaling purposes
-        public void SearchHandle(Packet packet, string endPoint)
+        public void SearchHandle(IPacket packet, IPEndPoint endPoint)
         {
             MethodInfo? method = typeof(PacketProcessor).GetMethod("Process" + packet.GetType().Name, BindingFlags.NonPublic | BindingFlags.Instance);
             method?.Invoke(null, [packet, endPoint]);

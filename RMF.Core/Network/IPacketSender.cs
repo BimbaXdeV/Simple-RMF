@@ -10,6 +10,6 @@ namespace RMF.Core.Network
     public interface IPacketSender
     {
         MemoryStream GetCachedStream();
-        Task SendPacketAsync(Stream stream, Packet packet, CancellationToken token);
+        Task SendPacketAsync(Stream stream, IPacket packet, CancellationToken token);
     }
 }

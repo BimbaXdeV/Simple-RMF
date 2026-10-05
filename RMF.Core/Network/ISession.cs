@@ -21,7 +21,7 @@ namespace RMF.Core.Network
         Task<PacketHeader> ReadHeaderAsync(CancellationToken token);
         Task<byte[]> ReadPayloadAsync(int length, CancellationToken token);
 
-        void SendPacket(Packet packet);
+        void SendPacket(IPacket packet);
         void StartEvent(string eventName, Dictionary<string, object> eventSettings);
         void IncrementSendPackets();
         void IncrementReceivedPackets();

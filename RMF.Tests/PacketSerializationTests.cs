@@ -12,7 +12,7 @@ namespace RMF.Tests
     {
         [Theory]
         [MemberData(nameof(PacketTestFixtures.GetSerializationDataset), MemberType = typeof(PacketTestFixtures))]
-        public void Serialize_ToStream_ShouldMatchExactBytes(Packet packet, byte[] expectedBytes)
+        public void Serialize_ToStream_ShouldMatchExactBytes(IPacket packet, byte[] expectedBytes)
         {
             MemoryStream ms = new(expectedBytes.Length);
             BinaryWriter writer = new(ms);

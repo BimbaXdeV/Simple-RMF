@@ -51,14 +51,6 @@ namespace RMF_Client.DI
                 throw new FileLoadException(toolbarLoadResult.ExceptionMessage);
             }
 
-            // Network packets
-            LoadResult<Dictionary<short, Type>> packetLoadResult = ReflectionPacketLoader.Load();
-            if (!packetLoadResult.IsSuccess)
-            {
-                throw new TypeLoadException(packetLoadResult.ExceptionMessage);
-            }
-            PacketFactory packetFactory = new(packetLoadResult.Data!);
-
             // Server events
             LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Client");
             if (!eventLoadResult.IsSuccess)
@@ -100,7 +92,6 @@ namespace RMF_Client.DI
                     appearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "configsLoaded", configLoadResult.Loaded + " / " + configLoadResult.Total },
-                        { "packetsLoaded", packetLoadResult.Loaded + " / " + packetLoadResult.Total },
                         { "eventsLoaded", eventLoadResult.Loaded + " / " + eventLoadResult.Total }
                     }, autoUpdate: false); // Your time hasn`t come yet, bro; ClientBootstrapper ​​will sort everything out himself
                     return appearanceManager;
@@ -116,7 +107,7 @@ namespace RMF_Client.DI
                 services.AddSingleton<IMonitoringFactory, MonitoringFactory>();
 
                 // Packets
-                services.AddSingleton<IPacketFactory>(packetFactory);
+                services.AddSingleton<IPacketFactory, PacketFactory>();
                 services.AddSingleton<IClientPacketProcessor, PacketProcessor>();
 
                 // Client connection

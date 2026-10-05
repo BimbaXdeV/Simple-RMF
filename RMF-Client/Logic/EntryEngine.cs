@@ -68,7 +68,7 @@ namespace RMF_Client.Logic
                 PacketHeader header = await session.ReadHeaderAsync(token);
                 byte[] payload = await session.ReadPayloadAsync(header.Length, token);
 
-                Packet? packet = null;
+                IPacket? packet = null;
                 try
                 {
                     packet = this._packetFactory.CreatePacket(header.Id);

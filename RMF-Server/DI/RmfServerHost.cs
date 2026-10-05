@@ -59,14 +59,6 @@ namespace RMF_Server.DI
             }
             ThemeManager themeManager = new(themeLoadResult.Data!, new ThemeColor(255, 255, 255));
 
-            // Network packets
-            LoadResult<Dictionary<short, Type>> packetLoadResult = ReflectionPacketLoader.Load();
-            if (!packetLoadResult.IsSuccess)
-            {
-                throw new TypeLoadException(packetLoadResult.ExceptionMessage);
-            }
-            PacketFactory packetFactory = new(packetLoadResult.Data!);
-
             // Server events
             LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Server");
             if (!eventLoadResult.IsSuccess)
@@ -87,7 +79,6 @@ namespace RMF_Server.DI
             this._bootLogger.LogInformation("Initialized components:");
             consoleAppearance.LogInitialization(this._bootLogger, "Configurations", configLoadResult.Loaded, configLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Theme colors", themeLoadResult.Loaded, themeLoadResult.Total);
-            consoleAppearance.LogInitialization(this._bootLogger, "Network packets", packetLoadResult.Loaded, packetLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Server events", eventLoadResult.Loaded, eventLoadResult.Total);
             
             consoleAppearance.LogSeparator(this._bootLogger);
@@ -136,7 +127,7 @@ namespace RMF_Server.DI
                 services.AddSingleton<IServerMetricsMonitor, RmfServerMetrics>();
 
                 // Packets
-                services.AddSingleton<IPacketFactory>(packetFactory);
+                services.AddSingleton<IPacketFactory, PacketFactory>();
                 services.AddSingleton<IServerPacketProcessor, PacketProcessor>();
 
                 // Channels

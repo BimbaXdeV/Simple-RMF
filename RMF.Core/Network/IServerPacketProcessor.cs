@@ -10,7 +10,7 @@ namespace RMF.Core.Network
 {
     public interface IServerPacketProcessor
     {
-        Task SwitchHandle(Packet packet, IPEndPoint endPoint);
-        void SearchHandle(Packet packet, string endPoint);
+        Task SwitchHandle(IPacket packet, IPEndPoint endPoint);
+        void SearchHandle(IPacket packet, IPEndPoint endPoint);
     }
 }

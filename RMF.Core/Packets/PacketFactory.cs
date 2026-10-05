@@ -1,4 +1,5 @@
 ﻿using RMF.Core.Packets.Client;
+using RMF.Core.Packets.Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,31 +12,50 @@ namespace RMF.Core.Packets
 {
     public class PacketFactory : IPacketFactory
     {
-        private readonly Dictionary<short, Type> _packetTypes;
-        private readonly short[] _clientPacketIds;
+        private readonly Dictionary<short, (Func<IPacket>, PacketOrigin)> _factories;
+        private short[]? _cachedClientPacketIds;
 
-        public PacketFactory(Dictionary<short, Type> packetTypes)
+        public PacketFactory(IEnumerable<IPacket> packets)
         {
-            this._packetTypes = packetTypes;
+            _factories = new Dictionary<short, (Func<IPacket>, PacketOrigin)>()
+            {
+                // [!] Client-side
+                // 1. General information packets
+                { 100, (() => new HeartbeatPacket(), PacketOrigin.Client) },
+                { 101, (() => new ClientInfoPacket(), PacketOrigin.Client) },
+                { 102, (() => new ClientVersionPacket(), PacketOrigin.Client) },
+                { 103, (() => new PartingPacket(), PacketOrigin.Client) },
+                { 104, (() => new EndOfStreamingPacket(), PacketOrigin.Client) },
 
-            this._clientPacketIds = _packetTypes.Where(item => item.Value.Namespace == typeof(HeartbeatPacket).Namespace!)
-                                                .Select(item => item.Key)
-                                                .ToArray();
-        }
+                // 2. Streaming packets (hot paths)
+                { 200, (() => new DesktopFramePacket(), PacketOrigin.Client) },
+                { 201, (() => new StreamFramePacket(), PacketOrigin.Client) },
 
-        public Type[] GetRegisteredTypes()
-        {
-            return this._packetTypes.Values.ToArray();
+                // [!] Server-side
+                // X. Uncategorized
+                { 300, (() => new HandshakePacket(), PacketOrigin.Server) },
+                { 301, (() => new ClientPingRequest(), PacketOrigin.Server) },
+                { 302, (() => new ClientInfoRequest(), PacketOrigin.Server) },
+                { 303, (() => new ClientVersionRequest(), PacketOrigin.Server) },
+                { 304, (() => new EndOfEventsRequest(), PacketOrigin.Server) },
+                { 305, (() => new ScreenshotRequest(), PacketOrigin.Server) },
+                { 306, (() => new StreamingRequest(), PacketOrigin.Server) }
+            };
         }
 
         public short[] GetClientPacketIDs()
         {
-            return this._clientPacketIds;
+            _cachedClientPacketIds ??= _factories.Where(f => f.Value.Item2 == PacketOrigin.Client)
+                                                 .Select(f => f.Key)
+                                                 .ToArray();
+            return _cachedClientPacketIds;
         }
 
-        public Packet? CreatePacket(short id)
+        public IPacket? CreatePacket(short id)
         {
-            return _packetTypes.TryGetValue(id, out Type? packetType) ? (Packet?)Activator.CreateInstance(packetType) : null;
+            return _factories.TryGetValue(id, out (Func<IPacket>, PacketOrigin) factory)
+                ? (IPacket?)factory.Item1()
+                : null;
         }
     }
 }

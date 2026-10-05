@@ -10,7 +10,7 @@ namespace RMF.Core.Network
 {
     public interface IClientPacketProcessor
     {
-        void SwitchHandle(Packet packet);
-        void SearchHandle(Packet packet);
+        void SwitchHandle(IPacket packet);
+        void SearchHandle(IPacket packet);
     }
 }

@@ -43,7 +43,7 @@ namespace RMF_Client.Logic
             this._toolbarManager = toolbarManager;
         }
 
-        public void SwitchHandle(Packet packet)
+        public void SwitchHandle(IPacket packet)
         {
             switch (packet)
             {
@@ -77,7 +77,7 @@ namespace RMF_Client.Logic
             }
         }
 
-        public void SearchHandle(Packet packet)
+        public void SearchHandle(IPacket packet)
         {
             var method = typeof(PacketProcessor).GetMethod("Process" + packet.GetType().Name, BindingFlags.NonPublic | BindingFlags.Static);
             method?.Invoke(null, new object[] { packet });
@@ -102,7 +102,7 @@ namespace RMF_Client.Logic
         {
             IConnectionClientSession? session = this._sessionManager.GetRunningSession();
             Version? appVersion = Assembly.GetEntryAssembly()?.GetName().Version;
-            Version? coreVersion = typeof(Packet).Assembly.GetName().Version;
+            Version? coreVersion = typeof(IPacket).Assembly.GetName().Version;
 
             ClientVersionPacket versionPacket = new()
             {

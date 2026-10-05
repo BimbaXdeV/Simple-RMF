@@ -85,7 +85,7 @@ namespace RMF_Server.Channels
                 await Task.Yield();
                 await foreach (PacketContext context in reader.ReadAllAsync(token))
                 {
-                    Packet? packet = this._packetFactory.CreatePacket(context.Id);
+                    IPacket? packet = this._packetFactory.CreatePacket(context.Id);
                     if (packet == null)
                     {
                         this._logger.LogWarning("Received an unknown packet \"{PacketId}\" from the client {EndPoint}", context.Id, context.EndPoint);

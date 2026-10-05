@@ -21,7 +21,7 @@ namespace RMF.Core.Network
         protected readonly IProtocolReader Reader;
         protected readonly IPacketSender PacketSender;
         protected readonly EventController Events;
-        protected Channel<Packet> OutboundChannel { get; private set; }
+        protected Channel<IPacket> OutboundChannel { get; private set; }
 
         public bool IsRunning { get; private set; }
         public IPEndPoint RemoteEndPoint => Connection.RemoteEndPoint;
@@ -56,7 +56,7 @@ namespace RMF.Core.Network
             PacketSender = packetSender;
 
             Events = new EventController(eventFactory);
-            OutboundChannel = Channel.CreateBounded<Packet>(
+            OutboundChannel = Channel.CreateBounded<IPacket>(
                 new BoundedChannelOptions(channelCapacity > 0 ? channelCapacity : 1000)
                 {
                     FullMode = BoundedChannelFullMode.Wait
@@ -85,7 +85,7 @@ namespace RMF.Core.Network
 
             try
             {
-                await foreach (Packet packet in OutboundChannel.Reader.ReadAllAsync(token))
+                await foreach (IPacket packet in OutboundChannel.Reader.ReadAllAsync(token))
                 {
                     await _streamLocker.WaitAsync(token);
                     try
@@ -105,7 +105,7 @@ namespace RMF.Core.Network
             }
             finally
             {
-                while (OutboundChannel.Reader.TryRead(out Packet? packet))
+                while (OutboundChannel.Reader.TryRead(out IPacket? packet))
                 {
                     if (packet is IReleasable releasable)
                     {
@@ -125,7 +125,7 @@ namespace RMF.Core.Network
             return Reader.ReadPayloadAsync(Connection.GetNetworkStream(), length, token);
         }
 
-        public void SendPacket(Packet packet)
+        public void SendPacket(IPacket packet)
         {
             if (!IsRunning)
             {
@@ -141,7 +141,7 @@ namespace RMF.Core.Network
                 return;
             }
 
-            OutboundChannel.Reader.TryRead(out Packet? oldestPacket);
+            OutboundChannel.Reader.TryRead(out IPacket? oldestPacket);
             if (oldestPacket != null && oldestPacket is IReleasable releasableOldest)
             {
                 releasableOldest.Release();
