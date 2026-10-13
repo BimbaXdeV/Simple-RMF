@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RMF.Core.Events;
+using RMF.Core.Events.Client;
+using RMF.Core.Events.Server;
 using RMF.Core.Network;
 using RMF.Core.Packets;
 using RMF.Core.Packets.Server;
@@ -158,10 +161,14 @@ namespace RMF_Server.Logic
 
                     if (this._controllerConfig.EnableClientHeartbeat)
                     {
-                        session.StartEvent("HeartbeatEvent", new Dictionary<string, object>
+                        EventResult result = session.StartEvent(nameof(HeartbeatEvent), new Dictionary<string, object>
                         {
                             { "IntervalSecs", this._controllerConfig.ClientHeartbeatIntervalSecs }
                         });
+                        if (!result.IsSuccess)
+                        {
+                            this._logger.LogWarning("Failed to start the \"{EventName}\" event for the client {EndPoint}: {ErrorMessage}", nameof(HeartbeatEvent), endPoint, result.ExceptionMessage!);
+                        }
                     }
 
                     _ = Task.Factory.StartNew(() => ClientHandler(session, token), TaskCreationOptions.LongRunning);

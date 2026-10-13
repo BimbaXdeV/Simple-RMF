@@ -35,18 +35,6 @@ namespace RMF.Core.Events
                 );
 
             return LoadResult<Dictionary<string, Type>>.Success(foundEvents, foundEvents.Count, foundEvents.Count);
-
-            //Type[] foundEvents = executingAssembly
-            //    .GetTypes()
-            //    .Where(t => t.Namespace == targetNamespace && t.IsSubclassOf(baseEventType) && !t.IsInterface && !t.IsAbstract)
-            //    .ToArray();
-
-            //Dictionary<string, Type> eventTypes = [];
-            //foreach (Type t in foundEvents)
-            //{
-            //    eventTypes.TryAdd(t.Name, t);
-            //}
-            //return LoadResult<Dictionary<string, Type>>.Success(eventTypes, eventTypes.Count, foundEvents.Length);
         }
     }
 }

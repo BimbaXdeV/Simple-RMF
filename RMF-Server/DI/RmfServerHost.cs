@@ -52,20 +52,12 @@ namespace RMF_Server.DI
             LoggingConfig loggingConfig = configProvider.GetConfig<LoggingConfig>();
 
             // Console theme
-            LoadResult< Dictionary<string, ThemeColor>> themeLoadResult = XmlThemeLoader.Load(Path.Combine("Resources", "theme.xml"));
+            LoadResult<Dictionary<string, ThemeColor>> themeLoadResult = XmlThemeLoader.Load(Path.Combine("Resources", "theme.xml"));
             if (!themeLoadResult.IsSuccess)
             {
                 throw new FileLoadException(themeLoadResult.ExceptionMessage);
             }
             ThemeManager themeManager = new(themeLoadResult.Data!, new ThemeColor(255, 255, 255));
-
-            // Server events
-            LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Server");
-            if (!eventLoadResult.IsSuccess)
-            {
-                throw new TypeLoadException(eventLoadResult.ExceptionMessage);
-            }
-            EventFactory eventFactory = new(eventLoadResult.Data!);
 
             // ---- Registering the logger provider and initial console output ----
             ConsoleSynchronizer consoleSynchronizer = new();
@@ -79,7 +71,6 @@ namespace RMF_Server.DI
             this._bootLogger.LogInformation("Initialized components:");
             consoleAppearance.LogInitialization(this._bootLogger, "Configurations", configLoadResult.Loaded, configLoadResult.Total);
             consoleAppearance.LogInitialization(this._bootLogger, "Theme colors", themeLoadResult.Loaded, themeLoadResult.Total);
-            consoleAppearance.LogInitialization(this._bootLogger, "Server events", eventLoadResult.Loaded, eventLoadResult.Total);
             
             consoleAppearance.LogSeparator(this._bootLogger);
             this._bootLogger.LogInformation("Preparing to launch the server:");
@@ -114,7 +105,7 @@ namespace RMF_Server.DI
                     return new ProtocolReader(firewallConfig.MaxPacketBufferKB * 1024);
                 });
                 services.AddSingleton<IPacketSender, StreamManager>();
-                services.AddSingleton<IEventFactory>(eventFactory);
+                services.AddSingleton<IEventFactory, EventFactory>();
                 services.AddSingleton<IServerSessionManager, SessionManager>();
 
                 // UI

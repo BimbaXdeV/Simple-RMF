@@ -9,8 +9,10 @@ namespace RMF.Core.Events
 {
     public interface IEvent
     {
-        public bool IsEvRunning { get; }
+        bool IsEvRunning { get; }
 
-        public Task ExecuteAsync(ISession session, CancellationToken token);
+        bool ValidateSettings(out string? exceptionMessage);
+        void ApplySettings(IReadOnlyDictionary<string, object> settings);
+        Task ExecuteAsync(ISession session, CancellationToken token);
     }
 }

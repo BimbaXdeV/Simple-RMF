@@ -153,9 +153,9 @@ namespace RMF.Core.Network
             }
         }
 
-        public void StartEvent(string eventName, Dictionary<string, object> eventSettings)
+        public EventResult StartEvent(string eventName, Dictionary<string, object> eventSettings)
         {
-            Events.StartEvent(this, eventName, eventSettings);
+            return Events.StartEvent(this, eventName, eventSettings);
         }
 
         public void IncrementSendPackets()

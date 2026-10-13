@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,19 +13,37 @@ namespace RMF.Core.Events
         public bool IsEvRunning { get; private set; } = false;
 
         protected abstract Task HandleLogic(ISession session, CancellationToken token);
-        
+        public abstract bool ValidateSettings(out string? exceptionMessage);
+        public abstract void ApplySettings(IReadOnlyDictionary<string, object> settings);
+
+        protected static void ApplyValue<T>(IReadOnlyDictionary<string, object> settings, string key, Action<T> setter)
+        {
+            if (settings.TryGetValue(key, out object? value) && value != null)
+            {
+                if (value is T typedValue)
+                {
+                    setter(typedValue);
+                    return;
+                }
+
+                try
+                {
+                    T convertedValue = (T)Convert.ChangeType(value, typeof(T));
+                    setter(convertedValue);
+                }
+                catch
+                {
+                }
+            }
+        }
+
         public async Task ExecuteAsync(ISession session, CancellationToken token)
         {
             this.IsEvRunning = true;
             try
             {
-                await Task.Delay(1000, token);  // Small delay (1sec) to ensure the event is fully registered before execution
                 await HandleLogic(session, token);
             }
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine($"Exception in BackgroundEvent: {ex.Message}");
-            //}
             finally
             {
                 this.IsEvRunning = false;

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using RMF.Core.Events.Client;
+using RMF.Core.Events.Server;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,54 +11,25 @@ namespace RMF.Core.Events
 {
     public class EventFactory : IEventFactory
     {
-        private readonly Dictionary<string, Type> _eventTypes;
+        private readonly Dictionary<string, (Func<IEvent> Factory, EventOrigin Origin)> _factories;
 
-        public EventFactory(Dictionary<string, Type> eventTypes)
+        public EventFactory()
         {
-            this._eventTypes = eventTypes;
+            _factories = new Dictionary<string, (Func<IEvent>, EventOrigin)>()
+            {
+                // [!] Client-side
+                { nameof(StreamingEvent), (() => new StreamingEvent(), EventOrigin.Client) },
+
+                // [!] Server-side
+                { nameof(HeartbeatEvent), (() => new HeartbeatEvent(), EventOrigin.Server) }
+            };
         }
 
         public IEvent? CreateEvent(string eventName)
         {
-            if (this._eventTypes.TryGetValue(eventName, out Type? backgroundEventType))
-            {
-                return Activator.CreateInstance(backgroundEventType) as BackgroundEvent;
-            }
-            return null;
-        }
-
-        public void ApplyEventSettings(string eventName, Dictionary<string, object> settings)
-        {
-            if (this._eventTypes.TryGetValue(eventName, out Type? backgroundEventType))
-            {
-                IEvent? backgroundEvent = Activator.CreateInstance(backgroundEventType) as BackgroundEvent;
-                if (backgroundEvent != null)
-                {
-                    ApplyEventSettings(backgroundEvent, settings);
-                }
-            }
-        }
-
-        public void ApplyEventSettings(IEvent backgroundEvent, Dictionary<string, object> settings)
-        {
-            foreach (string key in settings.Keys)
-            {
-                PropertyInfo? prop = backgroundEvent.GetType().GetProperty(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                if (prop != null && prop.CanWrite)
-                {
-                    try
-                    {
-                        Type targetType = prop.PropertyType;
-                        object rawValue = settings[key];
-                        
-                        object convertedValue = targetType.IsAssignableFrom(rawValue.GetType()) ? rawValue : Convert.ChangeType(rawValue, targetType);
-                        prop.SetValue(backgroundEvent, convertedValue);
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
+            return _factories.TryGetValue(eventName, out var tuple)
+                ? tuple.Factory()
+                : null;
         }
     }
 }

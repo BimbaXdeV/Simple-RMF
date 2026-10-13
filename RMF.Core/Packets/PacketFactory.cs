@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,10 +11,12 @@ namespace RMF.Core.Packets
 {
     public class PacketFactory : IPacketFactory
     {
-        private readonly Dictionary<short, (Func<IPacket>, PacketOrigin)> _factories;
+        private readonly Dictionary<short, (Func<IPacket> Factory, PacketOrigin Origin)> _factories;
+
+        // Cache data
         private short[]? _cachedClientPacketIds;
 
-        public PacketFactory(IEnumerable<IPacket> packets)
+        public PacketFactory()
         {
             _factories = new Dictionary<short, (Func<IPacket>, PacketOrigin)>()
             {
@@ -45,7 +46,7 @@ namespace RMF.Core.Packets
 
         public short[] GetClientPacketIDs()
         {
-            _cachedClientPacketIds ??= _factories.Where(f => f.Value.Item2 == PacketOrigin.Client)
+            _cachedClientPacketIds ??= _factories.Where(f => f.Value.Origin == PacketOrigin.Client)
                                                  .Select(f => f.Key)
                                                  .ToArray();
             return _cachedClientPacketIds;
@@ -53,8 +54,8 @@ namespace RMF.Core.Packets
 
         public IPacket? CreatePacket(short id)
         {
-            return _factories.TryGetValue(id, out (Func<IPacket>, PacketOrigin) factory)
-                ? (IPacket?)factory.Item1()
+            return _factories.TryGetValue(id, out var tuple)
+                ? (IPacket?)tuple.Factory()
                 : null;
         }
     }

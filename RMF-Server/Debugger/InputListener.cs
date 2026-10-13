@@ -95,7 +95,7 @@ namespace RMF_Server.Debugger
                                 string commandName = parts[0];
                                 string[] commandArgs = parts.Length >= 1 ? parts[1..] : [];
 
-                                await _commandRouter.RouteCommandAsync(command, commandArgs, token);
+                                await _commandRouter.RouteCommandAsync(commandName, commandArgs, token);
                                 _consoleSync.IsAdminTyping = false;
 
                                 //InlineCommand? cm = _commandManager.GetCommand(commandName);

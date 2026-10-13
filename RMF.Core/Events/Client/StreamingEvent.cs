@@ -25,7 +25,7 @@ namespace RMF.Core.Events.Client
 
         private void SendActualFrame(ISession session)
         {
-            CapturedFrame? frame = this.Provider?.Capture(this.Format, this.QualityPercent, this.FrameUpdateRate);
+            CapturedFrame? frame = Provider!.Capture(Format, QualityPercent, FrameUpdateRate);
             if (frame.HasValue && frame.Value is CapturedFrame f)
             {
                 StreamFramePacket streamFramePacket = new()
@@ -42,7 +42,7 @@ namespace RMF.Core.Events.Client
 
         protected override async Task HandleLogic(ISession session, CancellationToken token)
         {
-            double targetFrameRateTick = 1000.0 / this.TargetFPS;
+            double targetFrameRateTick = 1000.0 / TargetFPS;
             Stopwatch sw = new();
 
             while (!token.IsCancellationRequested)
@@ -59,6 +59,41 @@ namespace RMF.Core.Events.Client
                     await Task.Delay((int)Math.Round(remainingMsecs), token);
                 }
             }
+        }
+
+        public override bool ValidateSettings(out string? exceptionMessage)
+        {
+            exceptionMessage = null;
+            if (Provider == null)
+            {
+                exceptionMessage = "Screen provider is not set";
+                return false;
+            }
+            if (QualityPercent > 100)
+            {
+                exceptionMessage = "QualityPercent must be between 0 and 100";
+                return false;
+            }
+            if (FrameUpdateRate < 0)
+            {
+                exceptionMessage = "FrameUpdateRate must or be greater than or equal to 0";
+                return false;
+            }
+            if (TargetFPS <= 0)
+            {
+                exceptionMessage = "TargetFPS must be greater than 0";
+                return false;
+            }
+            return true;
+        }
+
+        public override void ApplySettings(IReadOnlyDictionary<string, object> settings)
+        {
+            ApplyValue<IScreenProvider>(settings, nameof(Provider), v => Provider = v);
+            ApplyValue<ScreenFormats>(settings, nameof(Format), v => Format = v);
+            ApplyValue<byte>(settings, nameof(QualityPercent), v => QualityPercent = v);
+            ApplyValue<int>(settings, nameof(FrameUpdateRate), v => FrameUpdateRate = v);
+            ApplyValue<int>(settings, nameof(TargetFPS), v => TargetFPS = v);
         }
     }
 }

@@ -51,14 +51,6 @@ namespace RMF_Client.DI
                 throw new FileLoadException(toolbarLoadResult.ExceptionMessage);
             }
 
-            // Server events
-            LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Client");
-            if (!eventLoadResult.IsSuccess)
-            {
-                throw new TypeLoadException(eventLoadResult.ExceptionMessage);
-            }
-            EventFactory eventFactory = new(eventLoadResult.Data!);
-
             // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
             builder.ConfigureLogging(logging =>
@@ -78,7 +70,7 @@ namespace RMF_Client.DI
                     return new ProtocolReader(securityConfig.MaxPacketBufferKB * 1024);
                 });
                 services.AddSingleton<IPacketSender, StreamManager>();
-                services.AddSingleton<IEventFactory>(eventFactory);
+                services.AddSingleton<IEventFactory, EventFactory>();
                 services.AddSingleton<IClientSessionManager, SessionManager>();
 
                 // UI
@@ -92,7 +84,6 @@ namespace RMF_Client.DI
                     appearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
                         { "configsLoaded", configLoadResult.Loaded + " / " + configLoadResult.Total },
-                        { "eventsLoaded", eventLoadResult.Loaded + " / " + eventLoadResult.Total }
                     }, autoUpdate: false); // Your time hasn`t come yet, bro; ClientBootstrapper ​​will sort everything out himself
                     return appearanceManager;
                 });
