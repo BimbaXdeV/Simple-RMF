@@ -8,6 +8,8 @@ namespace RMF.Core.Events
 {
     public interface IEventFactory
     {
+        int RegisteredCount { get; }
+
         IEvent? CreateEvent(string eventName);
     }
 }

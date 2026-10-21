@@ -23,22 +23,22 @@ namespace RMF_Client.DI
             IWindowEffects windowEffects
         )
         {
-            this._monitoringFactory = monitoringFactory;
-            this._toolbarManager = toolbarManager;
-            this._windowEffects = windowEffects;
+            _monitoringFactory = monitoringFactory;
+            _toolbarManager = toolbarManager;
+            _windowEffects = windowEffects;
         }
 
         public Task StartAsync(CancellationToken token)
         {
-            this._windowEffects.DisplayLogo();
+            _windowEffects.DisplayLogo();
 
-            IHardwareMonitor? monitor = this._monitoringFactory.GetActualMonitor(updateIfNullable: true);
+            IHardwareMonitor? monitor = _monitoringFactory.GetActualMonitor(updateIfNullable: true);
             if (monitor != null)
             {
                 double ramCapacityGb = monitor.RAMCapacity() / 1024.0 / 1024.0 / 1024.0;
                 double vramCapacityGb = monitor.VRAMCapacity() / 1024.0 / 1024.0 / 1024.0;
 
-                this._toolbarManager.ReplaceToolbarContent(new Dictionary<string, string>
+                _toolbarManager.ReplaceToolbarContent(new Dictionary<string, string>
                 {
                     { "endpointMachine", monitor.MachineName() },
                     { "endpointUsername", monitor.Username() },
@@ -50,7 +50,7 @@ namespace RMF_Client.DI
             }
             else
             {
-                this._toolbarManager.DisplayToolbar();
+                _toolbarManager.DisplayToolbar();
             }
             return Task.CompletedTask;
         }

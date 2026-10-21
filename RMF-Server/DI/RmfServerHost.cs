@@ -43,37 +43,23 @@ namespace RMF_Server.DI
             // and instead throw an exception immediately if external files or parsing systems failed
 
             // Logging dependencies (color theme + synchronizer + config)
-            LoadResult<Dictionary<Type, object>> configLoadResult = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
-            if (!configLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(configLoadResult.ExceptionMessage);
-            }
-            XmlConfigProvider configProvider = new(configLoadResult.Data!);
+            (Dictionary<Type, object> serverConfigurations, int loadedConfigFields) = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
+            XmlConfigProvider configProvider = new(serverConfigurations, loadedConfigFields);
             LoggingConfig loggingConfig = configProvider.GetConfig<LoggingConfig>();
 
             // Console theme
-            LoadResult<Dictionary<string, ThemeColor>> themeLoadResult = XmlThemeLoader.Load(Path.Combine("Resources", "theme.xml"));
-            if (!themeLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(themeLoadResult.ExceptionMessage);
-            }
-            ThemeManager themeManager = new(themeLoadResult.Data!, new ThemeColor(255, 255, 255));
+            Dictionary<string, ThemeColor> serverTheme = XmlThemeLoader.Load(Path.Combine("Resources", "theme.xml"));
+            ThemeManager themeManager = new(serverTheme, new ThemeColor(255, 255, 255));
 
             // ---- Registering the logger provider and initial console output ----
             ConsoleSynchronizer consoleSynchronizer = new();
             RmfLoggerProvider loggerProvider = new(themeManager, consoleSynchronizer, loggingConfig);
             RmfConsoleAppearance consoleAppearance = new(themeManager, loggingConfig);
-            this._bootLogger = loggerProvider.CreateLogger("RmfServerBoot");
+            _bootLogger = loggerProvider.CreateLogger("RmfServerBoot");
 
-            consoleAppearance.DrawLogo(this._bootLogger);
-            consoleAppearance.LogSeparator(this._bootLogger);
-
-            this._bootLogger.LogInformation("Initialized components:");
-            consoleAppearance.LogInitialization(this._bootLogger, "Configurations", configLoadResult.Loaded, configLoadResult.Total);
-            consoleAppearance.LogInitialization(this._bootLogger, "Theme colors", themeLoadResult.Loaded, themeLoadResult.Total);
-            
-            consoleAppearance.LogSeparator(this._bootLogger);
-            this._bootLogger.LogInformation("Preparing to launch the server:");
+            consoleAppearance.DrawLogo(_bootLogger);
+            consoleAppearance.LogSeparator(_bootLogger);
+            _bootLogger.LogInformation("Preparing to launch the server:");
 
             // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
@@ -95,6 +81,7 @@ namespace RMF_Server.DI
                 services.AddSingleton<IConsoleExtensions>(consoleAppearance);
 
                 // Configurations
+                services.AddSingleton<IConfigViewer>(configProvider);
                 services.AddSingleton(configProvider);
                 services.AddSingletonConfigurations();
 
@@ -131,7 +118,7 @@ namespace RMF_Server.DI
                 services.AddSingleton<ICommandRouter, CommandDispatcher>(provider => provider.GetRequiredService<CommandDispatcher>());
                 services.AddSingleton<ICommandViewer, CommandDispatcher>(provider => provider.GetRequiredService<CommandDispatcher>());
 
-                // Server
+                // Server dependencies
                 services.AddSingleton<IConnectionListener, TcpListenerAdapter>(provider =>
                 {
                     ConnectionConfig connectionConfig = provider.GetRequiredService<ConnectionConfig>();
@@ -149,18 +136,21 @@ namespace RMF_Server.DI
                 });
                 services.AddSingleton<ITlsManager, TlsManager>();
                 services.AddSingleton<IFirewall, Firewall>();
+
+                // Server engine services
+                services.AddHostedService<ServerBootstrapper>();
                 services.AddHostedService<NetworkEngine>();
                 services.AddHostedService<InputListener>();
             });
 
-            this._host = builder.Build();
+            _host = builder.Build();
         }
 
         [STAThread]
         public async Task RunAsync(string[] args)
         {
-            IHostApplicationLifetime lifetime = this._host.Services.GetRequiredService<IHostApplicationLifetime>();
-            IAvaloniaManager avaloniaManager = this._host.Services.GetRequiredService<IAvaloniaManager>();
+            IHostApplicationLifetime lifetime = _host.Services.GetRequiredService<IHostApplicationLifetime>();
+            IAvaloniaManager avaloniaManager = _host.Services.GetRequiredService<IAvaloniaManager>();
 
             lifetime.ApplicationStopping.Register(() =>
             {
@@ -169,12 +159,12 @@ namespace RMF_Server.DI
                     Dispatcher.UIThread.Post(() =>
                     {
                         desktopLifetime.Shutdown();
-                        this._bootLogger.LogInformation("Avalonia graphics thread has been successfully stopped");
+                        _bootLogger.LogInformation("Avalonia graphics thread has been successfully stopped");
                     });
                 }
             });
 
-            await this._host.StartAsync();
+            await _host.StartAsync();
 
             try
             {
@@ -185,14 +175,14 @@ namespace RMF_Server.DI
             finally
             {
                 // Disposable dependencies
-                IFirewall firewall = this._host.Services.GetRequiredService<IFirewall>();
-                ILoggerProvider loggerProvider = this._host.Services.GetRequiredService<ILoggerProvider>();
+                IFirewall firewall = _host.Services.GetRequiredService<IFirewall>();
+                ILoggerProvider loggerProvider = _host.Services.GetRequiredService<ILoggerProvider>();
 
                 // Shutdown dependencies
-                IConsoleExtensions consoleExtensions = this._host.Services.GetRequiredService<IConsoleExtensions>();
-                ConnectionConfig connectionConfig = this._host.Services.GetRequiredService<ConnectionConfig>();
+                IConsoleExtensions consoleExtensions = _host.Services.GetRequiredService<IConsoleExtensions>();
+                ConnectionConfig connectionConfig = _host.Services.GetRequiredService<ConnectionConfig>();
 
-                await this._host.StopAsync().ConfigureAwait(false);
+                await _host.StopAsync().ConfigureAwait(false);
 
                 // If your firewall is capable of offloading data from RAM to disk, for example
                 if (firewall is IDisposable disposableFirewall)
@@ -209,7 +199,7 @@ namespace RMF_Server.DI
 
                 if (!connectionConfig.EnableForceShutdown)
                 {
-                    this._bootLogger.LogInformation("To finish this process, press any key...");
+                    _bootLogger.LogInformation("To finish this process, press any key...");
                     Console.ReadKey(true);
                 }
             }

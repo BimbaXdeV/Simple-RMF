@@ -37,19 +37,11 @@ namespace RMF_Client.DI
             // and instead throw an exception immediately if external files or parsing systems failed
 
             // Configurations
-            LoadResult<Dictionary<Type, object>> configLoadResult = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
-            if (!configLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(configLoadResult.ExceptionMessage);
-            }
-            XmlConfigProvider configProvider = new(configLoadResult.Data!);
+            (Dictionary<Type, object> clientConfigurations, int loadedConfigFields) = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
+            XmlConfigProvider configProvider = new(clientConfigurations, loadedConfigFields);
 
             // Toolbar content
-            LoadResult<ToolbarItem[]> toolbarLoadResult = XmlToolbarLoader.Load(Path.Combine("Resources", "toolbar.xml"));
-            if (!toolbarLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(toolbarLoadResult.ExceptionMessage);
-            }
+            ToolbarItem[] clientToolbar = XmlToolbarLoader.Load(Path.Combine("Resources", "toolbar.xml"));
 
             // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
@@ -79,11 +71,11 @@ namespace RMF_Client.DI
                     AppearanceConfig appearanceConfig = provider.GetRequiredService<AppearanceConfig>();
 
                     AppearanceManager appearanceManager = new(appearanceConfig);
-                    appearanceManager.LoadToolbar(toolbarLoadResult.Data!);
+                    appearanceManager.LoadToolbar(clientToolbar);
 
                     appearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
                     {
-                        { "configsLoaded", configLoadResult.Loaded + " / " + configLoadResult.Total },
+                        { "configsLoaded", clientToolbar.Length.ToString() },
                     }, autoUpdate: false); // Your time hasn`t come yet, bro; ClientBootstrapper ​​will sort everything out himself
                     return appearanceManager;
                 });

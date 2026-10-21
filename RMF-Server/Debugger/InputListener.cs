@@ -13,7 +13,6 @@ namespace RMF_Server.Debugger
 {
     internal class InputListener : BackgroundService
     {
-        private readonly IHostApplicationLifetime _lifetime;
         private readonly ICommandRouter _commandRouter;
         private readonly ICommandViewer _commandViewer;
         private readonly IThemeManager _themeManager;
@@ -38,7 +37,6 @@ namespace RMF_Server.Debugger
             ListenerConfig listenerConfig
         )
         {
-            _lifetime = lifetime;
             _commandRouter = commandRouter;
             _commandViewer = commandViewer;
             _themeManager = themeManager;

@@ -1,4 +1,5 @@
-﻿using RMF.Core.Events.Client;
+﻿using Microsoft.Extensions.Logging;
+using RMF.Core.Events.Client;
 using RMF.Core.Events.Server;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ namespace RMF.Core.Events
     public class EventFactory : IEventFactory
     {
         private readonly Dictionary<string, (Func<IEvent> Factory, EventOrigin Origin)> _factories;
+        public int RegisteredCount => _factories.Count;
 
         public EventFactory()
         {

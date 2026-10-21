@@ -12,6 +12,7 @@ namespace RMF.Core.Packets
     public class PacketFactory : IPacketFactory
     {
         private readonly Dictionary<short, (Func<IPacket> Factory, PacketOrigin Origin)> _factories;
+        public int RegisteredCount => _factories.Count;
 
         // Cache data
         private short[]? _cachedClientPacketIds;

@@ -14,6 +14,8 @@ namespace RMF_Server.Commands
         private readonly ILogger<CommandDispatcher> _logger;
         private readonly CommandConfig _commandConfig;
 
+        public int RegisteredCount => _commands.Count;
+
         public CommandDispatcher(
             IEnumerable<IExecutableCommand> commands,
             ILogger<CommandDispatcher> logger,
@@ -47,11 +49,6 @@ namespace RMF_Server.Commands
         public IExecutableCommand[] GetLoadedCommands()
         {
             return _commands.Values.ToArray();
-        }
-
-        public int GetLoadedCommandsCount()
-        {
-            return _commands.Count;
         }
 
         public IExecutableCommand? FindSimilarCommand(string commandHeaderPart)
