@@ -54,6 +54,8 @@ namespace RMF_Server.DI
             _logger.LogInformation("Core subsystems initialized:");
             _logger.LogInformation("Network packets: {Count}", _packetFactory.RegisteredCount);
             _logger.LogInformation("Server events:   {Count}", _eventFactory.RegisteredCount);
+
+            _consoleExtensions.LogSeparator(_logger);
             return Task.CompletedTask;
         }
 

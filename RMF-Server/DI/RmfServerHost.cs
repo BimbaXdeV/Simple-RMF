@@ -123,13 +123,8 @@ namespace RMF_Server.DI
                 {
                     ConnectionConfig connectionConfig = provider.GetRequiredService<ConnectionConfig>();
 
-                    IPAddress ip = connectionConfig.IPAddress != "Any"
-                        ? IPAddress.Parse(connectionConfig.IPAddress ?? "127.0.0.1")
-                        : IPAddress.Any;
-
-                    int port = (connectionConfig.Port >= IPEndPoint.MinPort && connectionConfig.Port <= IPEndPoint.MaxPort)
-                        ? connectionConfig.Port
-                        : 8000;  // Default port if the provided port is invalid
+                    IPAddress ip = connectionConfig.IPAddress;
+                    int port = connectionConfig.Port;
 
                     TcpListener listener = new(ip, port);
                     return new TcpListenerAdapter(listener);

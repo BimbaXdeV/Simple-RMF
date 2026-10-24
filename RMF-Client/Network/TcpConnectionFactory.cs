@@ -16,18 +16,13 @@ namespace RMF_Client.Network
 
         public TcpConnectionFactory(ConnectionConfig connectionConfig)
         {
-            this._connectionConfig = connectionConfig;
+            _connectionConfig = connectionConfig;
         }
 
         public INetworkConnection CreateConnection()
         {
-            IPAddress ip = this._connectionConfig.IPAddress != "Any"
-                ? IPAddress.Parse(this._connectionConfig.IPAddress ?? "127.0.0.1")
-                : IPAddress.Any;
-
-            int port = this._connectionConfig.Port >= IPEndPoint.MinPort && this._connectionConfig.Port <= IPEndPoint.MaxPort
-                ? this._connectionConfig.Port
-                : 8000;  // Default port if the provided port is invalid
+            IPAddress ip = _connectionConfig.IPAddress;
+            int port = _connectionConfig.Port;
 
             TcpClient tcpClient = new(ip.ToString(), port);
             return new TcpConnection(tcpClient);
