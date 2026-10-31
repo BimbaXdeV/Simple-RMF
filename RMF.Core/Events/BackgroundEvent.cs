@@ -1,6 +1,7 @@
 ﻿using RMF.Core.Network;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -26,13 +27,11 @@ namespace RMF.Core.Events
                     return;
                 }
 
-                try
+                TypeConverter converter = TypeDescriptor.GetConverter(typeof(T));
+                if (converter.CanConvertFrom(typeof(object)))
                 {
-                    T convertedValue = (T)Convert.ChangeType(value, typeof(T));
+                    T convertedValue = (T)converter.ConvertFrom(value)!;
                     setter(convertedValue);
-                }
-                catch
-                {
                 }
             }
         }

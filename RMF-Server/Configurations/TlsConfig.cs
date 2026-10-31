@@ -59,15 +59,13 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<string>(configDict, nameof(CertificateFilePath), ref loadedFields, v => CertificateFilePath = v);
-            ApplyValue<string>(configDict, nameof(CertificateName), ref loadedFields, v => CertificateName = v);
-            ApplyValue<string>(configDict, nameof(CertificateFileName), ref loadedFields, v => CertificateFileName = v);
-            ApplyValue<string>(configDict, nameof(CertificatePassword), ref loadedFields, v => CertificatePassword = v);
-            ApplyValue<int>(configDict, nameof(CertificateDurationDays), ref loadedFields, v => CertificateDurationDays = v);
-            return loadedFields;
+            ApplyValue<string>(configDict, nameof(CertificateFilePath), v => CertificateFilePath = v);
+            ApplyValue<string>(configDict, nameof(CertificateName), v => CertificateName = v);
+            ApplyValue<string>(configDict, nameof(CertificateFileName), v => CertificateFileName = v);
+            ApplyValue<string>(configDict, nameof(CertificatePassword), v => CertificatePassword = v);
+            ApplyValue<int>(configDict, nameof(CertificateDurationDays), v => CertificateDurationDays = v);
         }
     }
 }

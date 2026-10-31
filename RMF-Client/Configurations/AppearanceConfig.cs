@@ -28,12 +28,10 @@ namespace RMF_Client.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<string>(configDict, nameof(AppTitle), ref loadedFields, v => AppTitle = v);
-            ApplyValue<int>(configDict, nameof(CurtainStepDelayMsecs), ref loadedFields, v => CurtainStepDelayMsecs = v);
-            return loadedFields;
+            ApplyValue<string>(configDict, nameof(AppTitle), v => AppTitle = v);
+            ApplyValue<int>(configDict, nameof(CurtainStepDelayMsecs), v => CurtainStepDelayMsecs = v);
         }
     }
 }

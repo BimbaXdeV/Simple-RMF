@@ -34,13 +34,11 @@ namespace RMF_Client.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<string>(configDict, nameof(CertificateFingerprint), ref loadedFields, v => CertificateFingerprint = v);
-            ApplyValue<int>(configDict, nameof(TlsHandshakeTimeoutSecs), ref loadedFields, v => TlsHandshakeTimeoutSecs = v);
-            ApplyValue<int>(configDict, nameof(MaxPacketBufferKB), ref loadedFields, v => MaxPacketBufferKB = v);
-            return loadedFields;
+            ApplyValue<string>(configDict, nameof(CertificateFingerprint), v => CertificateFingerprint = v);
+            ApplyValue<int>(configDict, nameof(TlsHandshakeTimeoutSecs), v => TlsHandshakeTimeoutSecs = v);
+            ApplyValue<int>(configDict, nameof(MaxPacketBufferKB), v => MaxPacketBufferKB = v);
         }
     }
 }

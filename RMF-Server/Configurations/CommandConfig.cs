@@ -24,13 +24,11 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<char>(configDict, nameof(InlineCommandDefautSign), ref loadedFields, v => InlineCommandDefautSign = v);
-            ApplyValue<bool>(configDict, nameof(InlineSuggestionsEnabled), ref loadedFields, v => InlineSuggestionsEnabled = v);
-            ApplyValue<int>(configDict, nameof(InlineSuggestionsMinChars), ref loadedFields, v => InlineSuggestionsMinChars = v);
-            return loadedFields;
+            ApplyValue<char>(configDict, nameof(InlineCommandDefautSign), v => InlineCommandDefautSign = v);
+            ApplyValue<bool>(configDict, nameof(InlineSuggestionsEnabled), v => InlineSuggestionsEnabled = v);
+            ApplyValue<int>(configDict, nameof(InlineSuggestionsMinChars), v => InlineSuggestionsMinChars = v);
         }
     }
 }

@@ -26,6 +26,8 @@ namespace RMF_Server.Channels
 
         private readonly Dictionary<int, ChannelContext> _channels;
 
+        public int RegisteredCount => this._channels.Count;
+
         public ChannelDispatcher(
             IPacketFactory packetFactory,
             IServerPacketProcessor packetProcessor,
@@ -71,8 +73,6 @@ namespace RMF_Server.Channels
 
                 this._channels.TryAdd(k, new ChannelContext(rawChannel, workerTask, cts));
             }
-
-            this._logger.LogInformation("Successfully started {Loaded} inbound channels", this._channels.Count);
             return Task.CompletedTask;
         }
 

@@ -31,14 +31,12 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<IPAddress>(configDict, nameof(IPAddress), ref loadedFields, v => IPAddress = v);
-            ApplyValue<int>(configDict, nameof(Port), ref loadedFields, v => Port = v);
-            ApplyValue<int>(configDict, nameof(ReceiveTimeoutSecs), ref loadedFields, v => ReceiveTimeoutSecs = v);
-            ApplyValue<bool>(configDict, nameof(EnableForceShutdown), ref loadedFields, v => EnableForceShutdown = v);
-            return loadedFields;
+            ApplyValue<IPAddress>(configDict, nameof(IPAddress), v => IPAddress = v);
+            ApplyValue<int>(configDict, nameof(Port), v => Port = v);
+            ApplyValue<int>(configDict, nameof(ReceiveTimeoutSecs), v => ReceiveTimeoutSecs = v);
+            ApplyValue<bool>(configDict, nameof(EnableForceShutdown), v => EnableForceShutdown = v);
         }
     }
 }

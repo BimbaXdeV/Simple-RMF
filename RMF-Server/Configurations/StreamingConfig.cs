@@ -45,18 +45,16 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<string>(configDict, nameof(ScreenshotsFilePath), ref loadedFields, v => ScreenshotsFilePath = v);
-            ApplyValue<ScreenFormats>(configDict, nameof(ScreenshotFrameFormat), ref loadedFields, v => ScreenshotFrameFormat = v);
-            ApplyValue<int>(configDict, nameof(ScreenshotQualityPercentage), ref loadedFields, v => ScreenshotQualityPercentage = v);
-            ApplyValue<ScreenFormats>(configDict, nameof(StreamingFrameFormat), ref loadedFields, v => StreamingFrameFormat = v);
-            ApplyValue<int>(configDict, nameof(StreamingQualityPercentage), ref loadedFields, v => StreamingQualityPercentage = v);
-            ApplyValue<int>(configDict, nameof(StreamingFrameUpdateRate), ref loadedFields, v => StreamingFrameUpdateRate = v);
-            ApplyValue<int>(configDict, nameof(StreamingTargetFPS), ref loadedFields, v => StreamingTargetFPS = v);
-            ApplyValue<bool>(configDict, nameof(EnableStreamingStatsOverlay), ref loadedFields, v => EnableStreamingStatsOverlay = v);
-            return loadedFields;
+            ApplyValue<string>(configDict, nameof(ScreenshotsFilePath), v => ScreenshotsFilePath = v);
+            ApplyValue<ScreenFormats>(configDict, nameof(ScreenshotFrameFormat), v => ScreenshotFrameFormat = v);
+            ApplyValue<int>(configDict, nameof(ScreenshotQualityPercentage), v => ScreenshotQualityPercentage = v);
+            ApplyValue<ScreenFormats>(configDict, nameof(StreamingFrameFormat), v => StreamingFrameFormat = v);
+            ApplyValue<int>(configDict, nameof(StreamingQualityPercentage), v => StreamingQualityPercentage = v);
+            ApplyValue<int>(configDict, nameof(StreamingFrameUpdateRate), v => StreamingFrameUpdateRate = v);
+            ApplyValue<int>(configDict, nameof(StreamingTargetFPS), v => StreamingTargetFPS = v);
+            ApplyValue<bool>(configDict, nameof(EnableStreamingStatsOverlay), v => EnableStreamingStatsOverlay = v);
         }
     }
 }

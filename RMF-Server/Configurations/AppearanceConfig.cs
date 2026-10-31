@@ -43,14 +43,12 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<string>(configDict, nameof(AppTitle), ref loadedFields, v => AppTitle = v);
-            ApplyValue<string>(configDict, nameof(WindowTitle), ref loadedFields, v => WindowTitle = v);
-            ApplyValue<short>(configDict, nameof(WindowWidth), ref loadedFields, v => WindowWidth = v);
-            ApplyValue<short>(configDict, nameof(WindowHeight), ref loadedFields, v => WindowHeight = v);
-            return loadedFields;
+            ApplyValue<string>(configDict, nameof(AppTitle), v => AppTitle = v);
+            ApplyValue<string>(configDict, nameof(WindowTitle), v => WindowTitle = v);
+            ApplyValue<short>(configDict, nameof(WindowWidth), v => WindowWidth = v);
+            ApplyValue<short>(configDict, nameof(WindowHeight), v => WindowHeight = v);
         }
     }
 }

@@ -54,20 +54,18 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<bool>(configDict, nameof(EnableWordWrapIndent), ref loadedFields, v => EnableWordWrapIndent = v);
-            ApplyValue<bool>(configDict, nameof(EnableLogSaving), ref loadedFields, v => EnableLogSaving = v);
-            ApplyValue<int>(configDict, nameof(MaxLogSavingDurationSecs), ref loadedFields, v => MaxLogSavingDurationSecs = v);
-            ApplyValue<string>(configDict, nameof(LoggingFilePath), ref loadedFields, v => LoggingFilePath = v);
-            ApplyValue<bool>(configDict, nameof(EnableMultipleBackup), ref loadedFields, v => EnableMultipleBackup = v);
-            ApplyValue<int>(configDict, nameof(MaxLogFileCapacityKB), ref loadedFields, v => MaxLogFileCapacityKB = v);
-            ApplyValue<int>(configDict, nameof(LoggingHistoryLength), ref loadedFields, v => LoggingHistoryLength = v);
-            ApplyValue<char>(configDict, nameof(LoggingSeparatorChar), ref loadedFields, v => LoggingSeparatorChar = v);
-            ApplyValue<int>(configDict, nameof(LoggingSeparatorLength), ref loadedFields, v => LoggingSeparatorLength = v);
-            ApplyValue<int>(configDict, nameof(LoggingHandlerDelayMsecs), ref loadedFields, v => LoggingHandlerDelayMsecs = v);
-            return loadedFields;
+            ApplyValue<bool>(configDict, nameof(EnableWordWrapIndent), v => EnableWordWrapIndent = v);
+            ApplyValue<bool>(configDict, nameof(EnableLogSaving), v => EnableLogSaving = v);
+            ApplyValue<int>(configDict, nameof(MaxLogSavingDurationSecs), v => MaxLogSavingDurationSecs = v);
+            ApplyValue<string>(configDict, nameof(LoggingFilePath), v => LoggingFilePath = v);
+            ApplyValue<bool>(configDict, nameof(EnableMultipleBackup), v => EnableMultipleBackup = v);
+            ApplyValue<int>(configDict, nameof(MaxLogFileCapacityKB), v => MaxLogFileCapacityKB = v);
+            ApplyValue<int>(configDict, nameof(LoggingHistoryLength), v => LoggingHistoryLength = v);
+            ApplyValue<char>(configDict, nameof(LoggingSeparatorChar), v => LoggingSeparatorChar = v);
+            ApplyValue<int>(configDict, nameof(LoggingSeparatorLength), v => LoggingSeparatorLength = v);
+            ApplyValue<int>(configDict, nameof(LoggingHandlerDelayMsecs), v => LoggingHandlerDelayMsecs = v);
         }
     }
 }

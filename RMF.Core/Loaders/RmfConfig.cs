@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,27 +9,33 @@ namespace RMF.Core.Loaders
 {
     public abstract class RmfConfig : IConfig
     {
-        public abstract bool ValidateFields(out string? exceptionMessage);
-        public abstract int LoadFields(Dictionary<string, object> configDict);
+        private int _loadedFields = 0;
+        public int LoadedFields => _loadedFields;
 
-        protected static void ApplyValue<T>(IReadOnlyDictionary<string, object> configDict, string key, ref int loadCounter, Action<T> setter)
+        public abstract bool ValidateFields(out string? exceptionMessage);
+        public abstract void LoadFields(IReadOnlyDictionary<string, string> configDict);
+
+        protected void ApplyValue<T>(IReadOnlyDictionary<string, string> configDict, string key, Action<T> setter)
         {
-            if (configDict.TryGetValue(key, out object? value) && value != null)
+            if (configDict.TryGetValue(key, out string? value) && value != null)
             {
                 if (value is T typedValue)
                 {
                     setter(typedValue);
-                    loadCounter++;
+                    _loadedFields++;
                     return;
                 }
-                try
+
+                TypeConverter converter = TypeDescriptor.GetConverter(typeof(T));
+                if (converter.CanConvertFrom(typeof(string)))
                 {
-                    T convertedValue = (T)Convert.ChangeType(value, typeof(T));
+                    T convertedValue = (T)converter.ConvertFromString(value)!;
                     setter(convertedValue);
-                    loadCounter++;
+                    _loadedFields++;
                 }
-                catch
+                else
                 {
+                    throw new InvalidOperationException($"Cannot convert \"{value}\" to type {typeof(T).Name}");
                 }
             }
         }

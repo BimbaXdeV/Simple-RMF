@@ -17,11 +17,9 @@ namespace RMF_Client.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<bool>(configDict, nameof(EnableCollectingSessionStats), ref loadedFields, v => EnableCollectingSessionStats = v);
-            return loadedFields;
+            ApplyValue<bool>(configDict, nameof(EnableCollectingSessionStats), v => EnableCollectingSessionStats = v);
         }
     }
 }

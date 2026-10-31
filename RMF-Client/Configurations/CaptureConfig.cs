@@ -28,12 +28,10 @@ namespace RMF_Client.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<int>(configDict, nameof(MaxProcessorCores), ref loadedFields, v => MaxProcessorCores = v);
-            ApplyValue<int>(configDict, nameof(MetricsUpdateRate), ref loadedFields, v => MetricsUpdateRate = v);
-            return loadedFields;
+            ApplyValue<int>(configDict, nameof(MaxProcessorCores), v => MaxProcessorCores = v);
+            ApplyValue<int>(configDict, nameof(MetricsUpdateRate), v => MetricsUpdateRate = v);
         }
     }
 }

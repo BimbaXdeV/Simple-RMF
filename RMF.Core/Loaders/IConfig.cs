@@ -8,7 +8,9 @@ namespace RMF.Core.Loaders
 {
     public interface IConfig
     {
+        int LoadedFields { get; }
+
         bool ValidateFields(out string? exceptionMessage);
-        int LoadFields(Dictionary<string, object> configDict);
+        void LoadFields(IReadOnlyDictionary<string, string> configDict);
     }
 }

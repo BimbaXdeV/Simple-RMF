@@ -36,13 +36,6 @@ namespace RMF_Client.DI
             // [!] Ultimately, the decision was made to completely abandon partial resource loading
             // and instead throw an exception immediately if external files or parsing systems failed
 
-            // Configurations
-            (Dictionary<Type, object> clientConfigurations, int loadedConfigFields) = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
-            XmlConfigProvider configProvider = new(clientConfigurations, loadedConfigFields);
-
-            // Toolbar content
-            ToolbarItem[] clientToolbar = XmlToolbarLoader.Load(Path.Combine("Resources", "toolbar.xml"));
-
             // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
             builder.ConfigureLogging(logging =>
@@ -52,8 +45,11 @@ namespace RMF_Client.DI
             builder.ConfigureServices(services =>
             {
                 // Configurations
-                services.AddSingleton(configProvider);
-                services.AddSingletonConfigurations();
+                services.AddSingleton(provider =>
+                {
+                    Dictionary<string, string> configDict = XmlConfigLoader.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "config.xml"));
+                    return new RmfConfigProvider(configDict);
+                });
 
                 // Sessions & Network
                 services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>
@@ -71,6 +67,7 @@ namespace RMF_Client.DI
                     AppearanceConfig appearanceConfig = provider.GetRequiredService<AppearanceConfig>();
 
                     AppearanceManager appearanceManager = new(appearanceConfig);
+                    ToolbarItem[] clientToolbar = XmlToolbarLoader.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "toolbar.xml"));
                     appearanceManager.LoadToolbar(clientToolbar);
 
                     appearanceManager.ReplaceToolbarContent(new Dictionary<string, string>

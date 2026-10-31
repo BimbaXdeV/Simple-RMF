@@ -22,11 +22,9 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<int>(configDict, nameof(ChannelPacketsCapacity), ref loadedFields, v => ChannelPacketsCapacity = v);
-            return loadedFields;
+            ApplyValue<int>(configDict, nameof(ChannelPacketsCapacity), v => ChannelPacketsCapacity = v);
         }
     }
 }

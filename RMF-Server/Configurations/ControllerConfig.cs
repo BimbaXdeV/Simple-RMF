@@ -34,18 +34,16 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<bool>(configDict, nameof(EnableCollectingSessionStats), ref loadedFields, v => EnableCollectingSessionStats = v);
-            ApplyValue<bool>(configDict, nameof(EnableWelcomeHandshake), ref loadedFields, v => EnableWelcomeHandshake = v);
-            ApplyValue<bool>(configDict, nameof(EnableBuildComparison), ref loadedFields, v => EnableBuildComparison = v);
-            ApplyValue<bool>(configDict, nameof(EnableCollectingClientInfo), ref loadedFields, v => EnableCollectingClientInfo = v);
-            ApplyValue<bool>(configDict, nameof(EnableClientHeartbeat), ref loadedFields, v => EnableClientHeartbeat = v);
-            ApplyValue<int>(configDict, nameof(ClientHeartbeatIntervalSecs), ref loadedFields, v => ClientHeartbeatIntervalSecs = v);
-            ApplyValue<bool>(configDict, nameof(EnableRelativeParting), ref loadedFields, v => EnableRelativeParting = v);
-            ApplyValue<int>(configDict, nameof(PartingTimeoutSecs), ref loadedFields, v => PartingTimeoutSecs = v);
-            return loadedFields;
+            ApplyValue<bool>(configDict, nameof(EnableCollectingSessionStats), v => EnableCollectingSessionStats = v);
+            ApplyValue<bool>(configDict, nameof(EnableWelcomeHandshake), v => EnableWelcomeHandshake = v);
+            ApplyValue<bool>(configDict, nameof(EnableBuildComparison), v => EnableBuildComparison = v);
+            ApplyValue<bool>(configDict, nameof(EnableCollectingClientInfo), v => EnableCollectingClientInfo = v);
+            ApplyValue<bool>(configDict, nameof(EnableClientHeartbeat), v => EnableClientHeartbeat = v);
+            ApplyValue<int>(configDict, nameof(ClientHeartbeatIntervalSecs), v => ClientHeartbeatIntervalSecs = v);
+            ApplyValue<bool>(configDict, nameof(EnableRelativeParting), v => EnableRelativeParting = v);
+            ApplyValue<int>(configDict, nameof(PartingTimeoutSecs), v => PartingTimeoutSecs = v);
         }
     }
 }

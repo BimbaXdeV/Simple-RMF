@@ -92,9 +92,9 @@ namespace RMF_Server.Logic
         {
             if (this._sessionManager.GetClientSession(endPoint.ToString(), out _))
             {
-                if (RmfVersion.Core?.Major != packet.CoreMajorVersion ||
-                    RmfVersion.Core?.Minor != packet.CoreMinorVersion ||
-                    RmfVersion.Core?.Build != packet.CoreBuildVersion)
+                if (RmfMeta.CoreVersion?.Major != packet.CoreMajorVersion ||
+                    RmfMeta.CoreVersion?.Minor != packet.CoreMinorVersion ||
+                    RmfMeta.CoreVersion?.Build != packet.CoreBuildVersion)
                 {
                     string clientCoreVersion = $"{packet.CoreMajorVersion}.{packet.CoreMinorVersion}.{packet.CoreBuildVersion}";
 
@@ -104,14 +104,14 @@ namespace RMF_Server.Logic
                 }
 
                 string clientAppVersion = $"{packet.AppMajorVersion}.{packet.AppMinorVersion}.{packet.AppBuildVersion}";
-                if (RmfVersion.App?.Major != packet.AppMajorVersion || RmfVersion.App.Minor != packet.AppMinorVersion)
+                if (RmfMeta.AppVersion?.Major != packet.AppMajorVersion || RmfMeta.AppVersion.Minor != packet.AppMinorVersion)
                 {
                     this._logger.LogError("Client {EndPoint} is running a different version of RMF.App ({ReceivedAppVersion}), disconnecting...", endPoint, clientAppVersion);
                     this._sessionManager.Disconnect(endPoint.ToString());
                     return;
                 }
 
-                if (RmfVersion.App?.Build != packet.AppBuildVersion)
+                if (RmfMeta.AppVersion?.Build != packet.AppBuildVersion)
                 {
                     this._logger.LogWarning("The connected client has a different build version ({ReceivedAppVersion}), be careful", clientAppVersion);
                 }

@@ -47,16 +47,14 @@ namespace RMF_Server.Configurations
             return true;
         }
 
-        public override int LoadFields(Dictionary<string, object> configDict)
+        public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            int loadedFields = 0;
-            ApplyValue<int>(configDict, nameof(MaxConnections), ref loadedFields, v => MaxConnections = v);
-            ApplyValue<int>(configDict, nameof(MaxConnectionsPerIP), ref loadedFields, v => MaxConnectionsPerIP = v);
-            ApplyValue<int>(configDict, nameof(MaxPacketBufferKB), ref loadedFields, v => MaxPacketBufferKB = v);
-            ApplyValue<int>(configDict, nameof(MaxPacketRate), ref loadedFields, v => MaxPacketRate = v);
-            ApplyValue<bool>(configDict, nameof(EnableBlacklistSaving), ref loadedFields, v => EnableBlacklistSaving = v);
-            ApplyValue<string>(configDict, nameof(BlacklistFilePath), ref loadedFields, v => BlacklistFilePath = v);
-            return loadedFields;
+            ApplyValue<int>(configDict, nameof(MaxConnections), v => MaxConnections = v);
+            ApplyValue<int>(configDict, nameof(MaxConnectionsPerIP), v => MaxConnectionsPerIP = v);
+            ApplyValue<int>(configDict, nameof(MaxPacketBufferKB), v => MaxPacketBufferKB = v);
+            ApplyValue<int>(configDict, nameof(MaxPacketRate), v => MaxPacketRate = v);
+            ApplyValue<bool>(configDict, nameof(EnableBlacklistSaving), v => EnableBlacklistSaving = v);
+            ApplyValue<string>(configDict, nameof(BlacklistFilePath), v => BlacklistFilePath = v);
         }
     }
 }
