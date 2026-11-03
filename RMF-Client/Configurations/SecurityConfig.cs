@@ -36,7 +36,7 @@ namespace RMF_Client.Configurations
 
         public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            ApplyValue<string>(configDict, nameof(CertificateFingerprint), v => CertificateFingerprint = v);
+            ApplyValue(configDict, nameof(CertificateFingerprint), v => CertificateFingerprint = v);
             ApplyValue<int>(configDict, nameof(TlsHandshakeTimeoutSecs), v => TlsHandshakeTimeoutSecs = v);
             ApplyValue<int>(configDict, nameof(MaxPacketBufferKB), v => MaxPacketBufferKB = v);
         }

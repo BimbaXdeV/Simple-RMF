@@ -1,9 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ColorTheme>
 	<!-- Initial Colors -->
-	<add key="SuccessfullyLoadedCounter" R="94" G="255" B="102"/>
-	<add key="PartiallyLoadedCounter" R="255" G="187" B="51"/>
-	<add key="FailedToLoadCounter" R="255" G="94" B="94"/>
+	<add key="InitHighlight" R="130" G="255" B="136"/>
+	<add key="InitSecondary" R="118" G="180" B="121"/>
+	<add key="SuccessfullyLoaded" R="99" G="220" B="105"/>
+	<add key="FailedToLoad" R="255" G="187" B="51"/>
 
 	<!-- Input Colors -->
 	<add key="AdminInput" R="255" G="255" B="255"/>
@@ -26,7 +27,7 @@
 	<add key="Separator" R="175" G="175" B="175"/>
 	<add key="LoggingTrace" R="128" G="200" B="255"/>
 	<add key="LoggingDebug" R="128" G="145" B="255"/>
-	<add key="LoggingInformation" R="193" G="255" B="128"/>
+	<add key="LoggingInformation" R="170" G="217" B="124"/>
 	<add key="LoggingWarning" R="255" G="187" B="51"/>
 	<add key="LoggingError" R="255" G="94" B="94"/>
 	<add key="LoggingCritical" R="200" G="26" B="26"/>

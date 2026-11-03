@@ -54,7 +54,7 @@ namespace RMF_Server.Configurations
             ApplyValue<int>(configDict, nameof(MaxPacketBufferKB), v => MaxPacketBufferKB = v);
             ApplyValue<int>(configDict, nameof(MaxPacketRate), v => MaxPacketRate = v);
             ApplyValue<bool>(configDict, nameof(EnableBlacklistSaving), v => EnableBlacklistSaving = v);
-            ApplyValue<string>(configDict, nameof(BlacklistFilePath), v => BlacklistFilePath = v);
+            ApplyValue(configDict, nameof(BlacklistFilePath), v => BlacklistFilePath = v);
         }
     }
 }

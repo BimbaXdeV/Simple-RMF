@@ -61,10 +61,10 @@ namespace RMF_Server.Configurations
 
         public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            ApplyValue<string>(configDict, nameof(CertificateFilePath), v => CertificateFilePath = v);
-            ApplyValue<string>(configDict, nameof(CertificateName), v => CertificateName = v);
-            ApplyValue<string>(configDict, nameof(CertificateFileName), v => CertificateFileName = v);
-            ApplyValue<string>(configDict, nameof(CertificatePassword), v => CertificatePassword = v);
+            ApplyValue(configDict, nameof(CertificateFilePath), v => CertificateFilePath = v);
+            ApplyValue(configDict, nameof(CertificateName), v => CertificateName = v);
+            ApplyValue(configDict, nameof(CertificateFileName), v => CertificateFileName = v);
+            ApplyValue(configDict, nameof(CertificatePassword), v => CertificatePassword = v);
             ApplyValue<int>(configDict, nameof(CertificateDurationDays), v => CertificateDurationDays = v);
         }
     }

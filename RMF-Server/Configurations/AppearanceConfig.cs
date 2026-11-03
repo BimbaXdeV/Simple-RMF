@@ -45,8 +45,8 @@ namespace RMF_Server.Configurations
 
         public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            ApplyValue<string>(configDict, nameof(AppTitle), v => AppTitle = v);
-            ApplyValue<string>(configDict, nameof(WindowTitle), v => WindowTitle = v);
+            ApplyValue(configDict, nameof(AppTitle), v => AppTitle = v);
+            ApplyValue(configDict, nameof(WindowTitle), v => WindowTitle = v);
             ApplyValue<short>(configDict, nameof(WindowWidth), v => WindowWidth = v);
             ApplyValue<short>(configDict, nameof(WindowHeight), v => WindowHeight = v);
         }

@@ -30,7 +30,7 @@ namespace RMF_Client.Configurations
 
         public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            ApplyValue<string>(configDict, nameof(AppTitle), v => AppTitle = v);
+            ApplyValue(configDict, nameof(AppTitle), v => AppTitle = v);
             ApplyValue<int>(configDict, nameof(CurtainStepDelayMsecs), v => CurtainStepDelayMsecs = v);
         }
     }

@@ -47,10 +47,10 @@ namespace RMF_Server.Configurations
 
         public override void LoadFields(IReadOnlyDictionary<string, string> configDict)
         {
-            ApplyValue<string>(configDict, nameof(ScreenshotsFilePath), v => ScreenshotsFilePath = v);
-            ApplyValue<ScreenFormats>(configDict, nameof(ScreenshotFrameFormat), v => ScreenshotFrameFormat = v);
+            ApplyValue(configDict, nameof(ScreenshotsFilePath), v => ScreenshotsFilePath = v);
+            ApplyEnum<ScreenFormats>(configDict, nameof(ScreenshotFrameFormat), v => ScreenshotFrameFormat = v);
             ApplyValue<int>(configDict, nameof(ScreenshotQualityPercentage), v => ScreenshotQualityPercentage = v);
-            ApplyValue<ScreenFormats>(configDict, nameof(StreamingFrameFormat), v => StreamingFrameFormat = v);
+            ApplyEnum<ScreenFormats>(configDict, nameof(StreamingFrameFormat), v => StreamingFrameFormat = v);
             ApplyValue<int>(configDict, nameof(StreamingQualityPercentage), v => StreamingQualityPercentage = v);
             ApplyValue<int>(configDict, nameof(StreamingFrameUpdateRate), v => StreamingFrameUpdateRate = v);
             ApplyValue<int>(configDict, nameof(StreamingTargetFPS), v => StreamingTargetFPS = v);

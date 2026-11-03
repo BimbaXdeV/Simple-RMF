@@ -59,7 +59,7 @@ namespace RMF_Server.Configurations
             ApplyValue<bool>(configDict, nameof(EnableWordWrapIndent), v => EnableWordWrapIndent = v);
             ApplyValue<bool>(configDict, nameof(EnableLogSaving), v => EnableLogSaving = v);
             ApplyValue<int>(configDict, nameof(MaxLogSavingDurationSecs), v => MaxLogSavingDurationSecs = v);
-            ApplyValue<string>(configDict, nameof(LoggingFilePath), v => LoggingFilePath = v);
+            ApplyValue(configDict, nameof(LoggingFilePath), v => LoggingFilePath = v);
             ApplyValue<bool>(configDict, nameof(EnableMultipleBackup), v => EnableMultipleBackup = v);
             ApplyValue<int>(configDict, nameof(MaxLogFileCapacityKB), v => MaxLogFileCapacityKB = v);
             ApplyValue<int>(configDict, nameof(LoggingHistoryLength), v => LoggingHistoryLength = v);
