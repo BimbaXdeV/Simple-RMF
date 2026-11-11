@@ -8,8 +8,9 @@ namespace RMF_Server.Commands
 {
     internal interface ICommandViewer
     {
+        int RegisteredCount { get; }
+
         IExecutableCommand[] GetLoadedCommands();
-        int GetLoadedCommandsCount();
         IExecutableCommand? FindSimilarCommand(string commandHeaderPart);
     }
 }

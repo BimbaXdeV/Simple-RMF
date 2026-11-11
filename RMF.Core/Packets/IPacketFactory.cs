@@ -8,8 +8,9 @@ namespace RMF.Core.Packets
 {
     public interface IPacketFactory
     {
-        Type[] GetRegisteredTypes();
+        int RegisteredCount { get; }
+
         short[] GetClientPacketIDs();
-        Packet? CreatePacket(short id);
+        IPacket? CreatePacket(short id);
     }
 }

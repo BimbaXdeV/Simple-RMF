@@ -1,4 +1,5 @@
-﻿using RMF.Core.Packets;
+﻿using RMF.Core.Events;
+using RMF.Core.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,8 +22,8 @@ namespace RMF.Core.Network
         Task<PacketHeader> ReadHeaderAsync(CancellationToken token);
         Task<byte[]> ReadPayloadAsync(int length, CancellationToken token);
 
-        void SendPacket(Packet packet);
-        void StartEvent(string eventName, Dictionary<string, object> eventSettings);
+        void SendPacket(IPacket packet);
+        EventStartupResult StartEvent(string eventName, IReadOnlyDictionary<string, object> eventSettings);
         void IncrementSendPackets();
         void IncrementReceivedPackets();
         void StopProcessing();

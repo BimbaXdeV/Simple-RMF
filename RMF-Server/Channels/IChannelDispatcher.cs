@@ -9,6 +9,8 @@ namespace RMF_Server.Channels
 {
     public interface IChannelDispatcher
     {
+        int RegisteredCount { get; }
+
         Task EnqueuePacketAsync(PacketContext context);
         bool IsChannelExists(int key);
     }

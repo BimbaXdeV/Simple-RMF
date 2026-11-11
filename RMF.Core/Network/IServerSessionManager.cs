@@ -16,7 +16,7 @@ namespace RMF.Core.Network
 
         event Action<int>? ConnectionCountChanged;
 
-        void BroadcastPacket(Packet packet, CancellationToken token);
+        void BroadcastPacket(IPacket packet, CancellationToken token);
         IServerClientSession? NewConnection(INetworkConnection connection, CancellationToken token);
         bool GetClientSession(string endPoint, out IServerClientSession? session);
         Guid? GetSessionID(string endPoint);

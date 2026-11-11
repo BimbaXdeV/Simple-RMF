@@ -29,8 +29,8 @@ namespace RMF_Server.Commands
 
         public override Task ExecuteAsync(string[] args, CancellationToken token)
         {
-            string? serverVersion = RmfVersion.App?.ToString(3);
-            string? coreVersion = RmfVersion.Core?.ToString(3);
+            string? serverVersion = RmfMeta.AppVersion?.ToString(3);
+            string? coreVersion = RmfMeta.CoreVersion?.ToString(3);
 
             if (serverVersion != null && coreVersion != null)
             {

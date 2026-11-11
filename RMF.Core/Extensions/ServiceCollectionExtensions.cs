@@ -10,12 +10,12 @@ namespace RMF.Core.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddSingletonXmlConfig<TConfig>(this IServiceCollection services) where TConfig : class, new()
+        public static IServiceCollection AddSingletonXmlConfig<T>(this IServiceCollection services) where T : class, IConfig, new()
         {
             return services.AddSingleton(provider =>
             {
-                XmlConfigProvider configProvider = provider.GetRequiredService<XmlConfigProvider>();
-                return configProvider.GetConfig<TConfig>();
+                RmfConfigProvider configProvider = provider.GetRequiredService<RmfConfigProvider>();
+                return configProvider.GetConfig<T>();
             });
         }
     }

@@ -69,6 +69,6 @@
 	<add key="MaxLogFileCapacityKB" value="1024"/>
 	<add key="LoggingHistoryLength" value="500"/>
 	<add key="LoggingSeparatorChar" value="-"/>
-	<add key="LoggingSeparatorLength" value="36"/>
+	<add key="LoggingSeparatorLength" value="64"/>
 	<add key="LoggingHandlerDelayMsecs" value="100"/>
 </Settings>

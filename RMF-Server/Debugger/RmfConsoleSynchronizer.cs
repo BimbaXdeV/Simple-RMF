@@ -1,6 +1,6 @@
 ﻿namespace RMF_Server.Debugger
 {
-    internal class ConsoleSynchronizer : IConsoleSynchronizer
+    internal class RmfConsoleSynchronizer : IConsoleSynchronizer
     {
         // It is accessed directly via a memory address, bypassing the cache.
         // This should prevent desync... Probably

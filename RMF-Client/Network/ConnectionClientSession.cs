@@ -27,22 +27,22 @@ namespace RMF_Client.Network
             CancellationToken token = default
         ) : base(connection, reader, packetSender, eventFactory, channelCapacity, collectingStats, token)
         {
-            this.ConnectedTime = DateTime.UtcNow;
+            ConnectedTime = DateTime.UtcNow;
         }
 
         public bool IsEventRunning(string eventName)
         {
-            return this.Events.IsRunning(eventName);
+            return Events.IsRunning(eventName);
         }
 
         public void StopEvent(string eventName)
         {
-            this.Events.StopEvent(eventName);
+            Events.StopEvent(eventName);
         }
 
         public void StopAllEvents()
         {
-            this.Events.StopAllRunning();
+            Events.StopAllRunning();
         }
     }
 }

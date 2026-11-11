@@ -51,7 +51,7 @@ namespace RMF_Server.Logic
             this._channelConfig = channelConfig;
         }
 
-        public void BroadcastPacket(Packet packet, CancellationToken token)
+        public void BroadcastPacket(IPacket packet, CancellationToken token)
         {
             int totalTransferedPackets = 0;
             foreach (IServerClientSession session in this._connections.Values)

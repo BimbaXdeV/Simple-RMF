@@ -13,7 +13,7 @@ namespace RMF.Core.Events.Server
 {
     public class HeartbeatEvent : BackgroundEvent
     {
-        public int IntervalSecs { get; set; } = 0;
+        public int IntervalSecs { get; set; }
 
         protected override async Task HandleLogic(ISession session, CancellationToken token)
         {
@@ -29,6 +29,22 @@ namespace RMF.Core.Events.Server
                 session.SendPacket(pingRequest);
                 await Task.Delay(this.IntervalSecs * 1000, token);
             }
+        }
+
+        public override bool ValidateSettings(out string? exceptionMessage)
+        {
+            exceptionMessage = null;
+            if (this.IntervalSecs <= 0)
+            {
+                exceptionMessage = "IntervalSecs must be greater than 0";
+                return false;
+            }
+            return true;
+        }
+
+        public override void ApplySettings(IReadOnlyDictionary<string, object> settings)
+        {
+            ApplyValue<int>(settings, nameof(IntervalSecs), v => IntervalSecs = v);
         }
     }
 }

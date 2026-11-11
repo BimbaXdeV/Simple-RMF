@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using RMF.Core.Extensions;
+using RMF.Core.Loaders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,7 @@ namespace RMF_Server.Configurations
             services.AddSingletonXmlConfig<StreamingConfig>();
             services.AddSingletonXmlConfig<CommandConfig>();
             services.AddSingletonXmlConfig<ListenerConfig>();
+            services.AddSingletonXmlConfig<LoggingConfig>();
             return services;
         }
     }

@@ -36,7 +36,7 @@ namespace RMF_Server.Commands
             IThemeManager themeManager = _provider.GetRequiredService<IThemeManager>();
 
             CmLogger.LogInformation("Available inline commands:");
-            if (commandViewer.GetLoadedCommandsCount() <= 0)
+            if (commandViewer.RegisteredCount <= 0)
             {
                 CmLogger.LogInformation("No commands have been loaded...");
                 return Task.CompletedTask;

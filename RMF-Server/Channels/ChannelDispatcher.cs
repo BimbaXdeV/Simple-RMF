@@ -26,6 +26,8 @@ namespace RMF_Server.Channels
 
         private readonly Dictionary<int, ChannelContext> _channels;
 
+        public int RegisteredCount => this._channels.Count;
+
         public ChannelDispatcher(
             IPacketFactory packetFactory,
             IServerPacketProcessor packetProcessor,
@@ -71,8 +73,6 @@ namespace RMF_Server.Channels
 
                 this._channels.TryAdd(k, new ChannelContext(rawChannel, workerTask, cts));
             }
-
-            this._logger.LogInformation("Successfully started {Loaded} inbound channels", this._channels.Count);
             return Task.CompletedTask;
         }
 
@@ -85,7 +85,7 @@ namespace RMF_Server.Channels
                 await Task.Yield();
                 await foreach (PacketContext context in reader.ReadAllAsync(token))
                 {
-                    Packet? packet = this._packetFactory.CreatePacket(context.Id);
+                    IPacket? packet = this._packetFactory.CreatePacket(context.Id);
                     if (packet == null)
                     {
                         this._logger.LogWarning("Received an unknown packet \"{PacketId}\" from the client {EndPoint}", context.Id, context.EndPoint);

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Events
 {
-    public class EventContainer
+    public class EventContainer : IDisposable
     {
         public DateTime StartTime;
         public IEvent? Event;
@@ -14,14 +14,21 @@ namespace RMF.Core.Events
 
         public EventContainer()
         {
-            this.StartTime = DateTime.Now;
+            StartTime = DateTime.Now;
         }
 
         public EventContainer(IEvent backgroundEvent, CancellationTokenSource cts)
         {
-            this.StartTime = DateTime.Now;
-            this.Event = backgroundEvent;
-            this.Cts = cts;
+            StartTime = DateTime.Now;
+            Event = backgroundEvent;
+            Cts = cts;
+        }
+
+        public void Dispose()
+        {
+            Cts?.Cancel();
+            Cts?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

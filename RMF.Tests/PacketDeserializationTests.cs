@@ -17,10 +17,10 @@ namespace RMF.Tests
     {
         [Theory]
         [MemberData(nameof(PacketTestFixtures.GetDeserializationDataset), MemberType = typeof(PacketTestFixtures))]
-        public void Deserialize_FromPacketDumps_ShouldMatchExactState(Type packetType, byte[] networkBytearray, Packet expectedPacket)
+        public void Deserialize_FromPacketDumps_ShouldMatchExactState(Type packetType, byte[] networkBytearray, IPacket expectedPacket)
         {
             SpanReader reader = new(networkBytearray);
-            Packet packet = (Packet)Activator.CreateInstance(packetType)!;
+            IPacket packet = (IPacket)Activator.CreateInstance(packetType)!;
 
             try
             {
@@ -28,7 +28,7 @@ namespace RMF.Tests
 
                 // Unfortunately, the standard verification system cannot handle complex package types
                 // that use unmanaged memory, so dedicated asserters have been created specifically for them
-                if (PacketTestFixtures.SpecialDeserializeAsserters.TryGetValue(packetType, out Action<Packet, Packet>? asserter))
+                if (PacketTestFixtures.SpecialDeserializeAsserters.TryGetValue(packetType, out Action<IPacket, IPacket>? asserter))
                 {
                     asserter(expectedPacket, packet);
                 }

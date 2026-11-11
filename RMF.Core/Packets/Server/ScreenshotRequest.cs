@@ -9,7 +9,7 @@ namespace RMF.Core.Packets.Server
 {
     public class ScreenshotRequest : Packet
     {
-        public override short ID => 303;
+        public override short ID => 305;
 
         public byte FormatID;
         public byte QualityPercent;

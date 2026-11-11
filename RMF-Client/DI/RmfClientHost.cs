@@ -36,47 +36,17 @@ namespace RMF_Client.DI
             // [!] Ultimately, the decision was made to completely abandon partial resource loading
             // and instead throw an exception immediately if external files or parsing systems failed
 
-            // Configurations
-            LoadResult<Dictionary<Type, object>> configLoadResult = XmlConfigLoader.Load(Path.Combine("Resources", "config.xml"));
-            if (!configLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(configLoadResult.ExceptionMessage);
-            }
-            XmlConfigProvider configProvider = new(configLoadResult.Data!);
-
-            // Toolbar content
-            LoadResult<ToolbarItem[]> toolbarLoadResult = XmlToolbarLoader.Load(Path.Combine("Resources", "toolbar.xml"));
-            if (!toolbarLoadResult.IsSuccess)
-            {
-                throw new FileLoadException(toolbarLoadResult.ExceptionMessage);
-            }
-
-            // Network packets
-            LoadResult<Dictionary<short, Type>> packetLoadResult = ReflectionPacketLoader.Load();
-            if (!packetLoadResult.IsSuccess)
-            {
-                throw new TypeLoadException(packetLoadResult.ExceptionMessage);
-            }
-            PacketFactory packetFactory = new(packetLoadResult.Data!);
-
-            // Server events
-            LoadResult<Dictionary<string, Type>> eventLoadResult = ReflectionEventLoader.FindEvents("Client");
-            if (!eventLoadResult.IsSuccess)
-            {
-                throw new TypeLoadException(eventLoadResult.ExceptionMessage);
-            }
-            EventFactory eventFactory = new(eventLoadResult.Data!);
-
             // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
-            builder.ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-            });
             builder.ConfigureServices(services =>
             {
                 // Configurations
-                services.AddSingleton(configProvider);
+                services.AddSingleton(provider =>
+                {
+                    Dictionary<string, string> configDict = XmlConfigLoader.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "config.xml"));
+                    return new RmfConfigProvider(configDict);
+                });
+                services.AddSingleton<IConfigViewer>(provider => provider.GetRequiredService<RmfConfigProvider>());
                 services.AddSingletonConfigurations();
 
                 // Sessions & Network
@@ -86,23 +56,20 @@ namespace RMF_Client.DI
                     return new ProtocolReader(securityConfig.MaxPacketBufferKB * 1024);
                 });
                 services.AddSingleton<IPacketSender, StreamManager>();
-                services.AddSingleton<IEventFactory>(eventFactory);
+                services.AddSingleton<IEventFactory, EventFactory>();
                 services.AddSingleton<IClientSessionManager, SessionManager>();
 
                 // UI
+                services.AddLogging(builder =>
+                {
+                    builder.ClearProviders();
+                });
                 services.AddSingleton(provider =>
                 {
                     AppearanceConfig appearanceConfig = provider.GetRequiredService<AppearanceConfig>();
-
                     AppearanceManager appearanceManager = new(appearanceConfig);
-                    appearanceManager.LoadToolbar(toolbarLoadResult.Data!);
-
-                    appearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
-                    {
-                        { "configsLoaded", configLoadResult.Loaded + " / " + configLoadResult.Total },
-                        { "packetsLoaded", packetLoadResult.Loaded + " / " + packetLoadResult.Total },
-                        { "eventsLoaded", eventLoadResult.Loaded + " / " + eventLoadResult.Total }
-                    }, autoUpdate: false); // Your time hasn`t come yet, bro; ClientBootstrapper ​​will sort everything out himself
+                    ToolbarItem[] clientToolbar = XmlToolbarLoader.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "toolbar.xml"));
+                    appearanceManager.LoadToolbar(clientToolbar);
                     return appearanceManager;
                 });
                 services.AddSingleton<IWindowManager, AppearanceManager>(provider => provider.GetRequiredService<AppearanceManager>());
@@ -116,7 +83,7 @@ namespace RMF_Client.DI
                 services.AddSingleton<IMonitoringFactory, MonitoringFactory>();
 
                 // Packets
-                services.AddSingleton<IPacketFactory>(packetFactory);
+                services.AddSingleton<IPacketFactory, PacketFactory>();
                 services.AddSingleton<IClientPacketProcessor, PacketProcessor>();
 
                 // Client connection

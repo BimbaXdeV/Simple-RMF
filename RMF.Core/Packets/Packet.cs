@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Packets
 {
-    public abstract class Packet
+    public abstract class Packet : IPacket
     {
         public abstract short ID { get; }
 
