@@ -184,7 +184,6 @@ namespace RMF_Client.Logic
             }
 
             // Streaming shutdown logic : if the packet includes "IsActive = false" and streaming event has already running
-
             bool isEventActive = session.IsEventRunning(nameof(StreamingEvent));
 
             if (!packet.IsActive && isEventActive)
@@ -205,8 +204,8 @@ namespace RMF_Client.Logic
                     return;
                 }
 
-                // Error reporting on the client side isn`t set up yet, please give me some time <3
-                _ = session.StartEvent(nameof(StreamingEvent), new Dictionary<string, object>
+                // [!] Error reporting on the client side isn`t set up yet, please give me some time <3
+                EventStartupResult startupResult = session.StartEvent(nameof(StreamingEvent), new Dictionary<string, object>
                 {
                     { "Provider", screenProvider },
                     { "Format", (ScreenFormats)packet.FormatID },
@@ -214,6 +213,18 @@ namespace RMF_Client.Logic
                     { "FrameUpdateRate", packet.FrameUpdateRate },
                     { "TargetFPS", packet.TargetFPS }
                 });
+
+                // For now, a temporary workaround - a bit of a "crutch", has been put in place so that the server at least
+                // knows why streaming isn`t working and can terminate the active stream, rather than waiting for a miracle
+                if (!startupResult.IsSuccess)
+                {
+                    EndOfStreamingPacket endOfStreamingPacket = new()
+                    {
+                        Reason = startupResult.ExceptionMessage!
+                    };
+                    session.SendPacket(endOfStreamingPacket);
+                }
+
             }
         }
 

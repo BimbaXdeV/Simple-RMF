@@ -9,7 +9,8 @@
 	<!-- Connection Settings -->
 	<add key="IPAddress" value="127.0.0.1"/>
 	<add key="Port" value="8000"/>
-	<add key="ConnectionRequestIntervalSecs" value="10"/>
+	<add key="MaxConnectionAttempts" value="10"/>
+	<add key="ConnectionRequestDelaySecs" value="10"/>
 	<add key="EnableForceShutdown" value="false"/>
 
 	<!-- Security Settings -->

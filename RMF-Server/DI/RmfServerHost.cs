@@ -64,12 +64,12 @@ namespace RMF_Server.DI
                 });
 
                 // Logging
-                services.AddSingleton<IConsoleSynchronizer, RmfConsoleSynchronizer>();
-                services.AddSingleton<IConsoleExtensions, RmfConsoleAppearance>();
                 services.AddLogging(builder =>
                 {
                     builder.ClearProviders();
                 });
+                services.AddSingleton<IConsoleSynchronizer, RmfConsoleSynchronizer>();
+                services.AddSingleton<IConsoleExtensions, RmfConsoleAppearance>();
                 services.AddSingleton<RmfLoggerProvider>();
                 services.AddSingleton<ILoggerProvider>(provider => provider.GetRequiredService<RmfLoggerProvider>());
                 services.AddHostedService(provider => provider.GetRequiredService<RmfLoggerProvider>());

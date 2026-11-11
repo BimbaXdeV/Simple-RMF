@@ -21,21 +21,21 @@ namespace RMF.Core.Events
             _runningTasks = new ConcurrentDictionary<string, EventContainer>();
         }
 
-        public EventResult StartEvent(
+        public EventStartupResult StartEvent(
             ISession session,
             string eventName,
-            Dictionary<string, object>? eventSettings = null
+            IReadOnlyDictionary<string, object>? eventSettings = null
         )
         {
             if (_runningTasks.ContainsKey(eventName))
             {
-                return EventResult.Failure($"Event \"{eventName}\" is already running");
+                return EventStartupResult.Failure($"Event \"{eventName}\" is already running");
             }
 
             IEvent? backgroundEvent = _eventFactory.CreateEvent(eventName);
             if (backgroundEvent == null)
             {
-                return EventResult.Failure($"Event \"{eventName}\" is not registered in the EventFactory");
+                return EventStartupResult.Failure($"Event \"{eventName}\" is not registered in the EventFactory");
             }
 
             if (eventSettings != null)
@@ -45,7 +45,7 @@ namespace RMF.Core.Events
 
             if (!backgroundEvent.ValidateSettings(out string? exceptionMessage))
             {
-                return EventResult.Failure($"Settings are invalid: {exceptionMessage}");
+                return EventStartupResult.Failure($"Settings are invalid: {exceptionMessage}");
             }
 
             CancellationTokenSource newCts = new();
@@ -74,7 +74,7 @@ namespace RMF.Core.Events
                 }, newCts.Token);
             }
 
-            return EventResult.Success();
+            return EventStartupResult.Success();
         }
 
         private void StopEvent(EventContainer eventContainer)

@@ -6,25 +6,25 @@ using System.Threading.Tasks;
 
 namespace RMF.Core.Events
 {
-    public readonly struct EventResult
+    public readonly struct EventStartupResult
     {
         public readonly bool IsSuccess;
         public readonly string? ExceptionMessage;
 
-        public EventResult(bool isSuccess, string? exceptionMessage = null)
+        public EventStartupResult(bool isSuccess, string? exceptionMessage = null)
         {
             IsSuccess = isSuccess;
             ExceptionMessage = exceptionMessage;
         }
 
-        public static EventResult Success()
+        public static EventStartupResult Success()
         {
-            return new EventResult(true);
+            return new EventStartupResult(true);
         }
 
-        public static EventResult Failure(string exceptionMessage)
+        public static EventStartupResult Failure(string exceptionMessage)
         {
-            return new EventResult(false, exceptionMessage);
+            return new EventStartupResult(false, exceptionMessage);
         }
     }
 }

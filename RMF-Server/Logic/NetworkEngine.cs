@@ -161,7 +161,7 @@ namespace RMF_Server.Logic
 
                     if (this._controllerConfig.EnableClientHeartbeat)
                     {
-                        EventResult result = session.StartEvent(nameof(HeartbeatEvent), new Dictionary<string, object>
+                        EventStartupResult result = session.StartEvent(nameof(HeartbeatEvent), new Dictionary<string, object>
                         {
                             { "IntervalSecs", this._controllerConfig.ClientHeartbeatIntervalSecs }
                         });

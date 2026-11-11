@@ -38,10 +38,6 @@ namespace RMF_Client.DI
 
             // ---- Assembling services into a DI container ----
             IHostBuilder builder = Host.CreateDefaultBuilder(args);
-            builder.ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-            });
             builder.ConfigureServices(services =>
             {
                 // Configurations
@@ -50,6 +46,8 @@ namespace RMF_Client.DI
                     Dictionary<string, string> configDict = XmlConfigLoader.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "config.xml"));
                     return new RmfConfigProvider(configDict);
                 });
+                services.AddSingleton<IConfigViewer>(provider => provider.GetRequiredService<RmfConfigProvider>());
+                services.AddSingletonConfigurations();
 
                 // Sessions & Network
                 services.AddSingleton<IProtocolReader, ProtocolReader>(provider =>
@@ -62,18 +60,16 @@ namespace RMF_Client.DI
                 services.AddSingleton<IClientSessionManager, SessionManager>();
 
                 // UI
+                services.AddLogging(builder =>
+                {
+                    builder.ClearProviders();
+                });
                 services.AddSingleton(provider =>
                 {
                     AppearanceConfig appearanceConfig = provider.GetRequiredService<AppearanceConfig>();
-
                     AppearanceManager appearanceManager = new(appearanceConfig);
                     ToolbarItem[] clientToolbar = XmlToolbarLoader.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "toolbar.xml"));
                     appearanceManager.LoadToolbar(clientToolbar);
-
-                    appearanceManager.ReplaceToolbarContent(new Dictionary<string, string>
-                    {
-                        { "configsLoaded", clientToolbar.Length.ToString() },
-                    }, autoUpdate: false); // Your time hasn`t come yet, bro; ClientBootstrapper ​​will sort everything out himself
                     return appearanceManager;
                 });
                 services.AddSingleton<IWindowManager, AppearanceManager>(provider => provider.GetRequiredService<AppearanceManager>());

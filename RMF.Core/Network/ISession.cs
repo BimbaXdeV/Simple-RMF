@@ -23,7 +23,7 @@ namespace RMF.Core.Network
         Task<byte[]> ReadPayloadAsync(int length, CancellationToken token);
 
         void SendPacket(IPacket packet);
-        EventResult StartEvent(string eventName, Dictionary<string, object> eventSettings);
+        EventStartupResult StartEvent(string eventName, IReadOnlyDictionary<string, object> eventSettings);
         void IncrementSendPackets();
         void IncrementReceivedPackets();
         void StopProcessing();

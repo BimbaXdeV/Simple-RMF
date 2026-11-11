@@ -12,18 +12,24 @@ namespace RMF_Client.Configurations
     {
         public IPAddress IPAddress = new([0, 0, 0, 0]);
         public int Port = 1000;
-        public int ConnectionRequestIntervalSecs = 1;
+        public int MaxConnectionAttempts = int.MaxValue;
+        public int ConnectionRequestDelaySecs = 1;
         public bool EnableForceShutdown = false;
 
         public override bool ValidateFields(out string? exceptionMessage)
         {
             exceptionMessage = null;
-            if (Port < 1 || Port > 65535)
+            if (Port < IPEndPoint.MinPort || Port > IPEndPoint.MaxPort)
             {
                 exceptionMessage = "Port must be between 1 and 65535";
                 return false;
             }
-            if (ConnectionRequestIntervalSecs <= 0)
+            if (MaxConnectionAttempts <= 0)
+            {
+                exceptionMessage = "MaxConnectionAttempts must be greater than 0";
+                return false;
+            }
+            if (ConnectionRequestDelaySecs <= 0)
             {
                 exceptionMessage = "ConnectionRequestIntervalSecs must be greater than 0";
                 return false;
@@ -35,7 +41,8 @@ namespace RMF_Client.Configurations
         {
             ApplyValue<IPAddress>(configDict, nameof(IPAddress), v => IPAddress = v);
             ApplyValue<int>(configDict, nameof(Port), v => Port = v);
-            ApplyValue<int>(configDict, nameof(ConnectionRequestIntervalSecs), v => ConnectionRequestIntervalSecs = v);
+            ApplyValue<int>(configDict, nameof(MaxConnectionAttempts), v => MaxConnectionAttempts = v);
+            ApplyValue<int>(configDict, nameof(ConnectionRequestDelaySecs), v => ConnectionRequestDelaySecs = v);
             ApplyValue<bool>(configDict, nameof(EnableForceShutdown), v => EnableForceShutdown = v);
         }
     }

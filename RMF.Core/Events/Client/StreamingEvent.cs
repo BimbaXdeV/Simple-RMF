@@ -21,7 +21,7 @@ namespace RMF.Core.Events.Client
         public ScreenFormats Format { get; set; }
         public byte QualityPercent { get; set; }
         public int FrameUpdateRate { get; set; }
-        public int TargetFPS { get; set; }
+        public short TargetFPS { get; set; }
 
         private void SendActualFrame(ISession session)
         {
@@ -93,7 +93,7 @@ namespace RMF.Core.Events.Client
             ApplyValue<ScreenFormats>(settings, nameof(Format), v => Format = v);
             ApplyValue<byte>(settings, nameof(QualityPercent), v => QualityPercent = v);
             ApplyValue<int>(settings, nameof(FrameUpdateRate), v => FrameUpdateRate = v);
-            ApplyValue<int>(settings, nameof(TargetFPS), v => TargetFPS = v);
+            ApplyValue<short>(settings, nameof(TargetFPS), v => TargetFPS = v);
         }
     }
 }
